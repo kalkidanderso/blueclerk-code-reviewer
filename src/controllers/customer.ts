@@ -303,6 +303,14 @@ export const getCustomers = async (req: Request, res: Response) => {
             }
         },
         {
+            $lookup: {
+                from: "pricetiers",
+                localField: "itemTier",
+                foreignField: "_id",
+                as: "itemTierObj"
+            }
+        },
+        {
             $match: {
                 $and: [
                     { 'companycustomers.company': new ObjectId(companyId) },
@@ -319,6 +327,9 @@ export const getCustomers = async (req: Request, res: Response) => {
                 "isActive": 1,
                 "quickbookId": 1,
                 "isPORequired": 1,
+                "itemTier": 1,
+                "itemTierObj": 1,
+                "discountPrices": 1
             }
         },
     ]).exec()

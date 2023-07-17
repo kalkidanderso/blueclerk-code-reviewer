@@ -4,12 +4,14 @@ import { IHomeOwner } from '../models/HomeOwner';
 import { IJobLocation } from '../models/JobLocation';
 import { IJobSite } from '../models/JobSite';
 import { IJobTypes } from '../models/JobType';
+import { ICustomer } from './Customer';
+import { ICompanyLocation } from './CompanyLocation';
 
 export interface IServiceTicket extends Document {
 
     createdAt: Date
     dueDate: Date
-    customer: Schema.Types.ObjectId
+    customer: Schema.Types.ObjectId | ICustomer
     createdBy: Schema.Types.ObjectId
     note: string
     customerPO: string,
@@ -28,8 +30,8 @@ export interface IServiceTicket extends Document {
     editedBy: Schema.Types.ObjectId
     editedAt: Date
     ticketId: string
-    jobLocation: Schema.Types.ObjectId
-    jobSite: Schema.Types.ObjectId
+    jobLocation: Schema.Types.ObjectId | IJobLocation
+    jobSite: Schema.Types.ObjectId | IJobSite
     isHomeOccupied: boolean
     homeOwner: Schema.Types.ObjectId | IHomeOwner
     homeJobLocation: Schema.Types.ObjectId | IJobLocation
@@ -41,7 +43,14 @@ export interface IServiceTicket extends Document {
     track: any[];
     source: string | null;
     workType: Schema.Types.ObjectId  | null
-    companyLocation: Schema.Types.ObjectId  | null
+    companyLocation: Schema.Types.ObjectId  | null | ICompanyLocation
+    type: "PO Request" | "Ticket"
+    emailHistory?: [{
+        sentTo: string
+        sentAt: Date,
+        sentBy: Schema.Types.ObjectId
+    }],
+    lastEmailSent?: Date
 }
 
 const ServiceTicketSchema = new Schema({
@@ -146,7 +155,11 @@ const ServiceTicketSchema = new Schema({
         jobType: {
             type: Schema.Types.ObjectId,
             ref: 'JobType'
-        }
+        },
+        quantity: {
+            type: Number,
+            default: 1
+        },
     }],
     item: {
         type: Schema.Types.ObjectId,
@@ -172,7 +185,21 @@ const ServiceTicketSchema = new Schema({
         type: String,
         enum: ['Ticket','PO Request'],
         default: 'Ticket'
-    }
+    },
+    emailHistory: [{
+        _id: false,
+        sentTo: String,
+        sentAt: {
+            type: Date,
+        },
+        sentBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        }
+    }],
+    lastEmailSent: {
+        type: Date
+    },
 })
 
 //Indexes

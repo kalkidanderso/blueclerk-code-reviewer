@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import { IItem } from './Item'
 
 export interface IJobType extends Document {
 
@@ -15,7 +16,8 @@ export interface IJobType extends Document {
 
 export interface IJobTypes {
 
-    jobType: Schema.Types.ObjectId | IJobType
+    jobType: Schema.Types.ObjectId | IJobType | IItem
+    quantity: number
 
 }
 

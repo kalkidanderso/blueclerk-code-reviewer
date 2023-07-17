@@ -615,7 +615,7 @@ export const updateDiscountItem = async (req: Request, res: Response, next: Next
 
     return new Promise(async (resolve, reject) => {
 
-        let parsedJobTypes: { jobTypeId: string }[];
+        let parsedJobTypes: { jobTypeId: string, quantity: number }[];
         let isFixed: boolean;
         const newJobTypes: IJobTypes[] = [];
         const invalidJobTypes: string[] = [];
@@ -665,7 +665,7 @@ export const updateDiscountItem = async (req: Request, res: Response, next: Next
                             // Check if jobType exist
                             const jobType = await JobType.findById(parsedJobType.jobTypeId);
                             if (jobType) {
-                                newJobTypes.push({ jobType: jobType._id });
+                                newJobTypes.push({ jobType: jobType._id, quantity: parsedJobType.quantity});
                                 continue;
                             }
                         }

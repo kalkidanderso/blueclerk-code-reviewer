@@ -7,9 +7,11 @@ import { ICompany } from '../models/Company';
 import { IUser } from '../models/User';
 import { ICustomer } from '../models/Customer';
 import { IInvoice } from '../models/Invoice';
-import { IEmailDefault, DefaultEmailTemplate, DefaultInvoicesEmailTemplate, EmailDefault, EmailTypes, DefaultIncomeReportEmailTemplate, DefaultARReportEmailTemplate } from '../models/EmailDefault';
+import { IEmailDefault, DefaultEmailTemplate, DefaultInvoicesEmailTemplate, EmailDefault, EmailTypes, DefaultIncomeReportEmailTemplate, DefaultARReportEmailTemplate, DefaultPORequestEmailTemplate } from '../models/EmailDefault';
 import { IJob } from 'src/models/Job';
 import { IContact } from 'src/common/contact';
+import { IServiceTicket } from 'src/models/ServiceTicket';
+import { IPaymentTerm } from 'src/models/PaymentTerm';
 
 
 export const getCompanyEmailDefault = async (req: Request, res: Response) => {
@@ -79,14 +81,16 @@ export const getPlaceholderValues = async ({
     invoices,
     customer,
     job,
-    dateRange
+    dateRange,
+    ticket
 }: {
     company: ICompany,
     invoice?: IInvoice,
     invoices?: IInvoice[],
     customer?: ICustomer,
     job?: IJob,
-    dateRange?: string
+    dateRange?: string,
+    ticket?: IServiceTicket
 }): Promise<any> => {
 
     // Get invoice and job contact if exist for the recipient
@@ -101,6 +105,8 @@ export const getPlaceholderValues = async ({
     const invoice_amount = helper.delimiterEnUs(invoice?.total);
     const invoice_due_date = moment(invoice?.dueDate ?? '').format('MMMM DD, YYYY');
     const date_range = dateRange ?? '';
+    const ticket_id = ticket?.ticketId ?? '';
+    const ticket_due_date = moment(ticket?.dueDate).format('MMMM DD, YYYY');
 
     let invoice_total_amount = '';
     if (invoices?.length) {
@@ -111,7 +117,7 @@ export const getPlaceholderValues = async ({
         invoice_total_amount = helper.delimiterEnUs(invoiceTotalAmount);
     }
 
-    return { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_total_amount, invoice_due_date, date_range };
+    return { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_total_amount, invoice_due_date, date_range, ticket_id, ticket_due_date };
 
 }
 
@@ -158,6 +164,15 @@ export const _createCompanyDefaultEmail = async (company: ICompany, emailType: E
             }).save();
             break;
 
+        case EmailTypes.PO_REQUEST:
+            await new EmailDefault({
+                subject: DefaultPORequestEmailTemplate.subject,
+                message: DefaultPORequestEmailTemplate.message,
+                emailType: EmailTypes.PO_REQUEST,
+                company
+            }).save();
+            break;
+    
         case EmailTypes.INVOICE:
         default:
             await new EmailDefault({

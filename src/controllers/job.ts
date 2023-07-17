@@ -2187,9 +2187,9 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                                 if (commissionTierId) {
                                     const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
                                     if (commissionTier?.charge){
-                                        balance += commissionTier.charge
-                                        contractorCommissionEntry.commission += commissionTier.charge
-                                        contractorCommissionEntry.commissionAmount += commissionTier.charge
+                                        balance += commissionTier.charge * (j.quantity || 1);
+                                        contractorCommissionEntry.commission += commissionTier.charge * (j.quantity || 1);
+                                        contractorCommissionEntry.commissionAmount += commissionTier.charge * (j.quantity || 1);
                                     }
                                 }
                                 await Company.findByIdAndUpdate(
@@ -2748,9 +2748,9 @@ export const updateJobTask = async (req: Request, res: Response) => {
                     if (commissionTierId) {
                         const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
                         if (commissionTier?.charge){
-                            balance += commissionTier.charge
-                            contractorCommissionEntry.commission += commissionTier.charge
-                            contractorCommissionEntry.commissionAmount += commissionTier.charge
+                            balance += commissionTier.charge * (j.quantity || 1);
+                            contractorCommissionEntry.commission += commissionTier.charge * (j.quantity || 1);
+                            contractorCommissionEntry.commissionAmount += commissionTier.charge * (j.quantity || 1);
                         }
                     }
                     await Company.findByIdAndUpdate(

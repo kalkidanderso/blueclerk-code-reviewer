@@ -373,20 +373,24 @@ export const createInvoice = (req: Request, res: Response) => {
                 const job = <IJob>result[0]
 
                 // Convert jobTypes to ObjectId in array
-                const jobTypeIds = [];
+                const jobTypes = [];
                 job.tasks.forEach(task => {
                     task.jobTypes.forEach(taskJobType => {
-                        jobTypeIds.push(taskJobType.jobType)
+                        jobTypes.push({
+                            id: taskJobType.jobType,
+                            quantity: taskJobType.quantity
+                        })
                     })
                 })
                 // const jobTypeIds = job.tasks.map(task => task.jobType);
                 // Fallback for old job who still using one job type
-                if (!jobTypeIds.length) jobTypeIds.push(job.type);
+                if (!jobTypes.length) jobTypes.push({id: job.type, quantity: 1});
                 // Search all jobTypes' items
                 // const items = Item.find({ jobType: { $in: jobTypeIds }});
                 const items: any[] = []
-                jobTypeIds.forEach(async (jobTypeId) => {
-                    const item = await Item.findOne({jobType: jobTypeId})
+                jobTypes.forEach(async (jobType) => {
+                    const item: any = await Item.findOne({jobType: jobType.id})
+                    item["quantity"] = jobType.quantity;
                     items.push(item);
                 });
 
@@ -1278,7 +1282,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
             // Set price to 0 if customer uses customPrice
             let price = customerObj.isCustomPrice ? 0 : itemTier?.charge || jobTypeitem.charges;
             // If item is hourly, take the task's timeSpent (minutes) for the quantity
-            let quantity = jobTypeitem.isFixed ? 1 : (jobTypes?.timeSpent / 60) || 1;
+            let quantity = jobTypeitem.isFixed ? ((jobTypeitem as any).quantity || 1) : (jobTypes?.timeSpent / 60) || 1;
             let itemTax = 0
             let itemTaxAmount: number = 0
             let subTotal = price * quantity

@@ -198,5 +198,99 @@ export const Styles = {
             color: '#4F4F4F',
             alignment: 'center'
         }
+    },
+    PORequest: {
+        ticketId: {
+            fontSize: 13,
+            bold: true,
+            color: '#00AAFF'
+        },
+        headerTitle: {
+            fontSize: 11,
+            color: '#828282'
+        },
+        headerTitleBold: {
+            fontSize: 11,
+            bold: true,
+            color: '#828282'
+        },
+        companyName: {
+            fontSize: 16,
+            bold: true,
+            color: '#4F4F4F'
+        },
+        ticketHeader: {
+            fontSize: 11,
+            color: '#333333'
+        },
+        ticketHeaderBold: {
+            fontSize: 11,
+            bold: true,
+            color: '#4F4F4F'
+        },
+        invoiceMetadataTitle: {
+            fontSize: 11,
+            bold: true,
+            color: '#333333',
+            alignment: 'right',
+        },
+        invoiceMetadata: {
+            fontSize: 11,
+            color: '#333333',
+            alignment: 'right',
+        },
+        itemTitle: {
+            fontSize: 12,
+            bold: true,
+            color: '#828282',
+            fillColor: '#F9FDFF',
+            margin: [0, 10, 0, 5]
+        },
+        itemListBold: {
+            fontSize: 12,
+            bold: true,
+            color: '#4F4F4F',
+            margin: [0, 0, 0, 5]
+        },
+        itemList: {
+            fontSize: 12,
+            color: '#4F4F4F'
+        },
+        itemListCenter: {
+            fontSize: 12,
+            color: '#4F4F4F',
+            alignment: 'center'
+        },
+        itemListRight: {
+            fontSize: 12,
+            color: '#4F4F4F',
+            alignment: 'right'
+        },
+        amountDueTitle: {
+            fontSize: 12,
+            bold: true,
+            color: '#333333',
+            alignment: 'right'
+        },
+        amountDue: {
+            fontSize: 16,
+            bold: true,
+            color: '#333333',
+            alignment: 'right'
+        },
+        smallFontGray: {
+            fontSize: 7,
+            color: '#4F4F4F'
+        },
+        icon: {
+            font: 'Fontello',
+            fontSize: 12,
+            color: '#4F4F4F',
+            alignment: 'center'
+        },
+        noteFont: {
+            fontSize: 12,
+            color: '#4F4F4F',
+        }
     }
 }

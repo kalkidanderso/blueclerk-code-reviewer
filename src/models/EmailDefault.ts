@@ -21,6 +21,7 @@ export enum EmailTypes {
     INVOICES = 'INVOICES',
     INCOME_REPORT = 'INCOME_REPORT',
     ACCOUNT_RECEIVABLE_REPORT = 'ACCOUNT_RECEIVABLE_REPORT',
+    PO_REQUEST = 'PO_REQUEST',
 }
 
 // DEFAULT EMAIL TEMPLATES
@@ -43,6 +44,11 @@ export const DefaultIncomeReportEmailTemplate = {
 export const DefaultARReportEmailTemplate = {
     subject: 'Account Receivable report of {{company_name}}',
     message: 'Hello,\n\nPlease see your Account Receivable Report attached.\n\n{{small_company_logo}}'
+}
+
+export const DefaultPORequestEmailTemplate = {
+    subject: '{{ticket_id}} from {{company_name}}',
+    message: 'Dear {{customer_name}},\n\nPlease see {{ticket_id}} attached with Job Types and Job Type Price valid until {{ticket_due_date}}.\n\nWe hope to hear from you soon here at {{company_name}}\n{{small_company_logo}}'
 }
 
 // MONGOOSE SCHEMA

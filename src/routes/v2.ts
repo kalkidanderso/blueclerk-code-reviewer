@@ -56,6 +56,22 @@ export default function () {
         serviceTicketController.getServiceTickets
     )
 
+    router.get(
+        '/getPORequestEmailTemplate',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        serviceTicketController.getPORequestEmailTemplate
+    )
+
+    router.post(
+        '/sendPORequest',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        serviceTicketController.sendPORequest
+    )
+
     return router
 
 }

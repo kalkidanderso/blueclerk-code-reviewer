@@ -145,6 +145,11 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                             return res.json({'status': Status.Error, 'message': Messages.GenericError})
                         }
 
+                        let historyMessage = "Service Ticket"
+                        if (params.type == "PO Request") {
+                            historyMessage  = "Purchase Order Request"
+                        }
+                        
                         if (serviceTicket.source === ServiceTicketSource.WEB) {
                             const serviceTicketDetail = await ServiceTicket.findOne(
                                 { _id: serviceTicket._id , company: companyId})
@@ -172,13 +177,13 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                                     if(err) {
                                         return null;
                                     }
-
+                                                            
                                     // Construct notification entry to be saved
                                     let notificationEntry: INotificationServiceTicket = new NotificationServiceTicket({
                                         company: companyId,
                                         notificationType: NotificationTypes.SERVICE_TICKET_CREATED,
                                         message: {
-                                            title: 'Service Ticket created',
+                                            title: `${historyMessage} created`,
                                             body: `${serviceTicket.ticketId} created via web`
                                         },
                                         metadata: serviceTicket._id
@@ -197,7 +202,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                             )
 
                         }
-                        return res.json({'status': Status.Success, 'message': 'Service ticket created successfully.', invalidJobTypes})
+                        return res.json({'status': Status.Success, 'message': `${historyMessage} created successfully.`, invalidJobTypes})
                     })
             })
 
@@ -1116,6 +1121,20 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
                             }
 
+                            if (customerPO) {
+                                let track: any[] = serviceTicket?.track ? serviceTicket.track : [];
+                                track.push({
+                                    user: user._id,
+                                    action: `Oerride-missing Customer PO`,
+                                    date: new Date()
+                                });
+                                if (customerPO) {
+                                    serviceTicket.type = "Ticket"
+                                }else{
+                                    serviceTicket.type = "PO Request"
+                                }
+                                await serviceTicket.save();
+                            }
                             // Update jobs related to this service ticket is jobTypes updated
                             const jobs = await Job.find({ ticket: serviceTicket._id });
                             for (const job of jobs) {

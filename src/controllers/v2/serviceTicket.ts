@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import moment from 'moment';
 
-import { DefaultPageSize, Status } from '../../common/constants';
+import { DefaultPageSize, Messages, Status } from '../../common/constants';
 import {
     splitArray, fillQueryCommon, getFilteredCustomerIds,
     getFilteredJobLocationsIds, getFilteredJobSitesIds, getFilteredTechniciansIds
@@ -11,6 +11,26 @@ import { Contact } from '../../models/Contact';
 import { HomeOwner } from '../../models/HomeOwner';
 import * as helper from '../../services/helper';
 import { IServiceTicket, ServiceTicket } from '../../models/ServiceTicket';
+import {FONT_SETS, INVOICE_IMAGE_PATH, PO_REQUEST_PATH} from '../../common/config';
+import {Layouts, Styles} from '../../common/constants.pdf';
+import { Customer, ICustomer } from 'src/models/Customer';
+import { ICompany } from '../../models/Company';
+import { ICompanyLocation } from '../../models/CompanyLocation';
+import { IContact } from '../../common/contact';
+import { downloadFileToPath } from '../invoice';
+import { IItem, Item } from '../../models/Item';
+import { IUser } from '../../models/User';
+import { IJobType } from '../../models/JobType';
+import { IPriceTier } from '../../models/PriceTier';
+import { IJobLocation } from '../../models/JobLocation';
+import { IJobSite } from '../../models/JobSite';
+import fs from 'fs';
+import { sendPORequestEmailToCustomer } from '../../services/aws';
+import { EmailDefault, EmailTypes } from '../../models/EmailDefault';
+import * as Sentry from '@sentry/node';
+import { _createCompanyDefaultEmail, getPlaceholderValues, transformPlaceholders } from '../emailDefault';
+
+const pdfmake = require('pdfmake');
 
 export const getServiceTickets = async (req: Request, res: Response) => {
     const bodyParams = req.body;
@@ -101,6 +121,145 @@ export const getServiceTickets = async (req: Request, res: Response) => {
     });
 }
 
+
+export const getPORequestEmailTemplate = async (req: Request, res: Response) => {
+    const params = req.query;
+    const company = <ICompany>req.company;
+    let emailType = EmailTypes.PO_REQUEST;
+
+    // Retrieve company email default
+    let emailDefault = await EmailDefault.findOne({ company, emailType });
+    // Create email default if company coesn't have one yet
+    if (!emailDefault) {
+        await _createCompanyDefaultEmail(company, emailType);
+        emailDefault = await EmailDefault.findOne({ company, emailType });
+    }
+
+    /**
+     * Transfrom the email default placeholder symbol to fit Javascript Template Literal,
+     * '{{' become '${' & '}}' become '}'
+     */
+    const ticket = await ServiceTicket
+                            .findOne({company, _id: params.ticketId})
+                            .populate("customer");
+
+    await transformPlaceholders(emailDefault);
+    // Get available placeholder values for ticket email template
+    const { company_name,company_email,customer_name,ticket_id, ticket_due_date } = await getPlaceholderValues({ company, ticket, customer: ticket.customer as ICustomer });
+
+    return res.json({
+        status: Status.Success,
+        emailTemplate: {
+            from: company_email,
+            subject: eval('`' + emailDefault.subject + '`'),
+            message: eval('`' + emailDefault.message + '`')
+        }
+    });
+
+}
+
+export const sendPORequest = async (req: Request, res: Response) => {
+    const params = req.body;
+    const user = <IUser>req.user;
+    const company = <ICompany>req.company;
+
+    const ticket = await ServiceTicket 
+        .findOne({company, _id: params.ticketId})
+        .populate('customer')
+        .populate('customerContactId')
+        .populate('companyLocation')
+        .populate('jobLocation')
+        .populate('jobSite')
+        .populate('tasks.jobType');
+
+    // Retrieve company email default
+    const filepath = req.file?.path ?? `${PO_REQUEST_PATH}/${ticket.ticketId}.pdf`;
+    const ticketPdfs = [{ticket, filepath}];
+    const emailDefault = await EmailDefault.findOne({company, emailType: EmailTypes.INVOICE});
+
+    await _generatePORequestPdf(company, ticket);
+
+    
+    const customer = <ICustomer>ticket.customer;
+    const customerContact = <IContact>ticket.customerContactId;
+
+    let paramRecipients: string[];
+    let recipientEmails: string[];
+    let copyToMyself: boolean;
+    try {
+        // Handle the stringify array of recipients value
+        if (params.recipients) {
+            if (Array.isArray(params.recipients)) {
+                paramRecipients = params.recipients;
+            } else {
+                paramRecipients = JSON.parse(params.recipients);
+            }
+        }
+
+        // Handle the stringify boolean value
+        copyToMyself = params.copyToMyself
+            ? params.copyToMyself === 'false' || params.copyToMyself === false
+                ? false
+                : !!params.copyToMyself
+            : false;
+
+        /**
+         * Construct list of recipients if providef from FE,
+         * othwerwise using customerContact or customer
+         */
+        recipientEmails = paramRecipients?.length > 0
+            ? paramRecipients
+            : [(customerContact?.email ?? customer?.info?.email)];
+
+        // Add the user's email himself if he want to receive copy email
+        if (copyToMyself) {
+            recipientEmails.push(user.auth?.email);
+        }
+    } catch (error) {
+        Sentry.captureException(error);
+        console.log('== Send PO Request Error:', error);
+        return res.json({status: Status.Error, message: Messages.GenericError});
+    }
+
+    const companyLocation = <ICompanyLocation>ticket.companyLocation;
+    // Call AWS SES method
+    sendPORequestEmailToCustomer({
+        subject: params.subject ?? emailDefault?.subject,
+        message: params.message ?? emailDefault?.message,
+        sender_email: companyLocation?.billingAddress?.emailSender || user.auth?.email,
+        company_name: company.info?.companyName,
+        company_email: company.info?.companyEmail,
+        company_logo: company.info?.logoUrl,
+        customer_name: customer.profile?.displayName,
+        customer_email: customerContact?.email ?? customer?.info?.email,
+        recipient_emails: recipientEmails,
+        po_request_number: ticket.ticketId,
+        po_request_pdfs: params.withPDF ? ticketPdfs : []
+    });
+
+    // Update email history and last email sent info
+    let track: any[] = ticket?.track ? ticket.track : [];
+    track.push({
+        user: user._id,
+        action: `Sent an email for a Purchase Order Request.`,
+        date: new Date()
+    });
+    
+    const sendingDate = new Date();
+    ticket.emailHistory.push({
+        sentTo: customer.info?.email,
+        sentAt: sendingDate,
+        sentBy: user._id || null
+    });
+    ticket.lastEmailSent = sendingDate;
+    await ticket.save();
+
+    return res.json({
+        status: Status.Success,
+        message: "Purchase Order Request has been sent successfully."
+    });
+}
+
 /**
  * ===================================
  * =====[ PRIVATE METHODS BELOW ]=====
@@ -115,7 +274,7 @@ export const getServiceTickets = async (req: Request, res: Response) => {
  */
 const _fillInitialQueryTickets = (bodyParams: any, queryParams: any, query: any) => {
     const { workType, companyLocation } = queryParams;
-    const { technicianIds, status, startDate, endDate, customerId } = bodyParams;
+    const { technicianIds, status, startDate, endDate, customerId, type } = bodyParams;
     let technicianIdsArr: any[];
     if (technicianIds) {
         // Validate is technician ids is already array or object
@@ -165,6 +324,11 @@ const _fillInitialQueryTickets = (bodyParams: any, queryParams: any, query: any)
     if (customerId) {
         query['$and'].push({ customer: new ObjectId(customerId) });
     }
+
+    if (type) {
+        query['$and'].push({type: type});
+    }
+
     fillQueryCommon({ workType, companyLocation }, query['$and']);
 }
 
@@ -294,3 +458,525 @@ const _getFilteredTicketsIds = async (filteredInitialTickets: any[], params: any
     return values;
 }
 
+/**
+ * Generate Purchase Order Request
+ * @param company 
+ * @param ticket 
+ * @returns Promise<unknown>
+ */
+const _generatePORequestPdf = async (company: ICompany, ticket: IServiceTicket) => {
+
+    // Initialize PDF Make
+    const pdfMake = new pdfmake({
+        ...FONT_SETS.ROBOTO,
+        ...FONT_SETS.FONTELLO
+    });
+
+    // Retrieve invoice populated or detailed data
+    const customer = <ICustomer>ticket.customer;
+    const companyLocation = <ICompanyLocation>ticket?.companyLocation;
+    const customerContact = <IContact>ticket.customerContactId;
+
+    // Construct Billing Address object
+    const billingAddress = {
+        street: ticket.companyLocation ? `${(companyLocation.isAddressAsBillingAddress ? companyLocation.address?.street : companyLocation.billingAddress?.street) ?? ''}` : `${company.address?.street ?? ''}`,
+        city: ticket.companyLocation ? `${(companyLocation.isAddressAsBillingAddress ? companyLocation.address?.city : companyLocation.billingAddress?.city) ?? ''}` : `${company.address?.city ?? ''}`,
+        state: ticket.companyLocation ? `${(companyLocation.isAddressAsBillingAddress ? companyLocation.address?.state : companyLocation.billingAddress?.state) ?? ''}` : `${company.address?.state ?? ''}`,
+        zipCode: ticket.companyLocation ? `${(companyLocation.isAddressAsBillingAddress ? companyLocation.address?.zipCode : companyLocation.billingAddress?.zipCode) ?? ''}` : `${company.address?.zipCode ?? ''}`,
+    }
+
+    // Construct Customer Address object
+    const customerAddress = {
+        street: customer?.address?.street ? `${customer?.address?.street}` : '',
+        city: customer?.address?.city ? `, ${customer?.address?.city}` : '',
+        state: customer?.address?.state ? `, ${customer?.address?.state}` : '',
+        zipCode: customer?.address?.zipCode ? `, ${customer?.address?.zipCode}` : '',
+    }
+
+    // Construct default Job Service Address and Job Site Address object
+    const jobAddress: any = {...customerAddress};
+    const jobSiteAddress: any = {...customerAddress};
+
+    // Take Job Location address if any
+    const jobLocation = <IJobLocation>ticket.jobLocation;
+    if (jobLocation) {
+        jobAddress.name = jobLocation?.name ?? '';
+        jobAddress.street = jobLocation?.address?.street ?? '';
+        jobAddress.city = jobAddress.street && jobLocation?.address?.city ? ', ' : '';
+        jobAddress.city += jobLocation?.address?.city ?? '';
+        jobAddress.state = (jobAddress.street || jobAddress.city) && jobLocation?.address?.state ? ', ' : '';
+        jobAddress.state += jobLocation?.address?.state ?? '';
+        jobAddress.zipCode = (jobAddress.street || jobAddress.city || jobAddress.state) && jobLocation?.address?.zipcode ? ', ' : '';
+        jobAddress.zipCode += jobLocation?.address?.zipcode ?? '';
+    }
+
+    // Take Job Site address if any
+    const site = <IJobSite>ticket.jobSite;
+    if (site) {
+        jobSiteAddress.name = site?.name ?? '';
+        jobSiteAddress.street = jobSiteAddress.name ? '\n' : '';
+        jobSiteAddress.street += site?.address?.street ?? '';
+        jobSiteAddress.city = jobSiteAddress.street && site?.address?.city ? ', ' : '';
+        jobSiteAddress.city += site?.address?.city ?? '';
+        jobSiteAddress.state = (jobSiteAddress.street || jobSiteAddress.city) && site?.address?.state ? ', ' : '';
+        jobSiteAddress.state += site?.address?.state ?? '';
+        jobSiteAddress.zipCode = (jobSiteAddress.street || jobSiteAddress.city || jobSiteAddress.state) && site?.address?.zipcode ? ', ' : '';
+        jobSiteAddress.zipCode += site?.address?.zipcode ?? '';
+    }
+
+    // Construct default Company Logo image
+    let companyImage: any = {
+        text: '',
+        fillColor: '#cccccc'
+    }
+
+    let companyLogoFilePath = '';
+
+    if (company.info?.logoUrl) {
+        // Check and download Company Logo to /tmp file
+        companyLogoFilePath = await downloadFileToPath(company, company.info.logoUrl, INVOICE_IMAGE_PATH, true);
+
+        companyImage = {
+            image: 'companyLogo',
+            width: 67,
+            height: 52,
+            margin: [0, 20, 0, 10],
+            border: [false, false, false, true],
+            rowSpan: 2
+        }
+    }
+
+    // Construct the header for the job Items
+    const table: any = {
+        headerRows: 1,
+        widths: [20, 220, 50, 110, 48, 110, 20],
+        body: [
+            [
+                {text: '', style: 'itemTitle'},
+                {
+                    text: "Service / Product",
+                    style: "itemTitle",
+                },
+                {
+                    text: 'Quantity',
+                    style: 'itemTitle',
+                    alignment: "center"
+                },
+                {
+                    text: 'Price',
+                    style: "itemTitle",
+                    alignment: "center"
+                },
+                {
+                    text: "Tax",
+                    style: "itemTitle",
+                    alignment: "center",
+                },
+                {
+                    text: "Amount",
+                    style: "itemTitle",
+                    alignment: "right",
+                },
+                {text: '', style: 'itemTitle'},
+            ],
+        ],
+    }
+
+    // Add Job's Items to table template    
+    let totalCharge = 0;
+    let taskMap: any[] = [];
+    let allPromise:Promise<void>[] = [];
+    ticket.tasks.forEach(task =>{
+        const newTask = async (res: any) => {
+            const jobType = <IJobType>res.jobType;
+            const item = await Item.findOne({jobType: jobType._id})
+
+            let itemTier;
+            if (customer.itemTier) {
+                // Find the assigned itemTier of the customer
+                itemTier = item.tiers.find(t => t.tier.toString() === customer.itemTier.toString());
+            } else {
+                // Take the first active tier of Item when customer doesn't have itemTier
+                await item.populate({path: 'tiers.tier'}).execPopulate();
+                itemTier = item.tiers.find(t => {
+                    const tier = <IPriceTier>t.tier;
+                    return tier.isActive;
+                });
+            }
+
+            let obj: any = {}
+            let price = itemTier?.charge;
+            let itemTax = 0;
+            let itemTaxAmount: number = 0;
+            let subTotal = price * res.quantity;
+
+            if (item.tax > 0) {
+                itemTax = item.tax
+                itemTaxAmount = subTotal * itemTax / 100;
+            }
+            totalCharge += subTotal;
+            
+            taskMap.push({
+                jobType: jobType,
+                quantity: res.quantity,
+                subTotal: subTotal,
+                tax: itemTaxAmount > 0 ? "Yes" : "No",
+                price: price
+            })
+        }
+        allPromise.push(newTask(task));
+    })
+
+      /**
+     * Check if invoice coming from Job and customer has Discount Prices,
+     * add the discount price based on the quantity of the invoice item
+     */
+      if (ticket.tasks?.length > 0 && customer.discountPrices?.length > 0) {
+        const newDiscount = async () =>{
+            // Sort the customer discount prices and filter any null prices
+            let discountPrices = customer.discountPrices?.sort((a, b) => {
+                return a.quantity - b.quantity
+            });
+            discountPrices = discountPrices.filter(disc => disc.discountItem);
+    
+            // Get the max quantity that should be discounted
+            const maxDiscountQty = discountPrices[discountPrices.length - 1]?.quantity;
+            const totalItemDiscounted = ticket.tasks.length > maxDiscountQty ? maxDiscountQty : ticket.tasks.length;
+    
+            // Find the discount item based on how many item that gonna be discounted
+            const customerDiscount = customer.discountPrices?.find(disc => disc.quantity === totalItemDiscounted);
+            const discountItem = await Item.findById(customerDiscount?.discountItem);
+    
+            if (discountItem) {
+                const discountAmount = discountItem.charges ?? 0;
+                const subTotal = Math.round(discountAmount * 100) / 100
+                taskMap.push({
+                    jobType: discountItem,
+                    quantity: 1,
+                    subTotal: subTotal,
+                    tax: discountItem.tax > 0 ? "Yes" : "No",
+                    price:  Math.round(discountAmount * 100) / 100
+                })
+                totalCharge += subTotal;
+            }
+        }
+        allPromise.push(newDiscount());
+    }
+
+    await Promise.all(allPromise)
+    const bodyTable: any = [];
+    taskMap.forEach(task => {
+        const jobType = <IJobType>task.jobType;
+
+        bodyTable.push([
+            {},
+            {
+                stack: [
+                    {text: `${jobType.title ?? jobType?.title ?? ''}`, style: 'itemListBold'},
+                    {text: `${jobType.description ?? jobType?.description ?? ''}`, style: 'itemList'}
+                ]
+            },
+            {text: task.quantity, style: 'itemListCenter'},
+            {text: `${helper.delimiterEnUs(task.price)}`, style: 'itemListCenter'},
+            {text:  task.tax, style: 'itemListCenter'},
+            {text: `${helper.delimiterEnUs(task.subTotal)}`, style: 'itemListRight'},
+            {}
+        ]);
+    });
+
+    bodyTable.push([{}, {}, {}, {}, {}, {}, {}]);
+    for (let i = 0; i < bodyTable.length; i++) {
+        table.body.push(bodyTable[i]);
+    }
+    
+    // // INITIALIZE PO Request PDF TEMPLATE
+    const docDefinition: any = {
+        pageSize: "A4",
+        pageMargins: [0, 0, 50, 30],
+        content: [
+            {
+                // HEADER FIRST LINE: COMPANY LOGO, NAME, VENDOR, & INVOICE ID
+                table: {
+                    headerRows: 1,
+                    widths: [10, 80, 170, 80, 197, 10],
+                    body: [
+                        [
+                            {},
+                            companyImage,
+                            {
+                                text: `${company.info?.companyName ?? ' '}`,
+                                style: 'companyName',
+                                margin: [0, 20, 0, 0],
+                                colSpan: 2,
+                            },
+                            {},
+                            {
+                                text: `${ticket.ticketId}`,
+                                style: 'ticketId',
+                                alignment: 'right',
+                                margin: [0, 20, 0, 0]
+                            },
+                            {}
+                        ],
+                        [
+                            {},
+                            {},
+                            {
+                                text: `${billingAddress.street}\n${billingAddress.city}${billingAddress.state ? ', ' + billingAddress.state : ''}${billingAddress.zipCode ? ', ' + billingAddress.zipCode : ''}\n${company.contact?.phone ?? ''}`,
+                                style: 'ticketHeader',
+                                margin: [0, 0, 0, 10],
+                                border: [false, false, false, true]
+                            },
+                            {text: '', margin: [0, -2, 0, 10], border: [false, false, false, true]},
+                            {
+                                stack: [
+                                    {
+                                        table: {
+                                            withs: ['auto',30,'auto'],
+                                            body: [
+                                                [{},{text: `Estimated Date:`, style: 'headerTitleBold'}, {}, {text: `${moment(ticket.dueDate).format('MMM. DD, YYYY')}`, style: 'headerTitle'}],
+                                            ]
+                                        },
+                                        layout: {
+                                            ...Layouts.noBorders,
+                                        }
+                                    }
+                                ],
+                                margin: [0, 0, 0, 0],
+                                border: [false, false, false, true]
+                            },
+                            {text: '', margin: [0, 0, 0, 10], border: [false, false, false, true]}
+                        ]
+                    ],
+                },
+                fillColor: '#F9FDFF',
+                layout: {
+                    ...Layouts.noBorders,
+                    hLineColor: (i: number, node: any) => {
+                        return '#D0D3DC';
+                    },
+                    hLineWidth: (i: number, node: any) => {
+                        return 1;
+                    }
+                },
+            },
+            {
+                // HEADER SECOND LINE: CUSTOMER  INFORMATION
+                table: {
+                    widths: [10, 160, 160, 110, 97, 10],
+                    body: [
+                        [
+                            {},
+                            {
+                                stack: [
+                                    {text: 'Bill To', style: 'headerTitle'},
+                                    {text: customer?.profile?.displayName ?? ' ', style: 'ticketHeaderBold'}
+                                ],
+                                margin: [0, 0, 0, 10],
+                            },
+                            {
+                                stack: [
+                                    {text: ' ', style: 'headerTitle'},
+                                    {text: customer?.contact.phone ?? ' ', style: 'ticketHeader'}
+                                ],
+                                margin: [0, 0, 0, 10],
+                            },     
+                            {
+                                stack: [
+                                    {text: ' ', style: 'headerTitle'},
+                                    {text: customer?.info.email ?? ' ', style: 'ticketHeader'}
+                                ],
+                                margin: [0, 0, 0, 10],
+                            },
+                            {},
+                            {}
+                        ],
+                        [
+                            {},
+                            {
+                                stack: [
+                                    {text: 'Subdivision', style: 'headerTitle'},
+                                    {text: jobAddress.name ?? ' ', style: 'ticketHeader'}
+                                ],
+                                margin: [0, 0, 0, 10],
+                            },
+                            {
+                                stack: [
+                                    {text: 'Job Address', style: 'headerTitle'},
+                                    {text: `${jobSiteAddress.name ?? ' '}${jobSiteAddress.street ?? ' '}`, style: 'ticketHeader'}
+                                ],
+                                margin: [0, 0, 0, 10],
+                            },
+                            {
+                                stack: [
+                                    {text: 'Contact Details', style: 'headerTitle'},
+                                    {text:  customerContact?.name ?? ' ', style: 'ticketHeader'},
+                                    {text:  customerContact?.phone ?? ' ', style: 'ticketHeader'},
+                                    {text:  customerContact?.email ?? ' ', style: 'ticketHeader'}
+                                ],
+                                margin: [0, 0, 0, 10],
+                            },
+                            {},
+                            {}
+                        ]
+                    ]
+                },
+                fillColor: '#F9FDFF',
+                layout: {
+                    ...Layouts.noBorders,
+                    hLineColor: (i: number, node: any) => {
+                        return '#D0D3DC';
+                    },
+                    hLineWidth: (i: number, node: any) => {
+                        return 1;
+                    }
+                },
+            },
+            {
+                // BODY LINE
+                table,
+                layout: {
+                    ...Layouts.custom,
+                    paddingLeft: (i: number, node: any) => {
+                        return 1;
+                    },
+                    paddingRight: (i: number, node: any) => {
+                        return 1;
+                    },
+                    paddingTop: (i: number, node: any) => {
+                        return 5;
+                    },
+                    paddingBottom: (i: number, node: any) => {
+                        return 5;
+                    },
+                },
+            },
+            {
+                // PO Request SUBTOTAL TOTAL AMOUNTDUE
+                table: {
+                    widths: [308, 148, 110, 20],
+                    body: [
+                        [
+                            {},
+                            {text: 'Total:', style: 'itemListRight', border: [false, false, false, true]},
+                            {
+                                text: `${helper.delimiterEnUs(totalCharge)}`,
+                                style: 'itemListRight',
+                                border: [false, false, false, true]
+                            },
+                            {}
+                        ],
+                        [
+                            {text: '', border: [false, false, false, true]},
+                            {text: 'AMOUNT DUE:', style: 'amountDueTitle', border: [false, false, false, true]},
+                            {
+                                text: `${helper.delimiterEnUs(totalCharge)}`,
+                                style: 'amountDue',
+                                border: [false, false, false, true]
+                            },
+                            {text: '', border: [false, false, false, true]}
+                        ]
+                    ]
+                },
+                layout: {
+                    ...Layouts.noBorders,
+                    hLineColor: (i: number, node: any) => {
+                        return '#D0D3DC';
+                    },
+                    hLineWidth: (i: number, node: any) => {
+                        return 1;
+                    },
+                    paddingLeft: (i: number, node: any) => {
+                        return 1;
+                    },
+                    paddingRight: (i: number, node: any) => {
+                        return 1;
+                    },
+                    paddingTop: (i: number, node: any) => {
+                        return 5;
+                    },
+                    paddingBottom: (i: number, node: any) => {
+                        return 5;
+                    },
+                },
+            },
+            {
+                // HEADER SECOND LINE: CUSTOMER  INFORMATION
+                table: {
+                    widths: [10,"*",10],
+                    body: [
+                        [{},{text: 'Note:', style: "noteFont"},{}],
+                        [{},{text: ticket.note, style: "ticketHeaderBold"},{}],
+                    ],
+                },
+                layout: {
+                    ...Layouts.noBorders,
+                    hLineColor: (i: number, node: any) => {
+                        return '#D0D3DC';
+                    },
+                    hLineWidth: (i: number, node: any) => {
+                        return 1;
+                    }
+                },
+            }
+        ],
+        footer: (currentPage: number, pageCount: number) => {
+            return [{
+                table: {
+                    widths: [20, 535, 20],
+                    body: [
+                        [
+                            {},
+                            {
+                                text: `Page ${currentPage} of ${pageCount}`,
+                                style: 'smallFontGray',
+                                alignment: 'right',
+                                margin: [0, 10]
+                            },
+                            {}
+                        ],
+                    ],
+                },
+                fillColor: '#F9FDFF',
+                layout: {...Layouts.noBorders},
+            }]
+        },
+        styles: Styles.PORequest,
+        defaultStyle: {
+            columnGap: 10,
+            font: 'Roboto',
+        },
+        images: {
+            companyLogo: companyLogoFilePath
+        },
+    };
+
+    const fullPath = `${PO_REQUEST_PATH}/${ticket.ticketId}.pdf`;
+    // Check if folder path exist, create if not
+    if (!fs.existsSync(PO_REQUEST_PATH)) {
+        fs.mkdirSync(PO_REQUEST_PATH);
+    }
+    // Check if existing PORequest PDF exist, remove if any
+    if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+    }
+
+    const pdfDoc = pdfMake.createPdfKitDocument(docDefinition);
+    const writeStream = fs.createWriteStream(fullPath);
+    pdfDoc.pipe(writeStream);
+    pdfDoc.end();
+
+    return await new Promise((resolve, reject) => {
+        writeStream.on('finish', () => {
+            if (company.info?.logoUrl) {
+                fs.unlink(companyLogoFilePath, (err) => {
+                    if (err) console.log(`Error in deleting temporary company logo image file "${companyLogoFilePath}" : ${err}`);
+                })
+            }
+            resolve('');
+        })
+            .on('error', (error) => {
+                reject('Error in _generatePORequestPdf: ' + error);
+            });
+    });
+}
