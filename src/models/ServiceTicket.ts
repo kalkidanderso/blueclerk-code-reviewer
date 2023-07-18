@@ -44,6 +44,7 @@ export interface IServiceTicket extends Document {
     source: string | null;
     workType: Schema.Types.ObjectId  | null
     companyLocation: Schema.Types.ObjectId  | null | ICompanyLocation
+    poOverriddenBy: Schema.Types.ObjectId
     type: "PO Request" | "Ticket"
     emailHistory?: [{
         sentTo: string
@@ -180,6 +181,10 @@ const ServiceTicketSchema = new Schema({
     companyLocation: {
         type: Schema.Types.ObjectId,
         ref: 'CompanyLocation',
+    },
+    poOverriddenBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
     },
     type: {
         type: String,

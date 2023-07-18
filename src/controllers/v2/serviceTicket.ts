@@ -49,7 +49,100 @@ export const getServiceTickets = async (req: Request, res: Response) => {
             { company: companyId }
         ]
     };
-    _fillInitialQueryTickets(bodyParams, queryParams, initialQuery);
+    _fillInitialQueryTickets(bodyParams, queryParams, initialQuery, "Ticket");
+
+    const filteredInitialJobs = await ServiceTicket.aggregate([
+        { $match: initialQuery },
+        {
+            $project:
+            {
+                customer: 1,
+                customerContactId: 1,
+                jobLocation: 1,
+                jobSite: 1,
+                "tasks.technician": 1,
+                HomeOwner: 1,
+            },
+        },
+    ]);
+
+    // Split the initial tickets into subarrays with 30,000 length, to do parallel processing
+    const filteredInitialTicketsSplited = splitArray(filteredInitialJobs, 30000);
+    const parallelFilter = filteredInitialTicketsSplited.map((value: any[]) => _getFilteredTicketsIds(value, bodyParams));
+    const finalTicketsIds = (await Promise.all(parallelFilter)).flat()
+    const finalQuery: any = {
+        $and: [{ _id: { $in: finalTicketsIds } }]
+    }
+
+    const finalParallelProcess = [
+        ServiceTicket.aggregate([
+            { $match: finalQuery },
+            {
+                $count: "count"
+            }
+        ]),
+        ServiceTicket.aggregate([
+            { $match: finalQuery },
+            { $sort: { createdAt: -1, _id: -1 } },
+            { $skip: (currentPage * pageSize) },
+            { $limit: pageSize },
+        ])
+    ];
+
+    const [total, tickets]: (any[] | IServiceTicket[]) = await Promise.all(finalParallelProcess);
+
+    await ServiceTicket.populate(tickets, [
+        {
+            path: 'customer',
+            select: 'info.email profile.displayName contactName',
+        },
+        {
+            path: 'poOverriddenBy',
+            select: 'profile.displayName'
+        },
+        {
+            path: 'homeOwner',
+            select: 'info profile address location contact'
+        },
+        {
+            path: 'createdBy',
+            select: 'profile.displayName'
+        },
+        {
+            path: 'technician',
+            select: 'profile.displayName'
+        },
+        {
+            path: 'editedBy',
+            select: 'profile.displayName'
+        }
+    ]);
+    
+    return res.json({
+        status: Status.Success,
+        serviceTickets: tickets,
+        total: total[0]?.count,
+    });
+}
+
+export const getPORequest = async (req: Request, res: Response) => {
+    const bodyParams = req.body;
+    // Return error when all cursors are provided
+    if (bodyParams.nextCursor && bodyParams.previousCursor) {
+        return res.json({ status: Status.Error, message: 'Provided cursor could only be one of either nextCursor or previousCursor.' });
+    }
+    const queryParams = req.query;
+    const companyId = req.otherCompanyId || req.companyId;
+    const currentPage = bodyParams.currentPage || 0;
+    const pageSize = bodyParams.pageSize || DefaultPageSize;
+
+    // Data query that used to search Tickets
+    const initialQuery: any = {
+        $and: [
+            { company: companyId }
+        ]
+    };
+    _fillInitialQueryTickets(bodyParams, queryParams, initialQuery, "PO Request");
 
     const filteredInitialJobs = await ServiceTicket.aggregate([
         { $match: initialQuery },
@@ -140,17 +233,25 @@ export const getPORequestEmailTemplate = async (req: Request, res: Response) => 
      * '{{' become '${' & '}}' become '}'
      */
     const ticket = await ServiceTicket
-                            .findOne({company, _id: params.ticketId})
-                            .populate("customer");
-
+        .findOne({ company, _id: params.ticketId })
+        .populate("customer")
+        .populate({
+            path: 'jobLocation',
+            select: 'name address location'
+        })
+        .populate({
+            path: 'jobSite',
+            select: 'name address location'
+        });
     await transformPlaceholders(emailDefault);
     // Get available placeholder values for ticket email template
-    const { company_name,company_email,customer_name,ticket_id, ticket_due_date } = await getPlaceholderValues({ company, ticket, customer: ticket.customer as ICustomer });
+    const { company_name, company_email, customer_name, ticket_id, ticket_due_date, customer_email, ticket_address } = await getPlaceholderValues({ company, ticket, customer: ticket.customer as ICustomer });
 
     return res.json({
         status: Status.Success,
         emailTemplate: {
             from: company_email,
+            to: customer_email,
             subject: eval('`' + emailDefault.subject + '`'),
             message: eval('`' + emailDefault.message + '`')
         }
@@ -272,9 +373,9 @@ export const sendPORequest = async (req: Request, res: Response) => {
  * @param queryParams param provided on the request query
  * @param query query to be filled
  */
-const _fillInitialQueryTickets = (bodyParams: any, queryParams: any, query: any) => {
+const _fillInitialQueryTickets = (bodyParams: any, queryParams: any, query: any, type: "Ticket" | "PO Request") => {
     const { workType, companyLocation } = queryParams;
-    const { technicianIds, status, startDate, endDate, customerId, type } = bodyParams;
+    const { technicianIds, status, startDate, endDate, customerId } = bodyParams;
     let technicianIdsArr: any[];
     if (technicianIds) {
         // Validate is technician ids is already array or object
@@ -325,12 +426,10 @@ const _fillInitialQueryTickets = (bodyParams: any, queryParams: any, query: any)
         query['$and'].push({ customer: new ObjectId(customerId) });
     }
 
-    if (type) {
-        if (type == "Ticket") {
-            query['$and'].push({$or: [{type: type}, { type: { $exists: false }}]});
-        }else{
-            query['$and'].push({type: type});
-        }
+    if (type == "Ticket") {
+        query['$and'].push({type: { $ne: "PO Request" }});
+    }else{
+        query['$and'].push({type: { $eq: "PO Request" }});
     }
 
     fillQueryCommon({ workType, companyLocation }, query['$and']);
@@ -738,7 +837,7 @@ const _generatePORequestPdf = async (company: ICompany, ticket: IServiceTicket) 
                                         table: {
                                             withs: ['auto',30,'auto'],
                                             body: [
-                                                [{},{text: `Estimated Date:`, style: 'headerTitleBold'}, {}, {text: `${moment(ticket.dueDate).format('MMM. DD, YYYY')}`, style: 'headerTitle'}],
+                                                [{},{text: `Created Date:`, style: 'headerTitleBold'}, {}, {text: `${moment(ticket.createdAt).format('MMM. DD, YYYY')}`, style: 'headerTitle'}],
                                             ]
                                         },
                                         layout: {
@@ -767,7 +866,7 @@ const _generatePORequestPdf = async (company: ICompany, ticket: IServiceTicket) 
             {
                 // HEADER SECOND LINE: CUSTOMER  INFORMATION
                 table: {
-                    widths: [10, 160, 160, 110, 97, 10],
+                    widths: [10, 160, 160, 207, 10],
                     body: [
                         [
                             {},
@@ -792,7 +891,6 @@ const _generatePORequestPdf = async (company: ICompany, ticket: IServiceTicket) 
                                 ],
                                 margin: [0, 0, 0, 10],
                             },
-                            {},
                             {}
                         ],
                         [
@@ -820,7 +918,6 @@ const _generatePORequestPdf = async (company: ICompany, ticket: IServiceTicket) 
                                 ],
                                 margin: [0, 0, 0, 10],
                             },
-                            {},
                             {}
                         ]
                     ]

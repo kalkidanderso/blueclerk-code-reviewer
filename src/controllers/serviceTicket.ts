@@ -89,9 +89,16 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
             if(req.otherCompanyId != undefined) {
                 companyId = req.otherCompanyId
             }
-            let ticketId = `Ticket ${company.currentJobId + 1}`;
+
+            //If the type is 'PO Request,' then set the ticket ID as 'PO Request'
+            let ticketType = "Ticket"
+            if (params.type == "PO Request") {
+                ticketType = "PO Request"
+            }
+
+            let ticketId = `${ticketType} ${company.currentJobId + 1}`;
             if (company.prefix) {
-                ticketId = `Ticket ${company.prefix}-${company.currentJobId + 1}`;
+                ticketId = `${ticketType} ${company.prefix}-${company.currentJobId + 1}`;
             }
 
             // let dueDate = params.dueDate ? new Date(params.dueDate) : null
@@ -202,7 +209,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                             )
 
                         }
-                        return res.json({'status': Status.Success, 'message': `${historyMessage} created successfully.`, invalidJobTypes})
+                        return res.json({'status': Status.Success, 'message': `${historyMessage} created successfully.`, invalidJobTypes , createdID : serviceTicket._id})
                     })
             })
 
@@ -1121,18 +1128,24 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
                             }
 
-                            if (customerPO) {
+                            if (!serviceTicket.customerPO && customerPO) {
                                 let track: any[] = serviceTicket?.track ? serviceTicket.track : [];
                                 track.push({
                                     user: user._id,
-                                    action: `Oerride-missing Customer PO`,
+                                    action: `Override-missing Customer PO`,
                                     date: new Date()
                                 });
-                                if (customerPO) {
-                                    serviceTicket.type = "Ticket"
-                                }else{
-                                    serviceTicket.type = "PO Request"
-                                }
+                                serviceTicket.type = "Ticket";
+                                serviceTicket.ticketId = serviceTicket.ticketId?.replace("PO Request","Ticket");
+                                serviceTicket.poOverriddenBy = user._id;
+                                await serviceTicket.save();
+                            }else if(serviceTicket.customerPO != customerPO){
+                                let track: any[] = serviceTicket?.track ? serviceTicket.track : [];
+                                track.push({
+                                    user: user._id,
+                                    action: `Updated Customer PO`,
+                                    date: new Date()
+                                });
                                 await serviceTicket.save();
                             }
                             // Update jobs related to this service ticket is jobTypes updated

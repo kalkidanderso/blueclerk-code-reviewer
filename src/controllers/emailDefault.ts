@@ -12,6 +12,8 @@ import { IJob } from 'src/models/Job';
 import { IContact } from 'src/common/contact';
 import { IServiceTicket } from 'src/models/ServiceTicket';
 import { IPaymentTerm } from 'src/models/PaymentTerm';
+import { IJobLocation } from 'src/models/JobLocation';
+import { IJobSite } from 'src/models/JobSite';
 
 
 export const getCompanyEmailDefault = async (req: Request, res: Response) => {
@@ -107,6 +109,23 @@ export const getPlaceholderValues = async ({
     const date_range = dateRange ?? '';
     const ticket_id = ticket?.ticketId ?? '';
     const ticket_due_date = moment(ticket?.dueDate).format('MMMM DD, YYYY');
+    
+    let address: any;
+    if (ticket?.customer) {
+        const ticket_customer = ticket?.customer as ICustomer;
+        address = ticket_customer.address;
+    }
+    if (ticket?.jobLocation) {
+        const jobLocation = ticket?.jobLocation as IJobLocation;
+        address = jobLocation.address;
+    }
+    if (ticket?.jobLocation) {
+        const jobSite = ticket?.jobSite as IJobSite;
+        address = jobSite.address;
+    }
+    const ticket_address = `${address.street ? address.street + ", ": ""}${address.city ? address.city + ", " : ""}${address.state || ""} ${address.zipcode || ""}`;
+
+
 
     let invoice_total_amount = '';
     if (invoices?.length) {
@@ -117,7 +136,7 @@ export const getPlaceholderValues = async ({
         invoice_total_amount = helper.delimiterEnUs(invoiceTotalAmount);
     }
 
-    return { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_total_amount, invoice_due_date, date_range, ticket_id, ticket_due_date };
+    return { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_total_amount, invoice_due_date, date_range, ticket_id, ticket_due_date, ticket_address};
 
 }
 

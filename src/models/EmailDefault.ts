@@ -48,7 +48,7 @@ export const DefaultARReportEmailTemplate = {
 
 export const DefaultPORequestEmailTemplate = {
     subject: '{{ticket_id}} from {{company_name}}',
-    message: 'Dear {{customer_name}},\n\nPlease see {{ticket_id}} attached with Job Types and Job Type Price valid until {{ticket_due_date}}.\n\nWe hope to hear from you soon here at {{company_name}}\n{{small_company_logo}}'
+    message: 'Dear {{customer_name}}, \n\nPlease refer to {{ticket_id}} for the job address {{ticket_address}}.\n\nWe hope to hear from you soon here at {{company_name}}\n{{small_company_logo}}'
 }
 
 // MONGOOSE SCHEMA
