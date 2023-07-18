@@ -855,6 +855,7 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
     const serviceTicketCursor = ServiceTicket.find({
         company: company._id,
         jobCreated: false,
+        type: { $ne: "PO Request" },
         status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] },
         ...filterByDivision
     }).sort({ _id: -1 })
