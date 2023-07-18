@@ -6016,12 +6016,7 @@
                     ]
                   },
                   "productCost": {
-                    "type": "number",
-                    "description": "Required with Item Type Product"
-                  },
-                  "salePrice": {
-                    "type": "number",
-                    "description": "Required with Item Type Product"
+                    "type": "number"
                   }
                 }
               }
@@ -6141,10 +6136,6 @@
                     ]
                   },
                   "productCost": {
-                    "type": "number",
-                    "description": "Required with Item Type Product"
-                  },
-                  "salePrice": {
                     "type": "number",
                     "description": "Required with Item Type Product"
                   }
