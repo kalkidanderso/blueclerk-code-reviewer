@@ -825,6 +825,7 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
     const totalServiceTickets = await ServiceTicket.find({
         company: company._id,
         jobCreated: false,
+        type: { $ne: "PO Request" },
         status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] },
         ...filterByDivision
     }).countDocuments();
