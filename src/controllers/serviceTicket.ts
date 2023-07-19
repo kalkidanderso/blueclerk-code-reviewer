@@ -1035,7 +1035,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     
                     let homeOwnerId = params.homeOwnerId ? new ObjectId(params.homeOwnerId) : serviceTicket.homeOwner;
                     
-                    if(isHomeOccupied && isHomeOccupied === true) {
+                    if(isHomeOccupied && (isHomeOccupied === true || isHomeOccupied === 'true')) {
                         if(params.homeOwnerId) {
                             const newHomeOwner = await HomeOwner.findOne({ _id: params.homeOwnerId });
                             if(!newHomeOwner) {
@@ -1047,6 +1047,9 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                                 return res.json({ 'status': Status.Error, 'message': 'Home Owner is required when home is occupied' });
                             }
                         }
+                    }
+                    else {
+                        homeOwnerId = null;
                     }
 
                     //=== HANDLE params jobTypes

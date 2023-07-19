@@ -47,6 +47,9 @@ export const Validations = {
     check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })
   ],
 
+  //bounce email
+  bounceEmail: [check('email').exists(),check('email').isLength({min:1})],
+
   login: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
   socialLogin: [check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric()],
@@ -490,6 +493,7 @@ export const Validations = {
     check('jobLocationId').optional({ nullable: true }).isMongoId().withMessage(Messages.WrongId),
     check('jobSiteId').optional({ nullable: true }).isMongoId().withMessage(Messages.WrongId),
     check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
+    check('showJobId').optional().isBoolean().toBoolean().withMessage('showJobId has to be boolean'),
   ],
 
   setCustomInvoiceNumber: [check('invoiceNumber').optional().isInt().toInt()],
