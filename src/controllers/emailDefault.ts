@@ -11,7 +11,6 @@ import { IEmailDefault, DefaultEmailTemplate, DefaultInvoicesEmailTemplate, Emai
 import { IJob } from 'src/models/Job';
 import { IContact } from 'src/common/contact';
 import { IServiceTicket } from 'src/models/ServiceTicket';
-import { IPaymentTerm } from 'src/models/PaymentTerm';
 import { IJobLocation } from 'src/models/JobLocation';
 import { IJobSite } from 'src/models/JobSite';
 
@@ -109,23 +108,7 @@ export const getPlaceholderValues = async ({
     const date_range = dateRange ?? '';
     const ticket_id = ticket?.ticketId ?? '';
     const ticket_due_date = moment(ticket?.dueDate).format('MMMM DD, YYYY');
-    
-    let address: any;
-    if (ticket?.customer) {
-        const ticket_customer = ticket?.customer as ICustomer;
-        address = ticket_customer.address;
-    }
-    if (ticket?.jobLocation) {
-        const jobLocation = ticket?.jobLocation as IJobLocation;
-        address = jobLocation.address;
-    }
-    if (ticket?.jobLocation) {
-        const jobSite = ticket?.jobSite as IJobSite;
-        address = jobSite.address;
-    }
-    const ticket_address = `${address.street ? address.street + ", ": ""}${address.city ? address.city + ", " : ""}${address.state || ""} ${address.zipcode || ""}`;
-
-
+    const ticket_address = _getServiceTicketAddress(ticket);
 
     let invoice_total_amount = '';
     if (invoices?.length) {
@@ -138,6 +121,41 @@ export const getPlaceholderValues = async ({
 
     return { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_total_amount, invoice_due_date, date_range, ticket_id, ticket_due_date, ticket_address};
 
+}
+
+/**
+ * 
+ * @param ticket 
+ * @returns Customer Address
+ */
+const _getServiceTicketAddress = (ticket: IServiceTicket) => {
+
+    let address: any;
+    if (ticket?.customer) {
+        const customer = ticket?.customer as ICustomer;
+        const customerAddress = customer.address;
+        if (customerAddress?.street || customerAddress?.city || customerAddress?.state || customerAddress?.zipCode) {
+            address = customerAddress;
+        }
+    }
+
+    if (ticket?.jobLocation) {
+        const jobLocation = ticket?.jobLocation as IJobLocation;
+        const jobLocationAddress = jobLocation.address;
+        if (jobLocationAddress?.street || jobLocationAddress?.city || jobLocationAddress?.state || jobLocationAddress?.zipcode) {
+            address = jobLocationAddress;
+        }
+    }
+
+    if (ticket?.jobSite) {
+        const jobSite = ticket?.jobSite as IJobSite;
+        const jobSiteAddress = jobSite.address;
+        if (jobSiteAddress?.street || jobSiteAddress?.city || jobSiteAddress?.state || jobSiteAddress?.zipcode) {
+            address = jobSiteAddress;
+        }
+    }
+    const ticket_address = `${address.street ? address.street + ", " : ""}${address.city ? address.city + ", " : ""}${address.state || ""} ${(address.zipcode || address.zipCode) || ""}`;
+    return ticket_address;
 }
 
 

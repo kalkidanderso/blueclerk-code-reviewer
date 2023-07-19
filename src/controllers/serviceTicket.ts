@@ -40,6 +40,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
             let customerPo = params.customerPO ? params.customerPO : null;
             let customerId: any = null;
             let homeOwnerId: any = null;
+            let type = params.type == "Ticket"  || params.type == "PO Request" && customerPo ? "Ticket" : params.type;
 
             const isHomeOccupied = params.isHomeOccupied === undefined || params.isHomeOccupied === null
                 ? false
@@ -92,7 +93,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
 
             //If the type is 'PO Request,' then set the ticket ID as 'PO Request'
             let ticketType = "Ticket"
-            if (params.type == "PO Request") {
+            if (type == "PO Request") {
                 ticketType = "PO Request"
             }
 
@@ -117,7 +118,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 tasks: jobTypes,
                 customerPO : customerPo,
                 images: [],
-                type: params.type
+                type: type
             });
 
             serviceTicket.customer = customerId;
@@ -153,7 +154,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                         }
 
                         let historyMessage = "Service Ticket"
-                        if (params.type == "PO Request") {
+                        if (type == "PO Request") {
                             historyMessage  = "Purchase Order Request"
                         }
                         

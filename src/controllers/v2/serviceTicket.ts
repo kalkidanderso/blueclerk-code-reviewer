@@ -335,7 +335,7 @@ export const sendPORequest = async (req: Request, res: Response) => {
         customer_email: customerContact?.email ?? customer?.info?.email,
         recipient_emails: recipientEmails,
         po_request_number: ticket.ticketId,
-        po_request_pdfs: params.withPDF ? ticketPdfs : []
+        po_request_pdfs: ticketPdfs
     });
 
     // Update email history and last email sent info
@@ -568,6 +568,7 @@ const _getFilteredTicketsIds = async (filteredInitialTickets: any[], params: any
  * @returns Promise<unknown>
  */
 const _generatePORequestPdf = async (company: ICompany, ticket: IServiceTicket) => {
+    const blueclerkLogo = 'assets/images/logo_blue.png';
 
     // Initialize PDF Make
     const pdfMake = new pdfmake({
@@ -1024,10 +1025,22 @@ const _generatePORequestPdf = async (company: ICompany, ticket: IServiceTicket) 
         footer: (currentPage: number, pageCount: number) => {
             return [{
                 table: {
-                    widths: [20, 535, 20],
+                    widths: [20, 68,10,395, 20],
                     body: [
                         [
                             {},
+                            {
+                                text: `Powered by BlueClerk`,
+                                style: 'smallFontGray',
+                                alignment: 'left',
+                                margin: [0, 10]
+                            },
+                            {
+                                image: blueclerkLogo,
+                                width: 10,
+                                alignment: 'left',
+                                margin: [0, 8, 0, 0],
+                            },
                             {
                                 text: `Page ${currentPage} of ${pageCount}`,
                                 style: 'smallFontGray',
@@ -1048,7 +1061,8 @@ const _generatePORequestPdf = async (company: ICompany, ticket: IServiceTicket) 
             font: 'Roboto',
         },
         images: {
-            companyLogo: companyLogoFilePath
+            companyLogo: companyLogoFilePath,
+            blueclerkLogo: blueclerkLogo
         },
     };
 
