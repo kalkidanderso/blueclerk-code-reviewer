@@ -122,9 +122,9 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                             (jobReport.job.customer?.address?.zipCode ? jobReport.job.customer?.address?.zipCode + ' ' : ''), 
                             '25%')
                     }, {
-                        ...generateField('PHONE NUMBER', jobReport.job.customer?.contact?.phone, '20%')
+                        ...generateField('PHONE NUMBER', jobReport.job.customer?.contact?.phone, '25%')
                     }, {
-                        ...generateField('EMAIL', jobReport.job.customer?.info?.email, '30%')
+                        ...generateField('EMAIL', jobReport.job.customer?.info?.email, '50%')
                     }, ],
                 }, ],
             }, {
@@ -145,14 +145,14 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                                 text: '\nHOUSE STATUS',
                                 style: 'fieldLabel'
                             }, {
-                                text: jobReport.job.isHomeOccupied ? 'Occupied' : 'Not occuppied',
+                                text: jobReport.job.isHomeOccupied ? 'Occupied' : 'Not occupied',
                                 style: jobReport.job.isHomeOccupied ? 'boldGreen' : 'boldGrey'
                             }],
-                            width: '20%',
+                            width: '25%',
                         }, {
-                            ...generateField('START', moment(jobReport.job?.startTime).format('MMM. DD, YYYY HH:mm'), '15%')
+                            ...generateField('START', moment(jobReport.job?.startTime).format('MMM. DD, YYYY HH:mm'), '12.5%')
                         }, {
-                            ...generateField('END', moment(jobReport.job?.endTime).format('MMM. DD, YYYY HH:mm'), '15%')
+                            ...generateField('END', moment(jobReport.job?.endTime).format('MMM. DD, YYYY HH:mm'), '12.5%')
                         }, ],
                     },
                     jobReport.job.customerContactId ? {
@@ -168,12 +168,12 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                             ...generateField('PURCHASE ORDER', jobReport.job.customerPO, '25%')
                         }, {
                             ...generateField('TECHNICIAN(S) NAME(S)', 
-                                jobReport.job.tasks.map((task: any, idx: number) => task.technician?.profile?.displayName || '').flat(), 
+                                jobReport.job.tasks.map((task: any, idx: number) => task.technician?.profile?.displayName ? task.technician?.profile?.displayName + '\n' : '').flat(), 
                                 '25%')
                         }, {
                             ...generateField('JOB TYPE(S)', 
                                 jobReport.job.tasks.map((task: any) => {
-                                    return task.jobTypes.map((jobType: any) => jobType.jobType?.title + ' ')}).flat(), 
+                                    return task.jobTypes.map((jobType: any) => jobType.jobType?.title)}).join(', '), 
                                 '50%')
                         }, ],
                     },
@@ -194,7 +194,7 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                     }, {
                         ...generateField('PHONE NUMBER', jobReport.job.homeOwner?.contact?.phoneNumber, '25%')
                     }, {
-                        ...generateField('EMAIL', jobReport.job.homeOwner?.info?.email, '25%')
+                        ...generateField('EMAIL', jobReport.job.homeOwner?.info?.email, '50%')
                     }, ],
                 }, ],
             } : {}, {
