@@ -2092,7 +2092,15 @@ export default function (sio: any) {
         validate(Validations.companyInvoice),
         invoiceController.getCompanyInvoiceDetails
     )
-
+    router.post(
+        '/unvoidInvoice',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.unVoidInvoice),
+        invoiceController.unVoidInvoice
+    )
     router.delete(
         '/voidInvoice',
         passport.authenticate('jwt', { session: false }),

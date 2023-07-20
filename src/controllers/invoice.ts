@@ -4561,6 +4561,61 @@ export const getInvoicesByContractor = async (req: Request, res: Response) => {
 
 }
 
+export const unVoidInvoice = async (req: Request, res: Response) => {
+
+    const params = req.body;
+    const invoice = await Invoice.findById(params.invoiceId);
+    const company = <ICompany>req.company;
+
+    if (!invoice) {
+        return res.json({status: Status.Error, message: 'Invoice not found.'});
+    }
+    if (invoice.isVoid==false) {
+        return res.json({status: Status.Error, message: 'Invoice already un-voided.'});
+    }
+
+    // TODO: Check more properly for all possible payments ?
+    // const payment = await Payment.findOne({ invoice: invoice._id });
+    // if (payment || invoice.status !== InvoiceStatus.UNPAID) {
+    if (invoice.status !== InvoiceStatus.UNPAID) {
+        return res.json({
+            status: Status.Error,
+            message: 'Invoice already paid or partially paid, cannot void this invoice.'
+        });
+    }
+
+    const invoiceCommission = await InvoiceCommission.findOne({invoice: invoice._id});
+    // remove invoice commission if exsists
+    // if (invoiceCommission) {
+    //     await InvoiceCommission.deleteOne({_id: invoiceCommission._id});
+    // }
+
+    invoice.isVoid = false;
+    invoice.commission = null;
+    await invoice.save();
+
+    const customer = await Customer.findById(invoice.customer);
+    if (customer) {
+        customer.balance -= invoice.total;
+        customer.balance = Math.round(customer.balance * 100) / 100;
+        await customer.save();
+    }
+
+    const jobReport = await JobReport.findOne({invoice: invoice._id});
+    // remove invoice and invoiceCreated in job report if exsists
+    if (jobReport) {
+        await jobReport.updateOne({$unset: {invoice: null, invoiceCreated: false}});
+    }
+
+    if (company.qbAuthorized && invoice.quickbookId) {
+        // Delete Invoice in QuickBooks when invoice have quickbook id
+        await _voidQBInvoice(req, res, company, invoice);
+    }
+
+    return res.json({status: Status.Success, message: 'Invoice un-voided successfully', invoice});
+
+}
+
 export const voidInvoice = async (req: Request, res: Response) => {
 
     const params = req.body;
