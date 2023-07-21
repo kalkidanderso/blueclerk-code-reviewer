@@ -83,12 +83,13 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
     await item.save();
 
     // Return the HTTP request to user first
-    res.json({ status: Status.Success, message: 'Item created successfully.', item });
 
     if (company.qbAuthorized) {
-        console.log("item going to qb ",item);
+        console.log("company.qbAuthorized if")
+
         // Create the new Item in QuickBooks
         _createQBItem(req, res, company, item, async (err: any, errMsg: any, qbItem: IQBItem) => {
+            let qbSync=false;
             if (err) {
                 console.log('== createItem > _createQBItem');
                 console.log('== errMsg:', errMsg);
@@ -98,6 +99,7 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
             if (qbItem) {
                 item.quickbookId = qbItem.Id;
                 await item.save();
+                qbSync=true;
 
                 // If company's items already synced, update the synced date
                 if (company.qbSync?.itemsSynced) {
@@ -105,10 +107,16 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
                     await company.save();
                 }
             }
+            res.json({ status: Status.Success, message: 'Item created successfully.', item,qbSync });
 
             return next();
         })
+        
+
     } else {
+        console.log("company.qbAuthorized else")
+        res.json({ status: Status.Success, message: 'Item created successfully.', item });
+
         return next();
     }
 
@@ -240,7 +248,6 @@ export const updateItems = async (req: Request, res: Response) => {
             if (err) {
                 return res.json({ status: Status.Success, message: err.message, item: itemObj });
             }
-            console.log("update Items",itemObj)
             if (company.qbAuthorized && itemObj.quickbookId) {
                 await _updateQBItem(req, res, company, itemObj, async (err, errMsg) => { });
             }
