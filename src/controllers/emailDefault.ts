@@ -154,7 +154,7 @@ const _getServiceTicketAddress = (ticket: IServiceTicket) => {
             address = jobSiteAddress;
         }
     }
-    const ticket_address = `${address.street ? address.street + ", " : ""}${address.city ? address.city + ", " : ""}${address.state || ""} ${(address.zipcode || address.zipCode) || ""}`;
+    const ticket_address = `${address?.street ? address?.street + ", " : ""}${address?.city ? address?.city + ", " : ""}${address?.state || ""} ${(address?.zipcode || address?.zipCode) || ""}`;
     return ticket_address;
 }
 

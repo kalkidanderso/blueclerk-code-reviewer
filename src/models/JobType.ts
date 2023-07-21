@@ -18,6 +18,7 @@ export interface IJobTypes {
 
     jobType: Schema.Types.ObjectId | IJobType | IItem
     quantity: number
+    price: number
 
 }
 

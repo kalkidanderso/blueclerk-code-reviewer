@@ -161,6 +161,9 @@ const ServiceTicketSchema = new Schema({
             type: Number,
             default: 1
         },
+        price: {
+            type: Number
+        },
     }],
     item: {
         type: Schema.Types.ObjectId,

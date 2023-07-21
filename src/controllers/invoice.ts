@@ -378,19 +378,21 @@ export const createInvoice = (req: Request, res: Response) => {
                     task.jobTypes.forEach(taskJobType => {
                         jobTypes.push({
                             id: taskJobType.jobType,
-                            quantity: taskJobType.quantity
+                            quantity: taskJobType.quantity,
+                            price: taskJobType.price,
                         })
                     })
                 })
                 // const jobTypeIds = job.tasks.map(task => task.jobType);
                 // Fallback for old job who still using one job type
-                if (!jobTypes.length) jobTypes.push({id: job.type, quantity: 1});
+                if (!jobTypes.length) jobTypes.push({id: job.type, quantity: 1, price: 0});
                 // Search all jobTypes' items
                 // const items = Item.find({ jobType: { $in: jobTypeIds }});
                 const items: any[] = []
                 jobTypes.forEach(async (jobType) => {
                     const item: any = await Item.findOne({jobType: jobType.id})
                     item["quantity"] = jobType.quantity;
+                    item["price"] = jobType.price;
                     items.push(item);
                 });
 
@@ -1280,7 +1282,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
 
             let obj: any = {}
             // Set price to 0 if customer uses customPrice
-            let price = customerObj.isCustomPrice ? 0 : itemTier?.charge || jobTypeitem.charges;
+            let price = (jobTypeitem as any).price ?? (customerObj.isCustomPrice ? 0 : itemTier?.charge || jobTypeitem.charges);
             // If item is hourly, take the task's timeSpent (minutes) for the quantity
             let quantity = jobTypeitem.isFixed ? ((jobTypeitem as any).quantity || 1) : (jobTypes?.timeSpent / 60) || 1;
             let itemTax = 0

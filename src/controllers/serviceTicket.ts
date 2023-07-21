@@ -19,6 +19,7 @@ import { JobRequest } from '../models/JobRequest';
 import { ITask, Job } from '../models/Job';
 import { HomeOwner } from '../models/HomeOwner';
 import * as Sentry from '@sentry/node';
+import { PORequest } from '../models/PORequest';
 
 export const createServiceTicket = (req: Request, res: Response, sio: any) => {
 
@@ -104,7 +105,8 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
 
             // let dueDate = params.dueDate ? new Date(params.dueDate) : null
             let dueDate = params.dueDate ? moment.parseZone(params.dueDate).format("YYYY-MM-DD") : null;
-            let serviceTicket = new ServiceTicket({
+
+            const newData: any = {
                 isHomeOccupied,
                 createdAt: Date.now(),
                 dueDate: dueDate,
@@ -119,7 +121,15 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 customerPO : customerPo,
                 images: [],
                 type: type
-            });
+            };
+            let serviceTicket: IServiceTicket;
+            //To Detect where the ticket is created from, was it created as a Ticket or a PO Request
+            if (type == "PO Request") {
+                newData.PORequestId = ticketId;
+                serviceTicket = new PORequest(newData);
+            }else{
+                serviceTicket = new ServiceTicket(newData);
+            }
 
             serviceTicket.customer = customerId;
             serviceTicket.homeOwner = homeOwnerId;

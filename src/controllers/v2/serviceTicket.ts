@@ -29,6 +29,7 @@ import { sendPORequestEmailToCustomer } from '../../services/aws';
 import { EmailDefault, EmailTypes } from '../../models/EmailDefault';
 import * as Sentry from '@sentry/node';
 import { _createCompanyDefaultEmail, getPlaceholderValues, transformPlaceholders } from '../emailDefault';
+import { IPORequest, PORequest } from '../../models/PORequest';
 
 const pdfmake = require('pdfmake');
 
@@ -132,6 +133,7 @@ export const getPORequest = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Provided cursor could only be one of either nextCursor or previousCursor.' });
     }
     const queryParams = req.query;
+    const showAll = bodyParams.showAll;
     const companyId = req.otherCompanyId || req.companyId;
     const currentPage = bodyParams.currentPage || 0;
     const pageSize = bodyParams.pageSize || DefaultPageSize;
@@ -142,9 +144,14 @@ export const getPORequest = async (req: Request, res: Response) => {
             { company: companyId }
         ]
     };
-    _fillInitialQueryTickets(bodyParams, queryParams, initialQuery, "PO Request");
+    
+    if (showAll) {
+        _fillInitialQueryTickets(bodyParams, queryParams, initialQuery, "All PO Request");
+    }else{
+        _fillInitialQueryTickets(bodyParams, queryParams, initialQuery, "PO Request");
+    }
 
-    const filteredInitialJobs = await ServiceTicket.aggregate([
+    const filteredInitialJobs = await PORequest.aggregate([
         { $match: initialQuery },
         {
             $project:
@@ -168,13 +175,13 @@ export const getPORequest = async (req: Request, res: Response) => {
     }
 
     const finalParallelProcess = [
-        ServiceTicket.aggregate([
+        PORequest.aggregate([
             { $match: finalQuery },
             {
                 $count: "count"
             }
         ]),
-        ServiceTicket.aggregate([
+        PORequest.aggregate([
             { $match: finalQuery },
             { $sort: { createdAt: -1, _id: -1 } },
             { $skip: (currentPage * pageSize) },
@@ -182,9 +189,9 @@ export const getPORequest = async (req: Request, res: Response) => {
         ])
     ];
 
-    const [total, tickets]: (any[] | IServiceTicket[]) = await Promise.all(finalParallelProcess);
+    const [total, tickets]: (any[] | IPORequest[]) = await Promise.all(finalParallelProcess);
 
-    await ServiceTicket.populate(tickets, [
+    await PORequest.populate(tickets, [
         {
             path: 'customer',
             select: 'info.email profile.displayName contactName',
@@ -218,7 +225,8 @@ export const getPORequest = async (req: Request, res: Response) => {
 export const getPORequestEmailTemplate = async (req: Request, res: Response) => {
     const params = req.query;
     const company = <ICompany>req.company;
-    let emailType = EmailTypes.PO_REQUEST;
+    const user = <IUser>req.user;
+    const emailType = EmailTypes.PO_REQUEST;
 
     // Retrieve company email default
     let emailDefault = await EmailDefault.findOne({ company, emailType });
@@ -242,7 +250,14 @@ export const getPORequestEmailTemplate = async (req: Request, res: Response) => 
         .populate({
             path: 'jobSite',
             select: 'name address location'
+        })
+        .populate({
+            path: 'companyLocation',
+            select: 'isAddressAsBillingAddress address billingAddress'
         });
+    
+    const companyLocation = ticket?.companyLocation as ICompanyLocation;
+
     await transformPlaceholders(emailDefault);
     // Get available placeholder values for ticket email template
     const { company_name, company_email, customer_name, ticket_id, ticket_due_date, customer_email, ticket_address } = await getPlaceholderValues({ company, ticket, customer: ticket.customer as ICustomer });
@@ -250,7 +265,7 @@ export const getPORequestEmailTemplate = async (req: Request, res: Response) => 
     return res.json({
         status: Status.Success,
         emailTemplate: {
-            from: company_email,
+            from: companyLocation?.billingAddress.emailSender || user.auth?.email || company_email,
             to: customer_email,
             subject: eval('`' + emailDefault.subject + '`'),
             message: eval('`' + emailDefault.message + '`')
@@ -373,7 +388,7 @@ export const sendPORequest = async (req: Request, res: Response) => {
  * @param queryParams param provided on the request query
  * @param query query to be filled
  */
-const _fillInitialQueryTickets = (bodyParams: any, queryParams: any, query: any, type: "Ticket" | "PO Request") => {
+const _fillInitialQueryTickets = (bodyParams: any, queryParams: any, query: any, type: "Ticket" | "PO Request" | "All PO Request") => {
     const { workType, companyLocation } = queryParams;
     const { technicianIds, status, startDate, endDate, customerId } = bodyParams;
     let technicianIdsArr: any[];
@@ -428,7 +443,7 @@ const _fillInitialQueryTickets = (bodyParams: any, queryParams: any, query: any,
 
     if (type == "Ticket") {
         query['$and'].push({type: { $ne: "PO Request" }});
-    }else{
+    }else if(type == "PO Request"){
         query['$and'].push({type: { $eq: "PO Request" }});
     }
 
