@@ -162,7 +162,7 @@ export const getInvoices = async (req: Request, res: Response) => {
 const _fillInitialQuery = (params: any, queryParams: any, query: any) => {
     const { invoiceId, dueDate, status, startAmount, endAmount, customerPO, missingPO,
         customerId, customerContactId, isDraft, isVoid, startDate, endDate,
-        lastEmailStartDate, lastEmailEndDate } = params;
+        lastEmailStartDate, lastEmailEndDate, bouncedEmailFlag } = params;
     const {workType, companyLocation } = queryParams;
     if (invoiceId) {
         const invoiceIdRegex = helper.getRegex(invoiceId, 'i');
@@ -187,6 +187,9 @@ const _fillInitialQuery = (params: any, queryParams: any, query: any) => {
     }
     if (missingPO) {
         query['$and'].push({ $or: [{ customerPO: { $exists: false } }, { customerPO: '' }, { customerPO: null }] });
+    }
+    if (bouncedEmailFlag) {
+        query['$and'].push({ bouncedEmailFlag: true });
     }
     if (customerId) {
         query['$and'].push({ customer: new ObjectId(customerId) });

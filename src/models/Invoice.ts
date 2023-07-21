@@ -60,8 +60,10 @@ export interface IInvoice extends Document {
     emailHistory?: [{
         sentTo: string
         sentAt: Date,
-        sentBy: Schema.Types.ObjectId
+        sentBy: Schema.Types.ObjectId,
+        deliveryStatus: boolean
     }],
+    bouncedEmailFlag: boolean,
     lastEmailSent?: Date
     quickbookId?: string
     commission?: Schema.Types.ObjectId | IInvoiceCommission
@@ -79,7 +81,8 @@ export interface IInvoice extends Document {
             }
         ],
         images: [string]
-    }
+    },
+    showJobId: boolean,
 }
 
 export enum LineDetailTypes {
@@ -342,8 +345,16 @@ const InvoiceSchema = new Schema({
         sentBy: {
             type: Schema.Types.ObjectId,
             ref: 'User'
+        },
+        deliveryStatus: {
+            type: Boolean,
+            default: true
         }
     }],
+    bouncedEmailFlag: {
+        type: Boolean,
+        default: false
+    },
     lastEmailSent: {
         type: Date
     },
@@ -376,6 +387,10 @@ const InvoiceSchema = new Schema({
             type: [String],
             required: false
         }
+    },
+    showJobId: {
+        type: Boolean,
+        default: true,
     }
 }, {timestamps: {createdAt: true, updatedAt: true}});
 

@@ -1047,7 +1047,7 @@ const createEmployee = (req: Request, res: Response, role: Role) => {
                 }
             )
 
-            employee.save((err: any) => {
+            employee.save((err: any, newEmployee) => {
 
                 if (err) {
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
@@ -1069,7 +1069,7 @@ const createEmployee = (req: Request, res: Response, role: Role) => {
                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                             }
                             sendEmployeeEmail({ to: params.email, company: company.info.companyName, replyTo: company.info.companyEmail, role: roles[employee.permissions.role], password: password })
-                            return res.json({ 'status': Status.Success, 'message': 'Employee created successfully.' })
+                            return res.json({ 'status': Status.Success, 'message': 'Employee created successfully.', 'employee': newEmployee })
                         }
                     )
                 })

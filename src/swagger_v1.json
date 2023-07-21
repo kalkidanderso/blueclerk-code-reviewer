@@ -11105,6 +11105,10 @@
                     "type": "object",
                     "description": "Object of technician messages to update",
                     "$ref": "#/components/schemas/TechnicianMessage"
+                  },
+                  "showJobId": {
+                    "type": "booelan",
+                    "description": "indicates if job id should be displayed or not"
                   }
                 }
               }
