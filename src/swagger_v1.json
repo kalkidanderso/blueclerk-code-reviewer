@@ -10998,6 +10998,51 @@
         ]
       }
     },
+    "/unvoidInvoice": {
+      "post": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "To un-void invoice",
+        "description": "To un-void invoice",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "invoiceId"
+                ],
+                "properties": {
+                  "invoiceId": {
+                    "type": "string",
+                    "description": "Id of invoice to un-void"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getInvoiceEmailTemplate": {
       "get": {
         "tags": [
