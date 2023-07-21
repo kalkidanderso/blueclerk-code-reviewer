@@ -1575,6 +1575,13 @@ export default function (sio: any) {
         getCompanyId(),
         quickBookItemController.syncQBItems
     )
+    router.post(
+        '/syncQBItem',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        quickBookItemController.syncQBItem
+    )
 
     router.post(
         '/syncQBPaymentTerms',
