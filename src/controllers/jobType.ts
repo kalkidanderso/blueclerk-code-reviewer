@@ -133,6 +133,7 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, company: IC
     for (const t of company.costing.list) {
         jobCostingList.push({ tier: t.tier });
     }
+    const isProduct=params.itemType=="Product";
 
     const item = new Item(
         {
@@ -143,6 +144,10 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, company: IC
             costing: jobCostingList,
             company: companyId,
             jobType: jobType._id,
+            itemType:params.itemType,
+            productCost:params.productCost,
+            isFixed:isProduct?true:params.isFixed,
+            salePrice:params.salePrice
         }
     )
 
@@ -150,10 +155,10 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, company: IC
         if (err) {
             return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
         }
-
         if (company.qbAuthorized) {
             console.log('=== company QB authorized, creating QB Item');
             // Create new Item in QuickBooks
+            console.log('item for qbok ==> ',item)
             _createQBItem(req, res, company, item, async (err: any, errMsg: any, qbItem: IQBItem) => {
                 if (err) {
                     console.log('== createJobType > _createItem > _createQBItem');

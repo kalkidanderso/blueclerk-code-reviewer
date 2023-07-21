@@ -16,6 +16,10 @@ import * as jobController from '../controllers/v2/job';
 import * as serviceTicketController from '../controllers/v2/serviceTicket';
 import * as bouncedEmails from '../controllers/bouncedEmails';
 
+
+
+
+
 export default function () {
 
     const router: express.Router = express.Router()
@@ -76,6 +80,7 @@ export default function () {
         checkUserPermissions(Permissions.Get_Service_Tickets),
         serviceTicketController.getServiceTickets
     )
+
 
     return router
 

@@ -63,7 +63,7 @@ export const _createQBItem = async (req: Request, res: Response, company: ICompa
       Name: item.name,
       Description: item.description,
       Sku: item.sku,
-      Type: QBItemTypes.SERVICE,
+      Type: item.itemType =='Product'? QBItemTypes.NONINVENTORY:QBItemTypes.SERVICE,
       UnitPrice: item.charges,
       Active: item.isActive,
       SalesTaxIncluded: false,
@@ -89,6 +89,123 @@ export const _createQBItem = async (req: Request, res: Response, company: ICompa
   });
 }
 
+/**
+ * To syncing item on DB to QB
+ */
+export const syncQBItem = async (req: Request, res: Response) => {
+  const user = <IUser>req.user;
+  const {itemId}=req.body;
+  let jobTypesToCreate: IJobType[] = [];
+  let itemsToCreate: IItem[] = [];
+  let createdItems: { _id: string, name: string }[] = [];
+  let updatedItems: { _id: string, name: string }[] = [];
+  const handleClientError = async () => {
+    await Company.findByIdAndUpdate(req.company._id, {
+      qbAuthorized: false,
+      qbAccessToken: undefined,
+      qbRefreshToken: undefined
+    });
+
+    return res.json({status: Status.QBUnauthorized, message: Messages.QBUnAuthorized})
+  }
+
+  const handleGenericError = async ({errMsg}: any) => await res.json({status: Status.Error, message: errMsg})
+
+  const handleErrors = async ({err, errMsg}: any) => {
+    switch (err) {
+      case 0:
+        await handleGenericError({errMsg})
+        break
+      case 400:
+        await handleClientError()
+        break
+      default:
+      //
+    }
+  }
+
+  const returnErrorJson = ({err}: any) => res.json({
+    status: Status.Error,
+    message: err.Fault?.Error[0]?.Message
+      || err.fault?.error[0]?.detail
+      || err.fault?.error[0]?.message
+      || Messages.GenericError
+  });
+
+  // Always refresh the token first because token valid only for 60 minutes
+  const syncItems = async (err: number, errMsg: string, company: any) => {
+    await handleErrors({err, errMsg})
+
+    // Initiate node-quickbooks object with the refreshed company token
+    const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+
+    // Retrieve all items of this company from Database
+    const blueClerkItems = await Item.find({company: company._id, _id:itemId});
+    const blueClerkItem=blueClerkItems[0];
+    
+    // Retrieve all items of this company from QuickBooks
+    const findQBItems = () => qbo.findItems({Id: blueClerkItem.quickbookId}, async (err: any, data: any) => {
+      
+      if (err){ 
+        
+        console.log(err);
+        returnErrorJson({err});
+      
+      }
+
+      const qbItems: IQBItem[] = data?.QueryResponse?.Item;
+      
+        // Item not exist on QB, create it
+        if (!qbItems) {
+          console.log("creating qb item");
+          _createQBItem(req, res, company, blueClerkItem, (err, errMsg, qbItem) => {
+            console.log("err",err);
+            console.log("errMsg",errMsg);
+            if (qbItem) {
+              // QB Item created, update DB Item & JobType's quickbookId
+              Item.findByIdAndUpdate(blueClerkItem, {quickbookId: qbItem.Id}).exec();
+              JobType.findByIdAndUpdate(blueClerkItem.jobType, {quickbookId: qbItem.Id}).exec();
+            }
+          })
+        } else {
+          // QB Item exist, update DB Item in quickbook
+          console.log("updating qb item");
+
+          await _updateQBItem(req, res, company, blueClerkItem, async (err, errMsg) => { 
+
+            console.log("err",err);
+            console.log("errMsg",errMsg);
+            
+          });
+        
+        }
+      // })
+
+      company.qbSync.itemsSynced = true;
+      company.qbSync.itemsSyncedAt = new Date();
+
+      try {
+        await company.save();
+        // Sentry.startTransaction({
+        //     op: "test",
+        //     name: "My First Test Transaction",
+        // }).finish();
+        return res.json({status: Status.Success, message: 'Item synced successfully.', createdItems, updatedItems});
+      } catch (e) {
+        Sentry.captureException('Syncing failed', e);
+        return res.json({status: Status.Error, message: 'Syncing failed'});
+      }
+
+    })
+    if(blueClerkItem){
+      findQBItems();
+
+    }
+  }
+
+  _refreshToken(req, res, req.company, syncItems)
+
+}
 /**
  * To syncing items on DB and items on QB
  */
@@ -373,9 +490,11 @@ export const _updateQBItem = async (req: Request, res: Response, company: ICompa
       qbItem.Name = item.name;
       qbItem.Taxable = item.tax === 0 ? false : !false;
       qbItem.Sku = item.sku;
+      qbItem.Type= item.itemType =='Product'? QBItemTypes.NONINVENTORY:QBItemTypes.SERVICE,
+
 
       qbo.updateItem(qbItem, async (err: any, updatedQbItem: IQBItem) => {
-        if (err || !updatedQbItem) {
+         if (err || !updatedQbItem) {
           const errMsg = err.Fault?.Error[0]?.Detail
           || err.Fault?.Error[0]?.Message
           || err.fault?.error[0]?.detail
