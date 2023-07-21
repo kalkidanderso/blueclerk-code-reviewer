@@ -192,7 +192,7 @@ export const syncQBItem = async (req: Request, res: Response) => {
         // }).finish();
         return res.json({status: Status.Success, message: 'Item synced successfully.', createdItems, updatedItems});
       } catch (e) {
-        // Sentry.captureException('Syncing failed', e);
+        Sentry.captureException('Syncing failed', e);
         return res.json({status: Status.Error, message: 'Syncing failed'});
       }
 
