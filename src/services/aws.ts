@@ -870,7 +870,8 @@ export const updateFieldsAndUploadImageInS3 = function (req: Request, res: Respo
   uploadMultiple(req, res, (err) => {
 
     if (err) return next(err, null)
-    if (!req.body.ticketId || !req.body.note) {
+
+    if ((!req.body.ticketId || !req.body.note) && req.body.type != "PO Request") {
       return next({ 'status': Status.Error, 'message': Messages.MissingParams }, null);
     }
     const imagesUrl: string[] = [];
