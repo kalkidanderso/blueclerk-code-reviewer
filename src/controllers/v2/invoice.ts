@@ -128,7 +128,8 @@ export const getInvoices = async (req: Request, res: Response) => {
         Invoice.find({
             company: companyId,
             isDraft: { $ne: true },
-            isVoid: { $ne: true },
+            // allow void invoices
+            // isVoid: { $ne: true },
             quickbookId: null
         }).countDocuments()
     ];
@@ -205,7 +206,7 @@ const _fillInitialQuery = (params: any, queryParams: any, query: any) => {
              * For isVoid false, use the $ne because we want to retrieve old invoices,
              * old invoices may don't have isVoid property at all
              */
-            query['$and'].push({ isVoid: { $ne: true } });
+            // query['$and'].push({ isVoid: { $ne: true } });
             break;
     }
     switch (isDraft) {
