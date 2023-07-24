@@ -4628,10 +4628,10 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
         await customer.save();
     }
 
-    const jobReport = await JobReport.findOne({invoice: invoice._id});
-    // remove invoice and invoiceCreated in job report if exsists
+    const jobReport = await JobReport.findOne({job: invoice.job});
+    // udpate invoice and invoiceCreated in job report if exsists
     if (jobReport) {
-        await jobReport.updateOne({$unset: {invoice: null, invoiceCreated: false}});
+        await jobReport.updateOne({$unset: {invoice: invoice._id, invoiceCreated: true}});
     }
 
     if (company.qbAuthorized && invoice.quickbookId) {
