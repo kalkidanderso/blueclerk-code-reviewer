@@ -4568,9 +4568,11 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
 
     if (!invoice) {
+        
         return res.json({status: Status.Error, message: 'Invoice not found.'});
     }
     if (invoice.isVoid==false) {
+
         return res.json({status: Status.Error, message: 'Invoice already un-voided.'});
     }
 
@@ -4578,20 +4580,74 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
     // const payment = await Payment.findOne({ invoice: invoice._id });
     // if (payment || invoice.status !== InvoiceStatus.UNPAID) {
     if (invoice.status !== InvoiceStatus.UNPAID) {
+        
         return res.json({
             status: Status.Error,
             message: 'Invoice already paid or partially paid, cannot void this invoice.'
         });
     }
 
-    const invoiceCommission = await InvoiceCommission.findOne({invoice: invoice._id});
-    // remove invoice commission if exsists
-    // if (invoiceCommission) {
-    //     await InvoiceCommission.deleteOne({_id: invoiceCommission._id});
-    // }
+    // const invoiceCommission = await InvoiceCommission.findOne({invoice: invoice._id});
+    // add commission to invoice
+    
+    // if (!invoice.isDraft) 
+    {
+        const customer = await Customer.findById(invoice.customer);
+        const job = await Job.findById(invoice.job);
+        customer.balance += invoice.total;
+        await customer.save();
+        
+        const invoiceCommissionEntry = [];
+        if (job.tasks) {
+            const totalTechnician = job.tasks.length;
+            for (const task of job?.tasks) {
+                if (task.contractor) {
+                    const contractor = await Company.findOne({_id: task.contractor}).exec();
+                    const commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                    const contractorEntry = {
+                        contractor: contractor._id,
+                        technician: contractor.admin,
+                        commission: contractor.commission,
+                        commissionAmount: Number(commission.toFixed(2))
+                    }
+
+                    if (contractor && contractor.commissionType != "fixed") {
+                        
+                        contractor.balance += Number(commission.toFixed(2));
+                        contractor.save();
+                    }
+
+                    invoiceCommissionEntry.push(contractorEntry);
+                }
+
+                if (task.technician && !task.contractor) {
+                    const technician = await User.findOne({_id: task.technician}).exec();
+                    const commission = (invoice.total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                    const invoiceTechnicianEntry: any = {
+                        technician: technician._id,
+                        commission: technician.commission,
+                        commissionAmount: Number(commission.toFixed(2))
+                    }
+
+                    if (technician) {
+                        technician.balance += Number(commission.toFixed(2));
+                        technician.save();
+                    }
+
+                    invoiceCommissionEntry.push(invoiceTechnicianEntry);
+                }
+            }
+        }
+   
+           let invoiceCommission = await new InvoiceCommission({
+                invoice: invoice._id,
+                technicians: invoiceCommissionEntry
+            }).save();
+     
+        invoice.commission = invoiceCommission._id;
+    }
 
     invoice.isVoid = false;
-    invoice.commission = null;
     await invoice.save();
 
     const customer = await Customer.findById(invoice.customer);
