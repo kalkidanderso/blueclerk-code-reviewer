@@ -253,19 +253,19 @@ export const getPORequestEmailTemplate = async (req: Request, res: Response) => 
         })
         .populate({
             path: 'companyLocation',
-            select: 'isAddressAsBillingAddress address billingAddress'
+            select: 'isAddressAsBillingAddress address billingAddress poRequestEmailSender'
         });
     
     const companyLocation = ticket?.companyLocation as ICompanyLocation;
 
     await transformPlaceholders(emailDefault);
     // Get available placeholder values for ticket email template
-    const { company_name, company_email, customer_name, ticket_id, ticket_due_date, customer_email, ticket_address, type_ticket } = await getPlaceholderValues({ company, ticket, customer: ticket.customer as ICustomer });
-
+    const { company_name, company_email, customer_name, ticket_id, ticket_due_date, customer_email, ticket_address, type_ticket, ticket_street } = await getPlaceholderValues({ company, ticket, customer: ticket.customer as ICustomer });
+    
     return res.json({
         status: Status.Success,
         emailTemplate: {
-            from: companyLocation?.billingAddress.emailSender || user.auth?.email || company_email,
+            from: companyLocation?.poRequestEmailSender || user.auth?.email || company_email,
             to: customer_email,
             subject: eval('`' + emailDefault.subject + '`'),
             message: eval('`' + emailDefault.message + '`')
@@ -278,7 +278,7 @@ export const sendPORequest = async (req: Request, res: Response) => {
     const params = req.body;
     const user = <IUser>req.user;
     const company = <ICompany>req.company;
-    
+
     const ticket = await ServiceTicket 
         .findOne({company, _id: params.ticketId})
         .populate('customer')

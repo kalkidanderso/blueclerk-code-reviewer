@@ -108,7 +108,7 @@ export const getPlaceholderValues = async ({
     const date_range = dateRange ?? '';
     const ticket_id = ticket?.ticketId ?? '';
     const ticket_due_date = moment(ticket?.dueDate).format('MMMM DD, YYYY');
-    const ticket_address = _getServiceTicketAddress(ticket);
+    const { ticket_address, ticket_street } = _getServiceTicketAddress(ticket);
     const type_ticket = ticket?.type;
 
     let invoice_total_amount = '';
@@ -120,7 +120,7 @@ export const getPlaceholderValues = async ({
         invoice_total_amount = helper.delimiterEnUs(invoiceTotalAmount);
     }
 
-    return { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_total_amount, invoice_due_date, date_range, ticket_id, ticket_due_date, ticket_address, type_ticket};
+    return { company_name, company_email, customer_name, customer_email, invoice_number, invoice_amount, invoice_total_amount, invoice_due_date, date_range, ticket_id, ticket_due_date, ticket_address, type_ticket, ticket_street};
 
 }
 
@@ -156,7 +156,7 @@ const _getServiceTicketAddress = (ticket: IServiceTicket) => {
         }
     }
     const ticket_address = `${address?.street ? address?.street : ""}${address?.city ? ", " + address?.city : ""}${address?.state ? ", " + address?.state : ""} ${(address?.zipcode || address?.zipCode) || ""}`;
-    return ticket_address;
+    return { ticket_address, ticket_street: address?.street || ""};
 }
 
 

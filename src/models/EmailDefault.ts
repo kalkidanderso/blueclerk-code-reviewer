@@ -47,7 +47,7 @@ export const DefaultARReportEmailTemplate = {
 }
 
 export const DefaultPORequestEmailTemplate = {
-    subject: '{{type_ticket}} {{ticket_address}} from {{company_name}}',
+    subject: '{{type_ticket}} {{ticket_street}} from {{company_name}}',
     message: 'Dear {{customer_name}}, \n\nPlease refer to {{ticket_id}} for the job address {{ticket_address}}.\n\nWe hope to hear from you soon here at {{company_name}}\n{{small_company_logo}}'
 }
 
