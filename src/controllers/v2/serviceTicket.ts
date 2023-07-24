@@ -194,7 +194,7 @@ export const getPORequest = async (req: Request, res: Response) => {
     await PORequest.populate(tickets, [
         {
             path: 'customer',
-            select: 'info.email profile.displayName contactName',
+            select: 'info.email profile.displayName contactName isPORequired',
         },
         {
             path: 'homeOwner',
@@ -261,11 +261,27 @@ export const getPORequestEmailTemplate = async (req: Request, res: Response) => 
     await transformPlaceholders(emailDefault);
     // Get available placeholder values for ticket email template
     const { company_name, company_email, customer_name, ticket_id, ticket_due_date, customer_email, ticket_address, type_ticket, ticket_street } = await getPlaceholderValues({ company, ticket, customer: ticket.customer as ICustomer });
-    
+        
+    const emailList = [
+        {
+            name: user.profile.displayName,
+            email: user.auth?.email
+        }
+    ];
+
+    if (companyLocation?.poRequestEmailSender) {
+        emailList.unshift(
+            {
+                name: "Default Email From",
+                email: companyLocation?.poRequestEmailSender
+            }
+        )
+    }
     return res.json({
         status: Status.Success,
         emailTemplate: {
-            from: companyLocation?.poRequestEmailSender || user.auth?.email || company_email,
+            from: emailList[0],
+            emailList: emailList,
             to: customer_email,
             subject: eval('`' + emailDefault.subject + '`'),
             message: eval('`' + emailDefault.message + '`')
@@ -342,7 +358,7 @@ export const sendPORequest = async (req: Request, res: Response) => {
     sendPORequestEmailToCustomer({
         subject: params.subject ?? emailDefault?.subject,
         message: params.message ?? emailDefault?.message,
-        sender_email: companyLocation?.billingAddress?.emailSender || user.auth?.email,
+        sender_email: params.sender || companyLocation?.poRequestEmailSender || user.auth?.email,
         company_name: company.info?.companyName,
         company_email: company.info?.companyEmail,
         company_logo: company.info?.logoUrl,
