@@ -260,7 +260,7 @@ export const getPORequestEmailTemplate = async (req: Request, res: Response) => 
 
     await transformPlaceholders(emailDefault);
     // Get available placeholder values for ticket email template
-    const { company_name, company_email, customer_name, ticket_id, ticket_due_date, customer_email, ticket_address } = await getPlaceholderValues({ company, ticket, customer: ticket.customer as ICustomer });
+    const { company_name, company_email, customer_name, ticket_id, ticket_due_date, customer_email, ticket_address, type_ticket } = await getPlaceholderValues({ company, ticket, customer: ticket.customer as ICustomer });
 
     return res.json({
         status: Status.Success,
@@ -278,7 +278,7 @@ export const sendPORequest = async (req: Request, res: Response) => {
     const params = req.body;
     const user = <IUser>req.user;
     const company = <ICompany>req.company;
-
+    
     const ticket = await ServiceTicket 
         .findOne({company, _id: params.ticketId})
         .populate('customer')
@@ -291,7 +291,7 @@ export const sendPORequest = async (req: Request, res: Response) => {
     // Retrieve company email default
     const filepath = req.file?.path ?? `${PO_REQUEST_PATH}/${ticket.ticketId}.pdf`;
     const ticketPdfs = [{ticket, filepath}];
-    const emailDefault = await EmailDefault.findOne({company, emailType: EmailTypes.INVOICE});
+    const emailDefault = await EmailDefault.findOne({company, emailType: EmailTypes.PO_REQUEST});
 
     await _generatePORequestPdf(company, ticket);
 
@@ -724,7 +724,7 @@ const _generatePORequestPdf = async (company: ICompany, ticket: IServiceTicket) 
             }
 
             let obj: any = {}
-            let price = itemTier?.charge;
+            let price = task.price ?? itemTier?.charge;
             let itemTax = 0;
             let itemTaxAmount: number = 0;
             let subTotal = price * res.quantity;
@@ -747,8 +747,8 @@ const _generatePORequestPdf = async (company: ICompany, ticket: IServiceTicket) 
     })
 
       /**
-     * Check if invoice coming from Job and customer has Discount Prices,
-     * add the discount price based on the quantity of the invoice item
+     * Check if ticket coming from Job and customer has Discount Prices,
+     * add the discount price based on the quantity of the ticket item
      */
       if (ticket.tasks?.length > 0 && customer.discountPrices?.length > 0) {
         const newDiscount = async () =>{

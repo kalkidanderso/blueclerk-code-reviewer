@@ -507,6 +507,212 @@
           }
         ]
       }
+    },
+    "/getPORequest": {
+      "post": {
+        "tags": [
+          "Service Ticket"
+        ],
+        "summary": "To get all service tickets of a company or company of employee.",
+        "parameters": [
+          {
+            "name": "workType",
+            "in": "query",
+            "description": "Array of work types to filter invoices",
+            "schema": {
+              "type": "array"
+            }
+          },
+          {
+            "name": "companyLocation",
+            "in": "query",
+            "description": "Array of company locations to filter invoices",
+            "schema": {
+              "type": "array"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "keyword": {
+                    "type": "string",
+                    "description": "Filter service tickets by search keyword to Service Ticket Id, Customer's name, Subdivision's name address, Technician's name, and Contractor's name"
+                  },
+                  "status": {
+                    "type": "integer",
+                    "description": "Filter service tickets by status (OPEN => 0, AVAILABLE => 1, ALL => 2)",
+                    "enum": [
+                      0,
+                      1,
+                      2
+                    ]
+                  },
+                  "startDate": {
+                    "type": "string",
+                    "description": "Filter of start service tickets schedule date"
+                  },
+                  "endDate": {
+                    "type": "string",
+                    "description": "Filter of end service tickets schedule date"
+                  },
+                  "customerId": {
+                    "type": "string",
+                    "description": "Filter service tickets by customer"
+                  },
+                  "technicianIds": {
+                    "type": "array",
+                    "description": "List of technician id's in array. eg. [\"608b9f54c30223196b7ab22a\", \"608b9f54c30223196b7ab21b\"]"
+                  },
+                  "currentPage": {
+                    "type": "number",
+                    "description": "Page to go on the pagination. Default value 0"
+                  },
+                  "pageSize": {
+                    "type": "number",
+                    "description": "The numbers of service tickets to return per page e.g. 10. When not provided, will return 30 service tickets by default"
+                  },
+                  "companyId": {
+                    "type": "string",
+                    "description": "Id of company if contractor is hitting for other company"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "number",
+                      "description": "Custom status"
+                    },
+                    "jobs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ServiceTicketList"
+                      }
+                    },
+                    "total": {
+                      "type": "number",
+                      "description": "Total of service tickets"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/getPORequestEmailTemplate": {
+      "get": {
+        "tags": [
+          "Service Ticket"
+        ],
+        "summary": "Get the Service Ticket email template before send the email",
+        "parameters": [
+          {
+            "name": "ticketId",
+            "in": "query",
+            "description": "",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/sendPORequest": {
+      "post": {
+        "tags": [
+          "Service Ticket"
+        ],
+        "summary": "Send an email about the Service Ticket",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ticketId"
+                ],
+                "properties": {
+                  "ticketId": {
+                    "type": "string",
+                    "description": "Id of Ticket"
+                  },
+                  "recipients": {
+                    "type": "string",
+                    "description": "List of all recipients in array. Example: [\"zyzorafu@abyssmail.com\",\"tiboqama@boximail.com\"]"
+                  },
+                  "subject": {
+                    "type": "string",
+                    "description": "Subject of the email, if not provided will use company's email default"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Message of the email, if not provided will use company's email default"
+                  },
+                  "copyToMyself": {
+                    "type": "boolean",
+                    "description": "To send copy to user himself"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -1489,6 +1695,12 @@
               "properties": {
                 "jobType": {
                   "type": "string"
+                },
+                "quantity": {
+                  "type": "number"
+                },
+                "price": {
+                  "type": "number"
                 }
               }
             }
@@ -1970,6 +2182,12 @@
           },
           "noOfEquipmentScanned": {
             "type": "number"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "price": {
+            "type": "number"
           }
         }
       },
@@ -2405,6 +2623,24 @@
             }
           }
         ]
+      },
+      "GeneralAPIResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "description": "Status of operation, 0 -> failure 1 -> success",
+            "format": "int32",
+            "enum": [
+              0,
+              1
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "Error message in case of operation failure"
+          }
+        }
       }
     },
     "securitySchemes": {
