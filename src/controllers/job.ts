@@ -1820,7 +1820,7 @@ export const getJobReportDetails = (req: Request, res: Response) => {
                 // TODO: To be deprecated
                 { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
                 { path: 'tasks.technician', select: 'profile auth.email contact' },
-                { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName' },
+                { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName notes' },
                 { path: 'customerContactId', select: '-id -__v' },
                 { path: 'type', select: 'title description sku' },
                 // TODO: To be deprecated

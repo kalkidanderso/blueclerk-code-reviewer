@@ -2078,7 +2078,7 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
                 {path: 'tasks.jobTypes.jobType', select: 'title description sku'},
                 {
                     path: 'customer',
-                    select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail'
+                    select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail notes'
                 },
                 {path: 'tasks.technician', select: 'profile auth.email address contact permissions.role'},
                 {
