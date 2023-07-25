@@ -95,7 +95,7 @@ export const getServiceTickets = async (req: Request, res: Response) => {
     await ServiceTicket.populate(tickets, [
         {
             path: 'customer',
-            select: 'info.email profile.displayName contactName',
+            select: 'info.email profile.displayName contactName notes',
         },
         {
             path: 'poOverriddenBy',
@@ -194,7 +194,7 @@ export const getPORequest = async (req: Request, res: Response) => {
     await PORequest.populate(tickets, [
         {
             path: 'customer',
-            select: 'info.email profile.displayName contactName isPORequired',
+            select: 'info.email profile.displayName contactName isPORequired notes',
         },
         {
             path: 'homeOwner',
@@ -458,9 +458,20 @@ const _fillInitialQueryTickets = (bodyParams: any, queryParams: any, query: any,
     }
 
     if (type == "Ticket") {
-        query['$and'].push({type: { $ne: "PO Request" }});
     }else if(type == "PO Request"){
-        query['$and'].push({type: { $eq: "PO Request" }});
+    }
+    switch (type) {
+        case "Ticket":
+            query['$and'].push({type: { $ne: "PO Request" }});
+            break;
+        case "PO Request":
+            query['$and'].push({type: { $eq: "PO Request" }, status: { $ne: 1 }});
+            break;
+        case "All PO Request":
+            query['$and'].push({type: { $eq: "PO Request" }});
+            break;
+        default:
+            break;
     }
 
     fillQueryCommon({ workType, companyLocation }, query['$and']);

@@ -70,7 +70,8 @@ export interface ICustomer extends Document {
     inactiveAt?: Date
     inactiveBy?: Schema.Types.ObjectId | IUser
     admin: Schema.Types.ObjectId | IUser
-
+    isPORequired?: boolean
+    notes?: string
 }
 
 export interface IQBCustomer {
@@ -259,7 +260,10 @@ const CustomerSchema = new Schema({
         type: Boolean,
         default: false,
         required: false
-    }
+    },
+    notes: {
+        type: String,
+    },
 });
 
 //Indexes
