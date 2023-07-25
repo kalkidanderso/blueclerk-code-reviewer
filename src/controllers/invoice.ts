@@ -4906,7 +4906,7 @@ export const voidInvoice = async (req: Request, res: Response) => {
     const jobReport = await JobReport.findOne({ invoice: invoice._id });
     // remove invoice and invoiceCreated in job report if exsists
     if (jobReport) {
-        await jobReport.updateOne({ $unset: { invoice: null, invoiceCreated: false } });
+        await jobReport.updateOne({ $set: { invoiceVoid:true } });
     }
 
     if (company.qbAuthorized && invoice.quickbookId) {

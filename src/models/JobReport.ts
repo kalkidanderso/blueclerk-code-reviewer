@@ -73,6 +73,9 @@ const JobReportSchema = new Schema({
     invoiceCreated: {
         type: Boolean
     },
+    invoiceVoid: {
+        type: Boolean
+    },
     invoice: {
         type: Schema.Types.ObjectId,
         ref: 'Invoice'
