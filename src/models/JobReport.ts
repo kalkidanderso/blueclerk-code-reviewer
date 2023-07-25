@@ -17,6 +17,7 @@ export interface IJobReport extends Document {
     createdAt: Date;
     lastEmailSent: Date;
     invoiceCreated?: boolean;
+    invoiceVoid?: boolean;
     invoice?: Schema.Types.ObjectId | IInvoice;
 }
 

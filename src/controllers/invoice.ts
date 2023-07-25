@@ -511,7 +511,8 @@ export const createInvoice = (req: Request, res: Response) => {
 
                     const jobReport = await JobReport.findOne({ job: invoice.job });
                     if (jobReport) {
-                        jobReport.invoiceCreated = true;
+                        jobReport.invoiceCreated=true;
+            jobReport.invoiceVoid= false;
                         jobReport.invoice = invoice._id;
                         await jobReport.save();
                     }
@@ -3350,7 +3351,8 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
 
         const jobReport = await JobReport.findOne({ job: invoice.job });
         if (jobReport) {
-            jobReport.invoiceCreated = true;
+            jobReport.invoiceCreated=true;
+            jobReport.invoiceVoid= false;
             jobReport.invoice = invoice._id;
             jobReport.save();
         }
@@ -4658,7 +4660,8 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
             await invoice.save();
             const jobReport = await JobReport.findOne({ job: invoice.job });
             if (jobReport) {
-                jobReport.invoiceCreated = true;
+                jobReport.invoiceCreated=true;
+            jobReport.invoiceVoid= false;
                 jobReport.invoice = invoice._id;
                 await jobReport.save();
             }
