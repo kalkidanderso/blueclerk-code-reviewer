@@ -2,6 +2,11 @@ import mongoose, { Document, Schema } from 'mongoose'
 import { IPriceTier } from './PriceTier';
 import { IJobCosting } from './JobCosting';
 
+
+export const enum ItemTypes{
+    SERVICE='Service',
+    PRODUCT='Product'
+}
 export interface IItem extends Document {
 
     name: string
@@ -27,6 +32,9 @@ export interface IItem extends Document {
     jobType?: Schema.Types.ObjectId
     company?: Schema.Types.ObjectId
     isActive: boolean
+    itemType:ItemTypes,
+    salePrice:number,
+    productCost:number,
     quickbookId?: string
     createdAt?: Date
     updatedAt?: Date
@@ -38,7 +46,6 @@ export const enum QBItemTypes {
     SERVICE = 'Service',
     NONINVENTORY = 'NonInventory'
 }
-
 export interface IQBItem {
 
     Id?: string
@@ -125,6 +132,21 @@ const ItemSchema = new Schema({
     jobType: {
         type: Schema.Types.ObjectId,
         ref: 'JobType',
+    },
+    itemType:{
+        type:String,
+        enum : ['Service','Product'],
+
+        default:'Service'
+    },
+    productCost:{
+        type:Number,
+        optional:true
+    },
+    
+    salePrice:{
+        type:Number,
+        optional:true
     },
     company: {
         type: Schema.Types.ObjectId,

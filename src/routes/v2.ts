@@ -8,9 +8,18 @@ import {
 import { getCompanyId } from '../middleware/company';
 import { isLogin } from '../middleware/session';
 import { Permissions } from '../common/constants';
+import { isObjectIdValid } from '../middleware/isObjectIdValid'
+import { isLambdaRequest } from '../middleware/isLamdaRequest'
+
 import * as invoiceController from '../controllers/v2/invoice';
 import * as jobController from '../controllers/v2/job';
 import * as serviceTicketController from '../controllers/v2/serviceTicket';
+import * as userPermissionController from '../controllers/v2/userPermission';
+import * as bouncedEmails from '../controllers/bouncedEmails';
+
+
+
+
 
 export default function () {
 
@@ -25,6 +34,23 @@ export default function () {
         checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.getInvoices),
         invoiceController.getInvoices
+    )
+
+    // Bounced Emails
+    router.post(
+        '/store-bounced-emails',
+        validate(Validations.bounceEmail),
+        isLambdaRequest,
+        bouncedEmails.store
+    )
+
+    //mark-bounced-emails-as-read
+    router.post(
+        '/mark-as-read',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        isObjectIdValid,
+        bouncedEmails.markRead
     )
 
     router.post(
@@ -79,6 +105,22 @@ export default function () {
         isLogin(),
         getCompanyId(),
         serviceTicketController.sendPORequest
+    )
+    
+    router.get(
+        '/getUserPermission/:userId',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        userPermissionController.getUserPermission
+    )
+
+    router.post(
+        '/updateUserPermission/:userId',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        userPermissionController.updateUserPermission
     )
 
     return router

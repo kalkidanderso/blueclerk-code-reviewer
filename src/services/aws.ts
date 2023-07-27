@@ -1568,7 +1568,7 @@ export const hasOptedOut = async (phoneNumber: string) : Promise<boolean> => {
         console.log("== checkHasOptedOutError " + err, err.stack);
         reject(err);
       }
-      resolve(data.isOptedOut);
+      resolve(data?.isOptedOut);
     });
   });
 }

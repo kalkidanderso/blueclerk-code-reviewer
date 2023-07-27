@@ -2061,6 +2061,10 @@ export const updateInvoiceMessages = async (req: Request, res: Response) => {
             images: params.technicianMessages.images || invoice.technicianMessages.images,
         };
 
+        if([true, false].includes(params.showJobId)) {
+            invoice.showJobId = params.showJobId;
+        }
+
         const updatedInvoice = await invoice.save();
         return res.json({status: Status.Success, message: 'Invoice updated successfully.', data: updatedInvoice});
     } catch (err) {
@@ -2083,7 +2087,7 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
                 {path: 'tasks.technician', select: 'profile auth.email address contact permissions.role'},
                 {
                     path: 'tasks.contractor',
-                    select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax',
+                    select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax commissionTier',
                     populate: {path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role'}
                 },
                 {path: 'technicianImages.uploadedBy', select: 'profile auth.email address contact permissions.role'},
@@ -2409,8 +2413,20 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     invoice.emailHistory.push({
         sentTo: customer.info?.email,
         sentAt: sendingDate,
-        sentBy: user._id || null
+        sentBy: user._id || null,
+        deliveryStatus:true
     });
+
+    
+    recipientEmails.forEach((item) => {
+        invoice.emailHistory.push({
+            sentTo: item,
+            sentAt: sendingDate,
+            sentBy: user._id || null,
+            deliveryStatus:true
+        });
+    });
+      
     invoice.lastEmailSent = sendingDate;
     await invoice.save();
 
@@ -2526,7 +2542,8 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
             invoice.emailHistory.push({
                 sentTo: customer.info?.email,
                 sentAt: sendingDate,
-                sentBy: user._id || null
+                sentBy: user._id || null,
+                deliveryStatus: true
             });
             invoice.lastEmailSent = sendingDate;
 
@@ -3787,14 +3804,14 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                                 border: [false, false, false, true]
                             },
 
-                            {
+                            invoice?.showJobId ? {
                                 stack: [
                                     {text: 'Job Number', style: 'headerTitleBold'},
                                     {text: job?.jobId ?? '', style: 'invoiceHeader'},
                                 ],
                                 margin: [0, -2, 0, 10],
                                 border: [false, false, false, true]
-                            },
+                            } : {},
                             {text: '', margin: [0, 0, 0, 10], border: [false, false, false, true]},
                         ]
                     ],

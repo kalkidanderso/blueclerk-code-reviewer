@@ -2992,13 +2992,29 @@ export const editJob = async (req: Request, res: Response) => {
                 }
 
                 job.isHomeOccupied = params.isHomeOccupied;
-                //job.jobLocation = null;
-                //job.jobSite = null;
                 if (linkedJob) { 
                     linkedJob.isHomeOccupied = params.isHomeOccupied; 
-                    //linkedJob.jobLocation = null; 
-                    //linkedJob.jobSite = null; 
                 }
+            }
+
+            if(params.isHomeOccupied === true) {
+                if(params.homeOwnerId && params.homeOwnerId !== job.homeOwner) {
+                    const newHomeOwner = await HomeOwner.findOne({ _id: params.homeOwnerId });
+                    if(!newHomeOwner) {
+                        return res.json({ 'status': Status.NotFound, 'message': 'Provided homeOwnerId does not correspond with any home owner' });
+                    }
+                    job.homeOwner = params.homeOwnerId;
+                    action  += '|Updated Home Owner|'
+                }
+                else {
+                    if(params.isHomeOccupied === true && !job.homeOwner) {
+                        return res.json({ 'status': Status.Error, 'message': 'Home Owner is required when home is occupied' });
+                    }
+                }
+            }
+            else if(params.isHomeOccupied === false) {
+                job.homeOwner = null;
+                action  += '|Updated Home Owner|'
             }
 
             if (params.customerContactId) {
@@ -4344,33 +4360,21 @@ export const handleScheduledTime = async ({
     technicianId: string
 }) => {
 
-    let newStartTime: any = null;
-    let newEndTime: any = null
-    let date;
-    if (scheduledStartTime) {
-        date = new Date(scheduleDate)
-        newStartTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + scheduledStartTime)
-    }
-    if (scheduledEndTime) {
-        date = new Date(scheduleDate)
-        newEndTime = new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + scheduledEndTime)
-    }
-
     const job = await Job.findOne({
         $or: [
             {
                 company: company._id,
                 tasks: { technician: technicianId },
                 scheduleDate: new Date(scheduleDate),
-                scheduledStartTime: { $lte: newStartTime },
-                scheduledEndTime: { $gte: newStartTime }
+                scheduledStartTime: { $lte: scheduledStartTime || null },
+                scheduledEndTime: { $gte: scheduledStartTime || null}
             },
             {
                 company: company._id,
                 tasks: { technician: technicianId },
                 scheduleDate: new Date(scheduleDate),
-                scheduledStartTime: { $lte: newEndTime },
-                scheduledEndTime: { $gte: newEndTime }
+                scheduledStartTime: { $lte: scheduledEndTime || null },
+                scheduledEndTime: { $gte: scheduledEndTime || null }
             }
         ]
     });
