@@ -354,10 +354,15 @@ export const sendPORequest = async (req: Request, res: Response) => {
     }
 
     const companyLocation = <ICompanyLocation>ticket.companyLocation;
+
+    let message = params.message ?? emailDefault?.message; 
+    try {
+        message = message.replace(/\n/g, '<br>')
+    } catch (error) {}
     // Call AWS SES method
     sendPORequestEmailToCustomer({
         subject: params.subject ?? emailDefault?.subject,
-        message: params.message ?? emailDefault?.message,
+        message: message,
         sender_email: params.sender || companyLocation?.poRequestEmailSender || user.auth?.email,
         company_name: company.info?.companyName,
         company_email: company.info?.companyEmail,
@@ -373,7 +378,7 @@ export const sendPORequest = async (req: Request, res: Response) => {
     let track: any[] = ticket?.track ? ticket.track : [];
     track.push({
         user: user._id,
-        action: `Sent an email for a Purchase Order Request.`,
+        action: `Sent an email for a PO Request.`,
         date: new Date()
     });
     
@@ -388,7 +393,7 @@ export const sendPORequest = async (req: Request, res: Response) => {
 
     return res.json({
         status: Status.Success,
-        message: "Purchase Order Request has been sent successfully."
+        message: "PO Request has been sent successfully."
     });
 }
 
@@ -604,7 +609,7 @@ const _getFilteredTicketsIds = async (filteredInitialTickets: any[], params: any
 }
 
 /**
- * Generate Purchase Order Request
+ * Generate PO Request
  * @param company 
  * @param ticket 
  * @returns Promise<unknown>
