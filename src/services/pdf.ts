@@ -263,7 +263,7 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
             header: {
                 fontSize: 18,
                 bold: true,
-                color: '#4F4F4F',
+                color: '#262626',
                 alignment: 'left'
             },
             bigger: {
@@ -273,17 +273,17 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
             boldGrey: {
                 fontSize: 10,
                 bold: true,
-                color: '#4F4F4F',
+                color: '#262626',
             },
             boldGreen: {
                 fontSize: 10,
                 bold: true,
-                color: '#44d62c',
+                color: '#2d8f1d',
             },
             boldGreyRight: {
                 fontSize: 10,
                 bold: true,
-                color: '#4F4F4F',
+                color: '#262626',
                 alignment: 'right'
             },
             jobLabel: {
@@ -295,18 +295,18 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
             fieldLabelRight: {
                 fontSize: 10,
                 bold: false,
-                color: '#828282',
+                color: '#5c5c5c',
                 alignment: 'right'
             },
             fieldLabel: {
                 fontSize: 10,
                 bold: false,
-                color: '#828282',
+                color: '#5c5c5c',
             },
             footerText: {
                 fontSize: 8,
                 bold: false,
-                color: '#828282',
+                color: '#5c5c5c',
             },
             separatorStyle: {
                 color: '#F2F2F2'
@@ -314,14 +314,14 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
             subTitle: {
                 fontSize: 10,
                 bold: true,
-                color: '#4F4F4F',
+                color: '#626262',
                 decoration: 'underline',
                 decorationColor: '#4F4F4F'
             },
             notesFieldLabel: {
                 fontSize: 10,
                 bold: false,
-                color: '#828282',
+                color: '#5c5c5c',
                 decoration: 'underline',
                 decorationColor: '#828282'
             },

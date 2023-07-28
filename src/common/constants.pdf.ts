@@ -112,17 +112,17 @@ export const Styles = {
     invoice: {
         headerTitle: {
             fontSize: 11,
-            color: '#828282'
+            color: '#5c5c5c'
         },
         headerTitleBold: {
             fontSize: 11,
             bold: true,
-            color: '#828282'
+            color: '#5c5c5c'
         },
         companyName: {
             fontSize: 16,
             bold: true,
-            color: '#4F4F4F'
+            color: '#262626'
         },
         invoiceId: {
             fontSize: 20,
@@ -136,7 +136,7 @@ export const Styles = {
         invoiceHeaderBold: {
             fontSize: 11,
             bold: true,
-            color: '#4F4F4F'
+            color: '#262626'
         },
         invoiceMetadataTitle: {
             fontSize: 11,
@@ -152,28 +152,28 @@ export const Styles = {
         itemTitle: {
             fontSize: 12,
             bold: true,
-            color: '#828282',
+            color: '#5c5c5c',
             fillColor: '#F9FDFF',
             margin: [0, 10, 0, 5]
         },
         itemListBold: {
             fontSize: 12,
             bold: true,
-            color: '#4F4F4F',
+            color: '#262626',
             margin: [0, 0, 0, 5]
         },
         itemList: {
             fontSize: 12,
-            color: '#4F4F4F'
+            color: '#262626'
         },
         itemListCenter: {
             fontSize: 12,
-            color: '#4F4F4F',
+            color: '#262626',
             alignment: 'center'
         },
         itemListRight: {
             fontSize: 12,
-            color: '#4F4F4F',
+            color: '#262626',
             alignment: 'right'
         },
         amountDueTitle: {
@@ -190,12 +190,12 @@ export const Styles = {
         },
         smallFontGray: {
             fontSize: 7,
-            color: '#4F4F4F'
+            color: '#262626'
         },
         icon: {
             font: 'Fontello',
             fontSize: 12,
-            color: '#4F4F4F',
+            color: '#262626',
             alignment: 'center'
         }
     }
