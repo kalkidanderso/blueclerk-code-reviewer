@@ -40,6 +40,7 @@ export interface ICompanyLocation extends Document {
     workTypes: [Schema.Types.ObjectId | IWorkType]
     assignedVendors: [IAssignedVendor] | any[]
     assignedEmployees: [IAssignedEmployee] | any[]
+    poRequestEmailSender?: string
 }
 
 const CompanyLocationSchema = new Schema({
@@ -91,7 +92,8 @@ const CompanyLocationSchema = new Schema({
     },
     workTypes: [{ type: Schema.Types.ObjectId, ref: 'WorkType' }],
     assignedVendors: [AssignedVendorSchema],
-    assignedEmployees: [AssignedEmployeeSchema]
+    assignedEmployees: [AssignedEmployeeSchema],
+    poRequestEmailSender: String
 })
 
 //Indexes

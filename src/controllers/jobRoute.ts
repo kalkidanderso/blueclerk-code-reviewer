@@ -115,7 +115,7 @@ export const getJobRoute = async (req: Request, res: Response) => {
             path: 'routes.job',
             select: '-__v -track -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
             populate: [
-                { path: 'customer', select: 'profile vendorId address location' },
+                { path: 'customer', select: 'profile vendorId address location notes' },
                 { path: 'tasks.jobType', select: 'title description sku' },
                 { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                 { path: 'type', select: 'title description sku' },
@@ -157,7 +157,7 @@ export const getAllJobRoutesByTechnician = async (req: Request, res: Response) =
             path: 'routes.job',
             select: '-__v -track -comment -charges -salesTax -equipment_scanned -no_of_equipment_scanned',
             populate: [
-                { path: 'customer', select: 'profile vendorId address location' },
+                { path: 'customer', select: 'profile vendorId address location notes' },
                 { path: 'tasks.jobType', select: 'title description sku' },
                 { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                 { path: 'type', select: 'title description sku' },

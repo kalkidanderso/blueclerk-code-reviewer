@@ -352,6 +352,91 @@ export const sendInvoiceEmailToCustomer = async function (options: any) {
 
 }
 
+export const sendPORequestEmailToCustomer = async function (options: any) {
+
+  const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env;
+
+  let { subject, message, sender_email, company_name, company_email, company_logo, recipient_emails, po_request_number, po_request_pdfs } = options;
+
+  AWS.config.update({
+    region: AWS_REGION,
+    accessKeyId: AWS_SES_ACCESSKEYID,
+    secretAccessKey: AWS_SES_SECRETACCESSKEY,
+  });
+
+  const ses = new AWS.SES({ apiVersion: '2012-10-17' });
+  const boundary = `NextPart${Math.random().toString().substr(2)}`;
+
+  // Fill in the small_company_logo placeholder
+  message = message.replace(/{{small_company_logo}}/gi, `<img style=\"width:150px\" src=\"${company_logo}\" alt=\"${company_name}\" />`);
+  // Replace \n to <br /> in HTML
+  message = message.replace(/\\n/gi, '<br />');
+
+  const SENDER = `"${company_name}" <${APP_EMAIL_NOREPLY ?? sender_email ?? company_email}>`;
+  const RECIPIENT = recipient_emails;
+  const SUBJECT = eval('`' + subject + '`');
+  const BODY_HTML = `<div style=\"font-family:roboto; padding:10px; background-color: #EAECF3; text-align:center;\">
+                      <p><img style=\"width:350px\" src=\"${company_logo}\" alt=\"${company_name}\" /></p>
+                      <p><strong>${company_name}</strong></p>
+                    </div>
+                    <div style=\"font-family:roboto; padding:10px; text-align:center\">
+                      <h2>${po_request_number ?? 'Purchase Order Request'}</h2>
+                    </div>
+                    <div style=\"font-family:roboto; padding:10px\">
+                      ${eval('`' + message + '`')}
+                      <br /><br />
+                      <p style="padding:0px">Sent with BlueClerk Software</p>
+                      <a href="https://app.blueclerk.com"><img src="https://blueclerk.com/wp-content/uploads/2020/07/logo.png" /></a>
+                    </div>`;
+
+  const rawMessage = [
+    `From: ${SENDER}`,
+    `To: ${RECIPIENT}`,
+    `Reply-To: ${sender_email}`,
+    `Subject: ${SUBJECT}`,
+    `MIME-Version: 1.0`,
+    `Content-Type: multipart/mixed; boundary=\"${boundary}\"\n`,
+    `--${boundary}`,
+    `Content-Type: text/html\n`,
+    `${BODY_HTML}\n`,
+    `--${boundary}`
+  ];
+
+  // Attachment PDF if provided
+  for (const ticket_pdf of po_request_pdfs) {
+    const pdfFile = fs.readFileSync(ticket_pdf.filepath);
+    const ATTACHMENT = pdfFile.toString("base64").replace(/([^\0]{76})/g, "$1\n");
+
+    rawMessage.push(`Content-Type: application/octet-stream; name=\"${ticket_pdf.ticket?.ticketId}.pdf\"`);
+    rawMessage.push(`Content-Transfer-Encoding: base64`);
+    rawMessage.push(`Content-Disposition: attachment;filename=\"${ticket_pdf.ticket?.ticketId}.pdf\"`);
+    rawMessage.push(`Content-ID:<${ticket_pdf.ticket?.ticketId}.pdf>\n`);
+    rawMessage.push(`${ATTACHMENT}\n`);
+
+    if (po_request_pdfs.findIndex((pdf: any) => pdf.ticket._id === ticket_pdf.ticket._id) === po_request_pdfs.length - 1) {
+      rawMessage.push(`--${boundary}--`);
+    } else {
+      rawMessage.push(`--${boundary}`);
+    }
+  }
+
+
+  try {
+    await ses.sendRawEmail({
+      Source: SENDER,
+      Destinations: RECIPIENT,
+      RawMessage: { Data: rawMessage.join("\n") }
+    }).promise();
+  } catch (error) {
+    Sentry.captureException(error);
+    console.log('== AWS sendPORequestEmailToCustomer Error:', error);
+    return;
+  }
+
+  return;
+
+}
+
 export const sendReportPdf = async (options: any) => {
 
   const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env;
@@ -785,7 +870,8 @@ export const updateFieldsAndUploadImageInS3 = function (req: Request, res: Respo
   uploadMultiple(req, res, (err) => {
 
     if (err) return next(err, null)
-    if (!req.body.ticketId || !req.body.note) {
+
+    if ((!req.body.ticketId || !req.body.note) && req.body.type != "PO Request") {
       return next({ 'status': Status.Error, 'message': Messages.MissingParams }, null);
     }
     const imagesUrl: string[] = [];

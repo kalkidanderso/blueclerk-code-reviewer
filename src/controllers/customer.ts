@@ -303,6 +303,14 @@ export const getCustomers = async (req: Request, res: Response) => {
             }
         },
         {
+            $lookup: {
+                from: "pricetiers",
+                localField: "itemTier",
+                foreignField: "_id",
+                as: "itemTierObj"
+            }
+        },
+        {
             $match: {
                 $and: [
                     { 'companycustomers.company': new ObjectId(companyId) },
@@ -318,6 +326,11 @@ export const getCustomers = async (req: Request, res: Response) => {
                 "info.email": 1,
                 "isActive": 1,
                 "quickbookId": 1,
+                "isPORequired": 1,
+                "notes": 1,
+                "itemTier": 1,
+                "itemTierObj": 1,
+                "discountPrices": 1
             }
         },
     ]).exec()
@@ -459,6 +472,8 @@ export const updateCustomer = (req: Request, res: Response) => {
                 contacts: params.contacts,
                 inactiveAt: null,
                 inactiveBy: null,
+                isPORequired: params.isPORequired,
+                notes: params.notes
             }
 
             if (customer.isActive && !isActive) {
