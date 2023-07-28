@@ -1330,7 +1330,7 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
         })
         .populate({
             path: 'customer',
-            select: 'info.email auth.email profile.displayName address location contactName'
+            select: 'info.email auth.email profile.displayName address location contactName notes'
         })
         .populate({
             path: 'customerContactId',
@@ -3721,7 +3721,7 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
         })
         .populate({
             path: 'customer',
-            select: 'info.email auth.email profile.displayName address location contactName'
+            select: 'info.email auth.email profile.displayName address location contactName notes'
         })
         .populate({
             path: 'customerContactId',
