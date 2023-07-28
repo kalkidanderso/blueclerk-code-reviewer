@@ -171,11 +171,37 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                                 jobReport.job.tasks.map((task: any, idx: number) => task.technician?.profile?.displayName ? task.technician?.profile?.displayName + '\n' : '').flat(), 
                                 '25%')
                         }, {
-                            ...generateField('JOB TYPE(S)', 
-                                jobReport.job.tasks.map((task: any) => {
-                                    return task.jobTypes.map((jobType: any) => jobType.jobType?.title)}).join(', '), 
-                                '50%')
-                        }, ],
+                            stack: [{
+                                text: '\n' + "JOB TYPE(S)",
+                                style: 'fieldLabel'
+                            }, 
+                            ...jobReport.job.tasks.map((task: any) => {
+                                    return task.jobTypes.map((jobType: any) => {
+                                        return {
+                                            text: jobType.jobType?.title || 'N/A',
+                                            style: 'boldGrey'
+                                        }
+                                    })
+                                }), 
+                            ],
+                            width: "25%"
+                        }, {
+                            stack: [{
+                                text: '\n' + "QUANTITY",
+                                style: 'fieldLabel'
+                            }, 
+                            ...jobReport.job.tasks.map((task: any) => {
+                                    return task.jobTypes.map((jobType: any) => {
+                                        return {
+                                            text: jobType.quantity || '1',
+                                            style: 'boldGrey'
+                                        }
+                                    })
+                                }), 
+                            ],
+                            width: "25%"
+                        }, 
+                    ],
                     },
                 ],
             },
