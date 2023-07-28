@@ -40,6 +40,7 @@ import { sendInvoiceEmailToCustomer, uploadFileInS3 } from '../services/aws';
 import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer';
 import { _createQBInvoice, _deleteQBInvoice, _updateQBInvoice, _voidQBInvoice } from '../controllers/quickbook.invoice';
 import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail } from '../controllers/emailDefault';
+import * as InvoiceLogController from "../controllers/invoiceLogs";
 import { IJobSite, JobSite } from '../models/JobSite';
 import { IJobLocation, JobLocation } from '../models/JobLocation';
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission';
@@ -51,6 +52,7 @@ import * as Sentry from '@sentry/node';
 import axios from 'axios';
 import { JobCommission } from '../models/JobCommission';
 import { IJobCosting } from '../models/JobCosting';
+import { logType } from 'src/models/invoiceLogs';
 
 const pdfmake = require('pdfmake');
 
@@ -519,6 +521,8 @@ export const createInvoice = (req: Request, res: Response) => {
 
             })
             .then((invoice: IInvoice) => {
+                // @ts-ignore
+                InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'CREATED', company: invoice.company, createdBy: invoice.createdBy });
                 if (company.qbAuthorized && !invoice.isDraft) {
                     /**
                      * Check Customer & Job Locations data on QBooks,
@@ -1486,9 +1490,12 @@ export const createPOInvoice = (req: Request, res: Response) => {
                 })
 
                 invoice.save((invoiceError: any) => {
+                    
                     if (invoiceError) {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
+                    // @ts-ignore
+                    InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'CREATED', company: invoice.company, createdBy: invoice.createdBy });
 
                     company.updateOne({currentInvoiceId: currentInvoiceId + 1})
                         .exec((companyError: any) => {
@@ -1833,6 +1840,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                                  */
                                 invoice.paymentTerm = params.paymentTermId ? paymentTerm?._id : null;
                                 await invoice.save();
+                                // @ts-ignore
+                                InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'UPDATED', company: invoice.company, createdBy: invoice.createdBy });
 
                                 // To handle the switch of Invoice isDraft
                                 _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
@@ -4599,7 +4608,8 @@ export const voidInvoice = async (req: Request, res: Response) => {
         // Delete Invoice in QuickBooks when invoice have quickbook id
         await _voidQBInvoice(req, res, company, invoice);
     }
-
+    // @ts-ignore
+    InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'VOID', company: invoice.company, createdBy: invoice.createdBy });
     return res.json({status: Status.Success, message: 'Invoice voided successfully', invoice});
 
 }
