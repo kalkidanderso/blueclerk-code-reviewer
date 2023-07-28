@@ -1330,7 +1330,7 @@ export const getJobsByTechnicianId = (req: Request, res: Response) => {
         })
         .populate({
             path: 'customer',
-            select: 'info.email auth.email profile.displayName address location contactName'
+            select: 'info.email auth.email profile.displayName address location contactName notes'
         })
         .populate({
             path: 'customerContactId',
@@ -1820,7 +1820,7 @@ export const getJobReportDetails = (req: Request, res: Response) => {
                 // TODO: To be deprecated
                 { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
                 { path: 'tasks.technician', select: 'profile auth.email contact' },
-                { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName' },
+                { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName notes' },
                 { path: 'customerContactId', select: '-id -__v' },
                 { path: 'type', select: 'title description sku' },
                 // TODO: To be deprecated
@@ -2187,9 +2187,9 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                                 if (commissionTierId) {
                                     const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
                                     if (commissionTier?.charge){
-                                        balance += commissionTier.charge
-                                        contractorCommissionEntry.commission += commissionTier.charge
-                                        contractorCommissionEntry.commissionAmount += commissionTier.charge
+                                        balance += commissionTier.charge * (j.quantity || 1);
+                                        contractorCommissionEntry.commission += commissionTier.charge * (j.quantity || 1);
+                                        contractorCommissionEntry.commissionAmount += commissionTier.charge * (j.quantity || 1);
                                     }
                                 }
                                 await Company.findByIdAndUpdate(
@@ -2748,9 +2748,9 @@ export const updateJobTask = async (req: Request, res: Response) => {
                     if (commissionTierId) {
                         const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
                         if (commissionTier?.charge){
-                            balance += commissionTier.charge
-                            contractorCommissionEntry.commission += commissionTier.charge
-                            contractorCommissionEntry.commissionAmount += commissionTier.charge
+                            balance += commissionTier.charge * (j.quantity || 1);
+                            contractorCommissionEntry.commission += commissionTier.charge * (j.quantity || 1);
+                            contractorCommissionEntry.commissionAmount += commissionTier.charge * (j.quantity || 1);
                         }
                     }
                     await Company.findByIdAndUpdate(
@@ -3721,7 +3721,7 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
         })
         .populate({
             path: 'customer',
-            select: 'info.email auth.email profile.displayName address location contactName'
+            select: 'info.email auth.email profile.displayName address location contactName notes'
         })
         .populate({
             path: 'customerContactId',

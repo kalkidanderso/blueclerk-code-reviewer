@@ -174,6 +174,8 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
         companyLocation.billingAddress.state = params.billingState;
         companyLocation.billingAddress.zipCode = params.billingZipCode;
         companyLocation.billingAddress.emailSender = params.billingEmailSender;
+        
+        companyLocation.poRequestEmailSender = params.poRequestEmailSender;
 
         companyLocation.contact = companyLocation.contact ?? {};
         companyLocation.contact.phone = params.phone;

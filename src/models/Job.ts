@@ -115,6 +115,8 @@ export interface ITaskJobType extends Document {
     timeUpdatedAt?: Date
     equipmentScanned?: boolean
     noOfEquipmentScanned?: number
+    quantity?: number
+    price?: number
 }
 
 const JobSchema = new Schema({
@@ -347,7 +349,14 @@ const JobSchema = new Schema({
             noOfEquipmentScanned: {
                 type: Number,
                 default: 0
-            }
+            },
+            quantity: {
+                type: Number,
+                default: 1
+            },
+            price: {
+                type: Number
+            },
         }],
         paid: {
             type: Boolean,

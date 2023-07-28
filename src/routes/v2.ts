@@ -82,6 +82,31 @@ export default function () {
         serviceTicketController.getServiceTickets
     )
 
+    router.post(
+        '/getPORequest',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Service_Tickets),
+        serviceTicketController.getPORequest
+    )
+
+    router.get(
+        '/getPORequestEmailTemplate',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        serviceTicketController.getPORequestEmailTemplate
+    )
+
+    router.post(
+        '/sendPORequest',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        serviceTicketController.sendPORequest
+    )
+    
     router.get(
         '/getUserPermission/:userId',
         passport.authenticate('jwt', { session: false }),
