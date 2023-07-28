@@ -4594,6 +4594,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
     delete invoice.createdAt;
     delete invoice.updatedAt;
     invoice.invoiceId = (company.currentInvoiceId + 1).toString();
+    invoice.invoiceId = `Invoice ${invoice.invoiceId}`;
     invoice.isVoid = false;
     invoice = await new Invoice(invoice).save();
     const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
