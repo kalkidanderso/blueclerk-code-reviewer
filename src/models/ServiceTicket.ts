@@ -186,5 +186,7 @@ ServiceTicketSchema.index({ homeJobSite: 1 });
 ServiceTicketSchema.index({ jobType: 1 });
 ServiceTicketSchema.index({ item: 1 });
 ServiceTicketSchema.index({ company: 1, jobCreated: 1, status: 1 });
+ServiceTicketSchema.index({ company: 1, jobCreated: 1, status: 1, type: 1 });
+ServiceTicketSchema.index({ company: 1, _id: 1 });
 
 export const ServiceTicket = mongoose.model<IServiceTicket>('ServiceTicket', ServiceTicketSchema)
