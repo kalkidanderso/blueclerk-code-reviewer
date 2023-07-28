@@ -1122,7 +1122,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                             date: new Date()
                         });
                     }
-                    console.log(serviceTicket.ticketId, serviceTicket.ticketId.includes('PO Request'), type === 'Ticket', type)
+
                     if (type === 'Ticket' && serviceTicket.ticketId.includes('PO Request')) {
                         serviceTicket.ticketId = serviceTicket.ticketId?.replace("PO Request","Ticket");
                     } 
