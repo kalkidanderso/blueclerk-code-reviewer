@@ -6006,6 +6006,17 @@
                   },
                   "sku": {
                     "type": "string"
+                  },
+                  "itemType": {
+                    "type": "string",
+                    "description": "Enum only accepts Product and Service",
+                    "enum": [
+                      "Service",
+                      "Product"
+                    ]
+                  },
+                  "productCost": {
+                    "type": "number"
                   }
                 }
               }
@@ -6030,8 +6041,8 @@
             "Bearer": []
           }
         ]
-      }
-    },
+      
+    }},
     "/getItems": {
       "post": {
         "tags": [
@@ -6115,6 +6126,18 @@
                   "tax": {
                     "type": "number",
                     "description": "tax percentage to be applied on this item in invoice"
+                  },
+                  "itemType": {
+                    "type": "string",
+                    "description": "Enum only accepts Product and Service",
+                    "enum": [
+                      "Service",
+                      "Product"
+                    ]
+                  },
+                  "productCost": {
+                    "type": "number",
+                    "description": "Required with Item Type Product"
                   }
                 }
               }
@@ -15054,6 +15077,51 @@
                   "customerId": {
                     "type": "string",
                     "description": "Id of a customer to be associated"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/syncQBItem": {
+      "post": {
+        "tags": [
+          "Quickbooks Integration"
+        ],
+        "summary": "Manually syncing one items",
+        "description": "Manually syncing ALL items from BlueClerk to QuickBooks and vice versa",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "itemId"
+                ],
+                "properties": {
+                  "itemId": {
+                    "type": "string",
+                    "description": "Id of an itemId to be synced"
                   }
                 }
               }

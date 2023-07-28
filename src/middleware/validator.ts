@@ -211,7 +211,18 @@ export const Validations = {
   // Item
   getItems: [check('includeDiscountItems').optional().isBoolean().toBoolean()],
 
-  createItem: [check('title').exists().withMessage(Messages.Required)],
+  createItem: [check('title').exists().withMessage(Messages.Required),
+  check("itemType").optional().isIn(['Product', 'Service']).withMessage('Item type must be either "Product" or "Service"'),
+  check("isFixed").optional({ checkFalsy: true }).custom((value: boolean, { req }: any) => {
+    // Check if itemType is "Product" and isFixed is not true
+      if (req.body.itemType === 'Product' && value !== true) {
+        throw new Error('isFixed must be true when itemType is "Product"');
+      }
+      return true;
+    }),
+    // check('productCost').if(check('itemType').equals('Product')).not().isEmpty().withMessage(Messages.Required),
+  // check('salePrice').if(check('itemType').equals('Product')).not().isEmpty().withMessage(Messages.Required)
+],
 
   // Discount Item
   getDiscountItems: [
