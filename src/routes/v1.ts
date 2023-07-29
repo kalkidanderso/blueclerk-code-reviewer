@@ -47,6 +47,7 @@ import * as quickBookPaymentController from '../controllers/quickbook.payment'
 import * as companyController from '../controllers/company'
 import * as emailDefaultController from '../controllers/emailDefault'
 import * as invoiceController from '../controllers/invoice'
+import * as invoiceLogsController from '../controllers/invoiceLogs'
 import * as paymentAdvanceController from '../controllers/advancePayment'
 import * as partController from '../controllers/part'
 import * as purchaseOrderController from '../controllers/purchaseOrder'
@@ -1901,6 +1902,15 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Sales_Taxes),
         companyController.getSalesTaxes
+    )
+    // Invoice Logs
+    router.post(
+        '/getInvoiceLogs',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoice_Detail),
+        invoiceLogsController.get
     )
 
     // Job Charges

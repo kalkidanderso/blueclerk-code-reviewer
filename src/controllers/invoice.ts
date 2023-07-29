@@ -522,7 +522,8 @@ export const createInvoice = (req: Request, res: Response) => {
             })
             .then((invoice: IInvoice) => {
                 // @ts-ignore
-                InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'CREATED', company: invoice.company, createdBy: invoice.createdBy });
+                InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'CREATED', customer: invoice.customer,companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
+                , createdBy: invoice.createdBy });
                 if (company.qbAuthorized && !invoice.isDraft) {
                     /**
                      * Check Customer & Job Locations data on QBooks,
@@ -1495,7 +1496,8 @@ export const createPOInvoice = (req: Request, res: Response) => {
                         return res.json({'status': Status.Error, 'message': Messages.GenericError})
                     }
                     // @ts-ignore
-                    InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'CREATED', company: invoice.company, createdBy: invoice.createdBy });
+                    InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'CREATED', customer: invoice.customer,companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
+                    , createdBy: invoice.createdBy });
 
                     company.updateOne({currentInvoiceId: currentInvoiceId + 1})
                         .exec((companyError: any) => {
@@ -1841,7 +1843,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                                 invoice.paymentTerm = params.paymentTermId ? paymentTerm?._id : null;
                                 await invoice.save();
                                 // @ts-ignore
-                                InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'UPDATED', company: invoice.company, createdBy: invoice.createdBy });
+                                InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'UPDATED', customer: invoice.customer,companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
+                                , createdBy: invoice.createdBy });
 
                                 // To handle the switch of Invoice isDraft
                                 _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
@@ -4609,7 +4612,7 @@ export const voidInvoice = async (req: Request, res: Response) => {
         await _voidQBInvoice(req, res, company, invoice);
     }
     // @ts-ignore
-    InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'VOID', company: invoice.company, createdBy: invoice.createdBy });
+    InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'VOID', customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: invoice.createdBy});
     return res.json({status: Status.Success, message: 'Invoice voided successfully', invoice});
 
 }

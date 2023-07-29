@@ -1,46 +1,67 @@
 import mongoose, { Document, Schema } from 'mongoose'
 
 export const enum logType {
-    CREATED= 'CREATED ',
-    UPDATED= 'UPDATED ',
-    VOID= 'VOID ',
-    DUPLICATE= 'DUPLICATE '
+    CREATED = 'CREATED ',
+    UPDATED = 'UPDATED ',
+    VOID = 'VOID ',
+    DUPLICATE = 'DUPLICATE '
 }
 export interface IInvoiceLogs extends Document {
 
-    invoiceId:String
-    invoice:Schema.Types.ObjectId,
-    company:Schema.Types.ObjectId,
+    invoiceId: String
+    invoice: Schema.Types.ObjectId,
+    company: Schema.Types.ObjectId,
+    companyLocation: Schema.Types.ObjectId,
+    workType: Schema.Types.ObjectId,
+    customer: Schema.Types.ObjectId,
     createdAt?: Date
     createdBy: Schema.Types.ObjectId
     updatedAt?: Date
-    type:logType
+    type: logType
 
 }
 
 
 const InvoiceLogsSchema = new Schema({
-invoiceId:String,
-invoice:Schema.Types.ObjectId,
-company:Schema.Types.ObjectId,
-type:String,
-createdBy: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-}
+    invoiceId: String,
+    invoice: Schema.Types.ObjectId,
+
+    company: {
+        type: Schema.Types.ObjectId,
+        ref: 'Company',
+        required: true
+    },
+    workType: {
+        type: Schema.Types.ObjectId,
+        ref: 'WorkType',
+    },
+    companyLocation: {
+        type: Schema.Types.ObjectId,
+        ref: 'CompanyLocation',
+    },
+    customer: {
+        type: Schema.Types.ObjectId,
+        ref: 'Customer',
+        required: true
+    },
+    type: String,
+    createdBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    }
 
 
 }, { timestamps: { createdAt: true, updatedAt: true } }
 )
 
 //Indexes
-InvoiceLogsSchema.index({ company: 1, isActive: 1 });
-InvoiceLogsSchema.index({ company: 1, isActive: 1 });
-InvoiceLogsSchema.index({ company: 1, name: 1 });
-InvoiceLogsSchema.index({ company: 1, isActive: 1, isDiscountInvoiceLogs: 1 });
+InvoiceLogsSchema.index({ company: 1 });
 InvoiceLogsSchema.index({ type: 1 });
 InvoiceLogsSchema.index({ invoice: 1 });
+InvoiceLogsSchema.index({ customer: 1 });
+InvoiceLogsSchema.index({ companyLocation: 1 });
+InvoiceLogsSchema.index({ workType: 1 });
 InvoiceLogsSchema.index({ invoiceId: 1 });
 
 export const InvoiceLogs = mongoose.model<IInvoiceLogs>('InvoiceLogs', InvoiceLogsSchema)
