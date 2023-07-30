@@ -951,7 +951,7 @@ export const exportCustomersToExcel = async (req: Request, res: Response) => {
         .filter((row: any) => row.name && row.name !== '');
     const XLSX = require("xlsx");
     const worksheet = XLSX.utils.json_to_sheet(rows);
-    const headers = ["Customer Name", "Email", "Phone", "Street", "City", "State", "Zip", "Pricing Tier", "Payment Term", "Active"]
+    const headers = ["Customer Name", "Email", "Phone", "Street", "City", "State", "Zip", "Pricing Tier", "Payment Term", "Active", "PO Required"]
     XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: "A1" });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Dates");
@@ -986,6 +986,7 @@ const _getDataCustomersToExport = async (company: string): Promise<any[]> => {
                             itemTier: 1,
                             paymentTerm: 1,
                             isActive: 1,
+                            isPORequired: 1,
                             lowerName:{
                                 "$toLower": "$profile.displayName"
                             }
@@ -1062,7 +1063,8 @@ const _converCustomerToRowExcel = (customer: any): any => {
         addressZipCode: '',
         tierName: '',
         paymentTermName: '',
-        isActive: ''
+        isActive: '',
+        isPORequired: ''
     };
     if (!customer) {
         return row;
@@ -1077,6 +1079,7 @@ const _converCustomerToRowExcel = (customer: any): any => {
         row.addressState = cust.address?.state;
         row.addressZipCode = cust.address?.zipCode;
         row.isActive = cust.isActive ? 'Yes' : 'No'
+        row.isPORequired = cust.isPORequired ? 'Yes' : 'No';
     }
     if (customer.tierObj.length > 0) {
         const tier = customer.tierObj[0];
