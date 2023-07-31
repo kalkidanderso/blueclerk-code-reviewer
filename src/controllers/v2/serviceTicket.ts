@@ -98,6 +98,9 @@ export const getServiceTickets = async (req: Request, res: Response) => {
             select: 'info.email profile.displayName contactName notes',
         },
         {
+            path: 'customerContactId'
+        },
+        {
             path: 'poOverriddenBy',
             select: 'profile.displayName'
         },
@@ -197,6 +200,9 @@ export const getPORequest = async (req: Request, res: Response) => {
             select: 'info.email profile.displayName contactName isPORequired notes',
         },
         {
+            path: 'customerContactId'
+        },
+        {
             path: 'homeOwner',
             select: 'info profile address location contact'
         },
@@ -243,6 +249,7 @@ export const getPORequestEmailTemplate = async (req: Request, res: Response) => 
     const ticket = await ServiceTicket
         .findOne({ company, _id: params.ticketId })
         .populate("customer")
+        .populate("customerContactId")
         .populate({
             path: 'jobLocation',
             select: 'name address location'
