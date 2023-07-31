@@ -4588,7 +4588,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
             message: 'Invoice already paid or partially paid, cannot void this invoice.'
         });
     }
-
+    const oldInoviceId=invoice._id;
     invoice = invoice.toObject();
     delete invoice._id;
     delete invoice.createdAt;
@@ -4597,6 +4597,12 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
     invoice.invoiceId = `Invoice ${invoice.invoiceId}`;
     invoice.isVoid = false;
     invoice = await new Invoice(invoice).save();
+    if(invoice){
+        // @ts-ignore
+        InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'DUPLICATE', oldInvoiceId:params.invoiceId,customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: invoice.createdBy});
+
+    }
+    
     const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
     // add commission to invoice
 
@@ -4659,6 +4665,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
             invoice.commission = invoiceCommission._id;
 
             await invoice.save();
+        
             const jobReport = await JobReport.findOne({ job: invoice.job });
             if (jobReport) {
                 jobReport.invoiceCreated=true;
@@ -4828,6 +4835,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
             }
         }
         else {
+            try{
             console.log("is a something else");
 
             company.updateOne({ currentInvoiceId: invoice.invoiceId })
@@ -4890,6 +4898,11 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
                     }
                 })
         }
+        
+    catch(err){
+        console.log("Can't process now. Please try again later.",err)
+    }
+    }
     }
 
 

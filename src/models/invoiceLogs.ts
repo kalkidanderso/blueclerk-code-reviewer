@@ -10,6 +10,7 @@ export interface IInvoiceLogs extends Document {
 
     invoiceId: String
     invoice: Schema.Types.ObjectId,
+    oldInvoiceId:Schema.Types.ObjectId,
     company: Schema.Types.ObjectId,
     companyLocation: Schema.Types.ObjectId,
     workType: Schema.Types.ObjectId,
@@ -26,6 +27,11 @@ const InvoiceLogsSchema = new Schema({
     invoiceId: String,
     invoice: Schema.Types.ObjectId,
 
+    oldInvoiceId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Invoice',
+        required: false
+    },
     company: {
         type: Schema.Types.ObjectId,
         ref: 'Company',
