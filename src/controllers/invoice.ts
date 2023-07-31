@@ -4716,6 +4716,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
             }
 
         }
+        // @ts-ignore
         else if (invoice.hasOwnProperty('purchaseOrder') && invoice.purchaseOrder != null && invoice.purchaseOrder != '""') {
 
             console.log("is a PO");
@@ -4774,6 +4775,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
                 });
             }
         }
+        // @ts-ignore
         else if (invoice.hasOwnProperty('estimate') && invoice.estimate != null && invoice.estimate != '""') {
 
             console.log("is a estimate");
