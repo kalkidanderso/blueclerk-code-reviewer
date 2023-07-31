@@ -149,12 +149,12 @@ const _getServiceTicketAddress = (ticket: IServiceTicket) => {
         }
     }
 
-    let ticket_street;
+    let address_name;
     if (ticket?.jobSite) {
         const jobSite = ticket?.jobSite as IJobSite;
         const jobSiteAddress = jobSite.address;
         if (jobSite?.name) {
-            ticket_street = jobSite.name;
+            address_name = jobSite.name;
         }
 
         if (jobSiteAddress?.street || jobSiteAddress?.city || jobSiteAddress?.state || jobSiteAddress?.zipcode) {
@@ -162,7 +162,7 @@ const _getServiceTicketAddress = (ticket: IServiceTicket) => {
         }
     }
     const ticket_address = `${address?.street ? address?.street : ""}${address?.city ? ", " + address?.city : ""}${address?.state ? ", " + address?.state : ""} ${(address?.zipcode || address?.zipCode) || ""}`;
-    return { ticket_address, ticket_street: ticket_street};
+    return { ticket_address, ticket_street: address_name};
 }
 
 
