@@ -97,11 +97,12 @@ export const getPlaceholderValues = async ({
     // Get invoice and job contact if exist for the recipient
     const invoiceContact = <IContact>invoice?.customerContactId;
     const jobContact = <IContact>job?.customerContactId;
+    const ticketContact = <IContact>ticket?.customerContactId;
 
     const company_name = company.info?.companyName ?? '';
     const company_email = company.info?.companyEmail ?? '';
     const customer_name = customer?.profile?.displayName ?? '';
-    const customer_email = invoiceContact?.email ?? jobContact?.email ?? customer?.info?.email ?? '';
+    const customer_email = invoiceContact?.email ?? jobContact?.email ?? ticketContact?.email ?? customer?.info?.email ?? '';
     const invoice_number = invoice?.invoiceId ?? '';
     const invoice_amount = helper.delimiterEnUs(invoice?.total);
     const invoice_due_date = moment(invoice?.dueDate ?? '').format('MMMM DD, YYYY');
@@ -132,6 +133,7 @@ export const getPlaceholderValues = async ({
 const _getServiceTicketAddress = (ticket: IServiceTicket) => {
 
     let address: any;
+    let address_name: string;
     if (ticket?.customer) {
         const customer = ticket?.customer as ICustomer;
         const customerAddress = customer.address;
@@ -143,6 +145,7 @@ const _getServiceTicketAddress = (ticket: IServiceTicket) => {
     if (ticket?.jobLocation) {
         const jobLocation = ticket?.jobLocation as IJobLocation;
         const jobLocationAddress = jobLocation.address;
+        address_name = jobLocation.name;
         if (jobLocationAddress?.street || jobLocationAddress?.city || jobLocationAddress?.state || jobLocationAddress?.zipcode) {
             address = jobLocationAddress;
         }
@@ -151,12 +154,13 @@ const _getServiceTicketAddress = (ticket: IServiceTicket) => {
     if (ticket?.jobSite) {
         const jobSite = ticket?.jobSite as IJobSite;
         const jobSiteAddress = jobSite.address;
+        address_name = jobSite.name;
         if (jobSiteAddress?.street || jobSiteAddress?.city || jobSiteAddress?.state || jobSiteAddress?.zipcode) {
             address = jobSiteAddress;
         }
     }
     const ticket_address = `${address?.street ? address?.street : ""}${address?.city ? ", " + address?.city : ""}${address?.state ? ", " + address?.state : ""} ${(address?.zipcode || address?.zipCode) || ""}`;
-    return { ticket_address, ticket_street: address?.street || ""};
+    return { ticket_address, ticket_street: address?.street || address_name || ""};
 }
 
 
