@@ -4564,7 +4564,7 @@ export const getInvoicesByContractor = async (req: Request, res: Response) => {
 }
 
 export const unVoidInvoice = async (req: Request, res: Response) => {
-
+         
     const params = req.body;
     let invoice = await Invoice.findById(params.invoiceId);
     const company = <ICompany>req.company;
@@ -4593,6 +4593,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
     delete invoice._id;
     delete invoice.createdAt;
     delete invoice.updatedAt;
+    const invoiceNumber=(company.currentInvoiceId + 1);
     invoice.invoiceId = (company.currentInvoiceId + 1).toString();
     invoice.invoiceId = `Invoice ${invoice.invoiceId}`;
     invoice.isVoid = false;
@@ -4721,7 +4722,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
 
             console.log("is a PO");
 
-            const companyUpdate = company.updateOne({ currentInvoiceId: invoice.invoiceId })
+            const companyUpdate = company.updateOne({ currentInvoiceId: invoiceNumber })
             const poUpdate = PurchaseOrder.updateOne({ _id: invoice.purchaseOrder }, { invoiceCreated: true })
 
             const customer = await Customer.findById(invoice.customer);
@@ -4780,7 +4781,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
 
             console.log("is a estimate");
 
-            const companyUpdate = company.updateOne({ currentInvoiceId: invoice.invoiceId })
+            const companyUpdate = company.updateOne({ currentInvoiceId: invoiceNumber })
             const estimateUpdate = Estimate.updateOne({ _id: invoice.estimate }, { invoiceCreated: true })
 
             if (!invoice.isDraft) {
@@ -4837,10 +4838,9 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
             }
         }
         else {
-            try{
             console.log("is a something else");
 
-            company.updateOne({ currentInvoiceId: invoice.invoiceId })
+            company.updateOne({ currentInvoiceId: invoiceNumber })
                 .exec(async (companyError: any) => {
                     if (companyError) {
                         return res.json({ status: Status.Error, message: Messages.GenericError });
@@ -4901,13 +4901,10 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
                 })
         }
         
-    catch(err){
-        console.log("Can't process now. Please try again later.",err)
-    }
-    }
+   
     }
 
-
+    
 
 }
 
