@@ -26,7 +26,7 @@ import { IJobLocation } from '../../models/JobLocation';
 import { IJobSite } from '../../models/JobSite';
 import fs from 'fs';
 import { sendPORequestEmailToCustomer } from '../../services/aws';
-import { EmailDefault, EmailTypes } from '../../models/EmailDefault';
+import { DefaultPORequestEmailTemplate, EmailDefault, EmailTypes } from '../../models/EmailDefault';
 import * as Sentry from '@sentry/node';
 import { _createCompanyDefaultEmail, getPlaceholderValues, transformPlaceholders } from '../emailDefault';
 import { IPORequest, PORequest } from '../../models/PORequest';
@@ -240,6 +240,11 @@ export const getPORequestEmailTemplate = async (req: Request, res: Response) => 
     if (!emailDefault) {
         await _createCompanyDefaultEmail(company, emailType);
         emailDefault = await EmailDefault.findOne({ company, emailType });
+    }else if (emailDefault.message != DefaultPORequestEmailTemplate.message || emailDefault.subject != DefaultPORequestEmailTemplate.subject) {
+        //This condition is used when we only use the default email message, but if we are using a customized email, we can remove it
+        emailDefault.message = DefaultPORequestEmailTemplate.message;
+        emailDefault.subject = DefaultPORequestEmailTemplate.subject;
+        emailDefault.save();
     }
 
     /**

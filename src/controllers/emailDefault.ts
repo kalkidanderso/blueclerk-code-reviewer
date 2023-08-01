@@ -162,7 +162,7 @@ const _getServiceTicketAddress = (ticket: IServiceTicket) => {
         }
     }
     const ticket_address = `${address?.street ? address?.street : ""}${address?.city ? ", " + address?.city : ""}${address?.state ? ", " + address?.state : ""} ${(address?.zipcode || address?.zipCode) || ""}`;
-    return { ticket_address, ticket_street: address_name};
+    return { ticket_address, ticket_street: address_name || ""};
 }
 
 
