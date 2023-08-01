@@ -156,23 +156,39 @@ export const syncQBItem = async (req: Request, res: Response) => {
 
       // Item not exist on QB, create it
       if (!qbItems) {
+        
+        console.log("create qb item");
+
         await _createQBItem(req, res, company, blueClerkItem, (error, errMsg, qbItem) => {
+        
+          console.log(errMsg);
+          console.log(error);
+        
+        
           if (qbItem) {
             // QB Item created, update DB Item & JobType's quickbookId
             Item.findByIdAndUpdate(blueClerkItem, { quickbookId: qbItem.Id }).exec();
             JobType.findByIdAndUpdate(blueClerkItem.jobType, { quickbookId: qbItem.Id }).exec();
-           return res.json({ status: Status.Success, message: 'Item synced successfully.', createdItems, updatedItems });
+            return res.json({ status: Status.Success, message: 'Item synced successfully.', createdItems, updatedItems });
           }
         })
       } else {
+
+        console.log("update qb item");
+
         // QB Item exist, update DB Item in quickbook
         await _updateQBItem(req, res, company, blueClerkItem, async (error, errMsg) => {
-          if (!err && !errMsg) {
+        
+          console.log(errMsg);
+          console.log(error);
+       
+          if (!error && !errMsg) {
+            
             return res.json({ status: Status.Success, message: 'Item synced successfully.', createdItems, updatedItems });
           }
         });
       }
-  
+
 
     })
     if (blueClerkItem) {
