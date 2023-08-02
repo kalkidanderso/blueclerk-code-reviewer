@@ -308,10 +308,11 @@ const _createJob = async (
                 serviceTicket.homeOwner = null;
             }
 
-            if(!serviceTicket.type || (serviceTicket.type != "Ticket" && serviceTicket.type != "PO Request")){
+            //To handle old schema tickets without any type
+            if(!serviceTicket.type || serviceTicket.type != "Ticket"){
                 serviceTicket.type = "Ticket";
             }
-            
+
             trackedServiceTicket = serviceTicket.track;
 
             await serviceTicket.save();
