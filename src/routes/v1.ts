@@ -1221,7 +1221,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Invite_Contractor),
         validate(Validations.startContract),
         (req, res) => {
             vendorController.startContract(req, res, sio)
@@ -1233,7 +1232,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Invite_Contractor),
         validate(Validations.searchContractor),
         vendorController.inviteContractor
     )
@@ -1243,7 +1241,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Invite_Contractor),
         validate(Validations.remindContractor),
         vendorController.remindContractor
     )
