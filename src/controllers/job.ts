@@ -308,6 +308,10 @@ const _createJob = async (
                 serviceTicket.homeOwner = null;
             }
 
+            if(!serviceTicket.type || (serviceTicket.type != "Ticket" && serviceTicket.type != "PO Request")){
+                serviceTicket.type = "Ticket";
+            }
+            
             trackedServiceTicket = serviceTicket.track;
 
             await serviceTicket.save();
