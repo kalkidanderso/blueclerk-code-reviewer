@@ -22,10 +22,10 @@ export const get = async (req: Request, res: Response) => {
         const { invoice, invoiceId, companyLocation, workType } = req.body;
         let pageSize = req.body?.pageSize ? parseInt(req.body?.pageSize) : null;
 
-        const { query: queryParams = {} } = req
+        const { query: queryParams = {} } = req;
         const loggedInCompanyId = req.companyId;
         let { customerId, homeOwnerId, companyId, isActive } = queryParams
-        let query: any = {};
+        let query: any = {'$and':[]};
         // Return error when all cursors are provided
         if (params.nextCursor && params.previousCursor) {
             return res.json({
@@ -36,7 +36,7 @@ export const get = async (req: Request, res: Response) => {
 
         if (invoice) {
 
-            query['$and'].push({ invoice: invoice });
+            query['$and'].push({ invoice: new ObjectId(invoice) });
 
         } else if (invoiceId) {
 
