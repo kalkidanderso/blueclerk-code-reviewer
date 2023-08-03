@@ -2140,11 +2140,15 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
         })
         .populate({
             path: 'createdBy',
-            select: 'info.companyName auth.email profile.displayName permissions.role address contact.phone'
+            select: 'info.companyName auth.email profile.displayName permissions.role address contact.phone profile.displayName'
         })
         .populate({
             path: 'companyLocation',
-            select: 'isAddressAsBillingAddress address billingAddress'
+            select: 'isAddressAsBillingAddress address billingAddress name'
+        })
+        .populate({
+            path: 'workType',
+            select: 'title'
         })
         .exec((err: any, invoice: IInvoice) => {
 
