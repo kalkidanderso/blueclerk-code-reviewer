@@ -43,6 +43,13 @@ export default function () {
         isLambdaRequest,
         bouncedEmails.storeforInvoices
     )
+
+    // Bounced Emails for PO
+    router.post(
+        '/store-po-request-bounced-emails ',
+        validate(Validations.bounceEmail),
+        isLambdaRequest,
+        bouncedEmails.storeforPO
     )
 
     //mark-bounced-emails-as-read
