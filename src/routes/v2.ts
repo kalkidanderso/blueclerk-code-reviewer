@@ -52,13 +52,13 @@ export default function () {
         bouncedEmails.storeforPO
     )
 
-    //mark-bounced-emails-as-read
+    //mark-bounced-emails-as-read-for-invoices
     router.post(
-        '/mark-as-read',
+        '/mark-as-read-invoices',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         isObjectIdValid,
-        bouncedEmails.markRead
+        bouncedEmails.markReadInvoiceNBounce
     )
 
     router.post(

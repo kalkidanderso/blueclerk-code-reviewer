@@ -61,7 +61,7 @@ export const storeforPO = async (req: Request, res: Response) => {
 /**
  * mark the bounced emails as read 
  */
-export const markRead = async (req: Request, res: Response) => {
+export const markReadInvoiceNBounce = async (req: Request, res: Response) => {
     try {
 
         const { invoiceId } = req.body
