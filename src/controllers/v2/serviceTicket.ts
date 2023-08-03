@@ -395,11 +395,16 @@ export const sendPORequest = async (req: Request, res: Response) => {
     });
     
     const sendingDate = new Date();
-    ticket.emailHistory.push({
-        sentTo: customer.info?.email,
-        sentAt: sendingDate,
-        sentBy: user._id || null
+  
+    recipientEmails.forEach((item) => {
+        ticket.emailHistory.push({
+            sentTo: item,
+            sentAt: sendingDate,
+            sentBy: user._id || null,
+            deliveryStatus:true
+        });
     });
+
     ticket.lastEmailSent = sendingDate;
     await ticket.save();
 
