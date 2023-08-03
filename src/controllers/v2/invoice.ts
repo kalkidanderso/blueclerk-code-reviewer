@@ -14,6 +14,7 @@ import { Company } from '../../models/Company';
 import { Customer } from '../../models/Customer';
 import { splitArray } from './common';
 import { User } from '../../models/User';
+import { param } from 'express-validator';
 
 /**
  * Receives the request to get invoices
@@ -99,7 +100,7 @@ export const getInvoices = async (req: Request, res: Response) => {
             {
                 $sort: sortQuery
             },
-            { $skip : (currentPage  * pageSize) },
+            { $skip: (currentPage * pageSize) },
             { $limit: params.pageSize || DefaultPageSize },
         ]
     )
@@ -143,6 +144,28 @@ export const getInvoices = async (req: Request, res: Response) => {
     })
 }
 
+/**
+ * Export invoices to excel 
+ * @param req request
+ * @param res response 
+ * @returns excel files
+ */
+export const exportInvoicesToExcel = async (req: Request, res: Response) => {
+    const invoices = await _getDataInvoices(req, res) as any[];
+    const rows = invoices.map((invoice: any) => _converInvoiceToRowExcel(invoice));
+    const XLSX = require("xlsx");
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const headers = ["Invoice ID", "Subdivision", "Job Address", "Customer", "Customer PO", "Total", "Payment Status", "Email Send Date", "Invoice Date"]
+    XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: "A1" });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Dates");
+    const buf = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+
+
+    res.attachment(`invoices-${moment().format("YYYYMMDD")}.xlsx`);
+    res.header('Access-Control-Expose-Headers', 'Content-Type, Location, Content-Disposition');
+    res.status(200).end(buf);
+}
 
 /**
  * ===================================
@@ -163,7 +186,7 @@ const _fillInitialQuery = (params: any, queryParams: any, query: any) => {
     const { invoiceId, dueDate, status, startAmount, endAmount, customerPO, missingPO,
         customerId, customerContactId, isDraft, isVoid, startDate, endDate,
         lastEmailStartDate, lastEmailEndDate, bouncedEmailFlag } = params;
-    const {workType, companyLocation } = queryParams;
+    const { workType, companyLocation } = queryParams;
     if (invoiceId) {
         const invoiceIdRegex = helper.getRegex(invoiceId, 'i');
         query['$and'].push({ invoiceId: invoiceIdRegex });
@@ -241,8 +264,8 @@ const _fillInitialQuery = (params: any, queryParams: any, query: any) => {
             workTypeIds = workTypeArr.map((id: string) => {
                 if (ObjectId.isValid(id)) return new ObjectId(id)
             })
-        } catch (error) {};
-        query['$and'].push({ workType: { $in : workTypeIds }});
+        } catch (error) { };
+        query['$and'].push({ workType: { $in: workTypeIds } });
     }
     if (companyLocation) {
         let companyLocationIds: any[] = [];
@@ -251,8 +274,8 @@ const _fillInitialQuery = (params: any, queryParams: any, query: any) => {
             companyLocationIds = companyLocationArr.map((id: string) => {
                 if (ObjectId.isValid(id)) return new ObjectId(id)
             })
-        } catch (error) {}
-        query['$and'].push({ companyLocation: { $in : companyLocationIds }});
+        } catch (error) { }
+        query['$and'].push({ companyLocation: { $in: companyLocationIds } });
     }
 }
 
@@ -749,4 +772,179 @@ const _getFinalInvoicesIds = async (filteredInitialInvoices: any[], params: any)
             },
         },
     ])).map((value: any) => value._id);
+}
+
+
+/**
+ * Retrieve all invoices data with filter options
+ * Export invoices to excel 
+ * @param req request
+ * @param res response 
+ * @returns invoices
+ */
+const _getDataInvoices = async (req: Request, res: Response) => {
+    const params = req.body;
+    const queryParams = req.query;
+    let companyId = req.otherCompanyId || req.companyId;
+    let currentPage = params.currentPage || 0;
+    let pageSize = params.pageSize || DefaultPageSize;
+
+    // Check if any filter provided to decide whether return all records or not
+    let isAllRecords = await _getIsAllRecordsByParams(params);
+    // Get the date of the last 90 days
+    const last90days = moment().subtract(90, 'days').format();
+
+    // Return error when all cursors are provided
+    if (params.nextCursor && params.previousCursor) {
+        return res.json({ status: Status.Error, message: 'Provided cursor could only be one of either nextCursor or previousCursor.' });
+    }
+
+    // Data query that used to search Invoices and available previous/next page
+    const initialQuery: any = {
+        $and: [{ company: companyId }]
+    };
+
+    // Add the last 90 days filter if need to return all records
+    if (!isAllRecords) {
+        initialQuery['$and'].push({ issuedDate: { $gte: new Date(last90days) } });
+    }
+
+    if (!params.allData) {
+        // Add filters to initial query
+        _fillInitialQuery(params, queryParams, initialQuery);
+    }
+
+    const filteredInitialInvoices = await Invoice.aggregate([
+        { $match: initialQuery },
+        {
+            $project:
+            {
+                job: 1,
+                customer: 1,
+            },
+        },
+    ]);
+
+    // Split the initial invoices into subarrays with 30,000 length, to do parallel processing
+    const filteredInitialInvoicesSplited = splitArray(filteredInitialInvoices, 30000);
+    const parallelFilter = filteredInitialInvoicesSplited.map((value: any[]) => _getFinalInvoicesIds(value, params));
+    const finalInvoicesIds = (await Promise.all(parallelFilter)).flat()
+
+    const finalQuery: any = {
+        $and: [
+            { _id: { $in: finalInvoicesIds } }
+        ]
+    };
+
+    // Deep clone filter finalQuery
+    const query: any = { $and: [] };
+    finalQuery['$and'].map((q: any) => { query['$and'].push({ ...q }) });
+
+    // Sort query that default to sort by the recent ones
+    let sortQuery = { createdAt: -1, _id: -1 };
+
+    let invoicesQuery:any = [
+        {
+            $match: { ...query }
+        },
+        {
+            $sort: sortQuery
+        },
+    ];
+
+    if (!params.allData) {
+        invoicesQuery.push(...[
+            { $skip: (currentPage * pageSize) },
+            { $limit: params.pageSize || DefaultPageSize },
+        ])
+    }
+
+    // Get the invoices limiting by the page size
+    let invoices = await Invoice.aggregate(invoicesQuery)
+
+    // Parallel processing ond fifferent queries that can be executed in parallel
+    const parallelProcessing = [
+        // Populate the invoices from aggregate
+        Invoice.populate(invoices, [
+            { path: 'job', select: 'jobId scheduleDate ticket jobLocation jobSite tasks' },
+            { path: 'paymentTerm', select: 'name dueDays' },
+            { path: 'customer', select: 'info.email auth.email profile address contact vendorId contactName contactEmail' },
+            { path: 'customerContactId', select: 'name phone email' },
+            { path: 'jobLocation', select: 'name address location' },
+            { path: 'jobSite', select: 'name address location' },
+            { path: 'companyLocation', select: 'billingAddress name isMainLocation' },
+            { path: 'workType', select: 'title' },
+        ])
+    ];
+
+    await Promise.all(parallelProcessing)
+
+    return invoices
+}
+
+
+/**
+ * Convert invoice to row to be used one xcel
+ * @param invoice the invoice will be converted
+ * @returns {
+ *      invoiceID,
+ *      subDivision,
+ *      jobAddress,
+ *      customer,
+ *      customerPO,
+ *      total,
+ *      paymentStatus,
+ *      emailSendDate,
+ *      invoiceDate
+*   }
+*/
+const _converInvoiceToRowExcel = (invoice: any): any => {
+    const row = {
+        invoiceID: '',
+        subDivision: '',
+        jobAddress: '',
+        customer: '',
+        customerPO: '',
+        total: '',
+        paymentStatus: '',
+        emailSendDate: '',
+        invoiceDate: ''
+    };
+    if (!invoice) {
+        return row;
+    }
+
+    let subDivision = "";
+    if (invoice?.jobLocation) {
+        const jobLocation = invoice?.jobLocation;
+        subDivision = jobLocation?.name;
+    } else {
+        //To check if invoice data is not provided with a job location, we can use the job field
+        const jobLocation = invoice?.job?.jobLocation;
+        subDivision = jobLocation?.name;
+    }
+
+    let jobAddressName;
+    if (invoice?.jobSite) {
+        const jobSite = invoice?.jobSite;
+        jobAddressName = jobSite?.name;
+    } else {
+        //To check if invoice data is not provided with a job site, we can use the job field
+        const jobSite = invoice?.job?.jobSite;
+        const jobSiteAddress = jobSite?.address;
+        jobAddressName = jobSite?.name;
+    }
+
+
+    row.invoiceID = invoice?.invoiceId?.substring(8);
+    row.jobAddress = jobAddressName;
+    row.subDivision = subDivision;
+    row.customer = invoice?.customer?.profile?.displayName;
+    row.customerPO = invoice.customerPO || invoice.job?.customerPO || invoice.job?.ticket?.customerPO;
+    row.total = invoice.total;
+    row.paymentStatus = invoice.status;
+    row.emailSendDate = invoice.lastEmailSent;
+    row.invoiceDate = invoice.issuedDate || invoice.createdAt;
+
+    return row;
 }
