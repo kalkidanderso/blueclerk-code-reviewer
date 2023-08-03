@@ -4,7 +4,7 @@ import { Invoice } from '../models/Invoice';
 /**
  * To store bounced emails in db
  */
-export const store = async (req: Request, res: Response) => {
+export const storeforInvoices = async (req: Request, res: Response) => {
     try {
 
         const { email } = req.body

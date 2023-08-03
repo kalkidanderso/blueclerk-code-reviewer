@@ -36,12 +36,13 @@ export default function () {
         invoiceController.getInvoices
     )
 
-    // Bounced Emails
+    // Bounced Emails for invoices
     router.post(
-        '/store-bounced-emails',
+        '/store-invoices-bounced-emails',
         validate(Validations.bounceEmail),
         isLambdaRequest,
-        bouncedEmails.store
+        bouncedEmails.storeforInvoices
+    )
     )
 
     //mark-bounced-emails-as-read
