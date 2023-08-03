@@ -61,6 +61,15 @@ export default function () {
         bouncedEmails.markReadInvoiceNBounce
     )
 
+    //mark-bounced-emails-as-read-for-PO
+    router.post(
+        '/mark-as-read-po',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        isObjectIdValid,
+        bouncedEmails.markReadPOBounce
+    )
+
     router.post(
         '/getJobs',
         passport.authenticate('jwt', { session: false }),
