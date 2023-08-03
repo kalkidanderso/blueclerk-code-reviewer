@@ -2664,6 +2664,9 @@ export const updateJobTask = async (req: Request, res: Response) => {
         case JobStatus.PAUSED:
             statusAction = 'Paused';
             break;
+        case JobStatus.PARTIALLY_COMPLETED:
+            statusAction = 'Partially Completed';
+            break;
         case JobStatus.FINISHED:
             statusAction = 'Finished';
             break;
@@ -4133,6 +4136,16 @@ const _updateTask = async ({ job, taskJobType, user, params, status }: { job: IJ
         taskJobType.pausedCount = Number(status ?? params.status) === JobStatus.PAUSED ? taskJobType.pausedCount + 1 : taskJobType.pausedCount;
         taskJobType.timeUpdatedBy = user;
         taskJobType.timeUpdatedAt = new Date();
+
+        //Partial Completed Count
+        if (params.completedCount > 0  && params.status == JobStatus.PARTIALLY_COMPLETED) {
+            let completedCount = params.completedCount;
+            if (params.completedCount > taskJobType.quantity) {
+                completedCount = taskJobType.completedCount;
+            }
+            
+            taskJobType.completedCount = completedCount;
+        }
     }
 
     return;
