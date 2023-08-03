@@ -46,7 +46,7 @@ export default function () {
 
     // Bounced Emails for PO
     router.post(
-        '/store-po-request-bounced-emails ',
+        '/store-po-request-bounced-emails',
         validate(Validations.bounceEmail),
         isLambdaRequest,
         bouncedEmails.storeforPO
