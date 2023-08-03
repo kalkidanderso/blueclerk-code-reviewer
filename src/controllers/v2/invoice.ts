@@ -108,7 +108,7 @@ export const getInvoices = async (req: Request, res: Response) => {
     const parallelProcessing = [
         // Populate the invoices from aggregate
         Invoice.populate(invoices, [
-            { path: 'job', select: 'jobId scheduleDate ticket jobLocation jobSite tasks' },
+            { path: 'job', select: 'jobId scheduleDate ticket jobLocation jobSite tasks',  populate: [{ path: 'jobLocation', select: 'name address location'},{ path: 'jobSite', select: 'name address location'}] },
             { path: 'paymentTerm', select: 'name dueDays' },
             { path: 'customer', select: 'info.email auth.email profile address contact vendorId contactName contactEmail' },
             { path: 'customerContactId', select: 'name phone email' },
