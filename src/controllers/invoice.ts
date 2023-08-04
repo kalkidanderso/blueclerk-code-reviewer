@@ -53,6 +53,7 @@ import axios from 'axios';
 import { JobCommission } from '../models/JobCommission';
 import { IJobCosting } from '../models/JobCosting';
 import { logType } from 'src/models/invoiceLogs';
+import { userInfo } from 'os';
 
 const pdfmake = require('pdfmake');
 
@@ -352,7 +353,7 @@ export const getInvoiceNumber = (req: Request, res: Response) => {
 export const createInvoice = (req: Request, res: Response) => {
 
     const params = req.body
-
+    const user = <IUser>req.user
     const company = <ICompany>req.company
 
     if (params.jobId) {
@@ -524,7 +525,7 @@ export const createInvoice = (req: Request, res: Response) => {
             .then((invoice: IInvoice) => {
                 // @ts-ignore
                 InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'CREATED', customer: invoice.customer,companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
-                , createdBy: invoice.createdBy });
+                , createdBy: user._id });
                 if (company.qbAuthorized && !invoice.isDraft) {
                     /**
                      * Check Customer & Job Locations data on QBooks,
@@ -1498,7 +1499,7 @@ export const createPOInvoice = (req: Request, res: Response) => {
                     }
                     // @ts-ignore
                     InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'CREATED', customer: invoice.customer,companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
-                    , createdBy: invoice.createdBy });
+                    , createdBy: user._id });
 
                     company.updateOne({ currentInvoiceId: currentInvoiceId + 1 })
                         .exec((companyError: any) => {
@@ -1520,6 +1521,7 @@ export const updateInvoice = (req: Request, res: Response) => {
 
     const params = req.body
     const company = <ICompany>req.company;
+    const user = <IUser>req.user
 
     Invoice.findOne({ '_id': params.invoiceId, 'company': req.companyId },
         async (err: any, invoice: IInvoice) => {
@@ -1845,7 +1847,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                                 await invoice.save();
                                 // @ts-ignore
                                 InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'UPDATED', customer: invoice.customer,companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
-                                , createdBy: invoice.createdBy });
+                                , createdBy: user._id });
 
                                 // To handle the switch of Invoice isDraft
                                 _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
@@ -2440,6 +2442,9 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
       
     invoice.lastEmailSent = sendingDate;
     await invoice.save();
+    // @ts-ignore
+    InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'EMAIL_SENT', customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id});
+
 
     return res.json({ status: Status.Success, message: 'Invoice has been sent successfully.' });
 
@@ -2560,7 +2565,7 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
 
             const companyLocation = <ICompanyLocation>invoice.companyLocation;
             invoiceSender = companyLocation?.billingAddress?.emailSender;
-
+             
             await invoice.save();
         }
     } catch (error) {
@@ -2620,6 +2625,8 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
         invoice_total_amount: totalInvoiceAmount,
         invoice_pdfs: invoicePdfs,
     });
+    // @ts-ignore
+    InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'EMAIL_SENT', customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id});
 
     return res.json({ status: Status.Success, message: 'Invoice has been sent successfully.' });
 
@@ -4572,6 +4579,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
     const params = req.body;
     let invoice = await Invoice.findById(params.invoiceId);
     const company = <ICompany>req.company;
+    const user = <IUser>req.user
 
     if (!invoice) {
 
@@ -4604,7 +4612,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
     invoice = await new Invoice(invoice).save();
     if(invoice){
         // @ts-ignore
-        InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'DUPLICATE', oldInvoiceId:params.invoiceId,customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: invoice.createdBy});
+        InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'DUPLICATE', oldInvoiceId:params.invoiceId,customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id});
 
     }
     
@@ -4917,6 +4925,7 @@ export const voidInvoice = async (req: Request, res: Response) => {
     const params = req.body;
     const invoice = await Invoice.findById(params.invoiceId);
     const company = <ICompany>req.company;
+    const user = <IUser>req.user
 
     if (!invoice) {
         return res.json({ status: Status.Error, message: 'Invoice not found.' });
@@ -4963,7 +4972,7 @@ export const voidInvoice = async (req: Request, res: Response) => {
         await _voidQBInvoice(req, res, company, invoice);
     }
     // @ts-ignore
-    InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'VOID', customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: invoice.createdBy});
+    InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'VOID', customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id});
     return res.json({status: Status.Success, message: 'Invoice voided successfully', invoice});
 
 }

@@ -1,10 +1,11 @@
 import mongoose, { Document, Schema } from 'mongoose'
 
 export const enum logType {
-    CREATED = 'CREATED ',
-    UPDATED = 'UPDATED ',
-    VOID = 'VOID ',
-    DUPLICATE = 'DUPLICATE '
+    CREATED = 'CREATED',
+    UPDATED = 'UPDATED',
+    VOID = 'VOID',
+    DUPLICATE = 'DUPLICATE',
+    EMAIL_SENT = 'EMAIL_SENT'
 }
 export interface IInvoiceLogs extends Document {
 
