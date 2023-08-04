@@ -551,7 +551,7 @@ export const updateDiscountItem = async (req: Request, res: Response, next: Next
     const company = <ICompany>req.company;
 
     let customer, custDiscountPrice;
-    const item = await DiscountItem.findOne({ _id: params.discountItemId, isActive: true, company: company._id });
+    const item = await DiscountItem.findOne({ _id: params.discountItemId, company: company._id });
 
     if (!item) {
         return res.json({ status: Status.Error, message: 'Discount Item not found' });
@@ -584,6 +584,7 @@ export const updateDiscountItem = async (req: Request, res: Response, next: Next
     item.charges = params.charges ?? 0;
     item.customer = customer?._id;
     item.noOfItems = params.noOfItems;
+    item.isActive = params.isActive ?? true; 
 
     await item.save();
 

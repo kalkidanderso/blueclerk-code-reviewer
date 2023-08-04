@@ -2176,8 +2176,8 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     for (const task of job?.tasks) {
                         task.status = JobStatus.FINISHED;
                         let contractorCommissionEntry = {
-                            contractor: task.contractor._id,
-                            technician: task.contractor.admin,
+                            contractor: task.contractor?._id,
+                            technician: task.contractor?.admin,
                             commission: 0,
                             commissionAmount: 0
                         }
@@ -2198,7 +2198,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                                     }
                                 }
                                 await Company.findByIdAndUpdate(
-                                    contractor._id,
+                                    contractor?._id,
                                     { $inc: { balance } },
                                     { new: true }
                                 ).exec()
