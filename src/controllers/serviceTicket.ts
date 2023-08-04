@@ -1051,6 +1051,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     if (params.jobTypeId) {
                         jobTypeId = params.jobTypeId
                     }
+                    let type = params.type;
 
                     // Update isHomeOccupied and or homeOwner
                     let isHomeOccupied = params.isHomeOccupied
@@ -1121,6 +1122,11 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                             date: new Date()
                         });
                     }
+
+                    if (type === 'Ticket' && serviceTicket.ticketId.includes('PO Request')) {
+                        serviceTicket.ticketId = serviceTicket.ticketId?.replace("PO Request","Ticket");
+                    } 
+
                     serviceTicket.updateOne(
                         {
                             note: params.note,
@@ -1137,6 +1143,8 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                             track: track,
                             isHomeOccupied: isHomeOccupied,
                             homeOwner: homeOwnerId,
+                            ticketId: serviceTicket.ticketId,
+                            type
                         },
                         async (err: any)=> {
 
