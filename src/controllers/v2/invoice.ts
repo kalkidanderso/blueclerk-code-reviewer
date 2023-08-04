@@ -155,7 +155,7 @@ export const exportInvoicesToExcel = async (req: Request, res: Response) => {
     const rows = invoices.map((invoice: any) => _converInvoiceToRowExcel(invoice));
     const XLSX = require("xlsx");
     const worksheet = XLSX.utils.json_to_sheet(rows);
-    const headers = ["Invoice ID", "Subdivision", "Job Address", "Customer", "Customer PO", "Total", "Payment Status", "Email Send Date", "Invoice Date"]
+    const headers = ["Invoice ID", "Subdivision", "Job Address", "Customer", "Customer PO", "Total", "Payment Status", "Email Send Date", "Invoice Date", "Contact Name", "Contact Email"]
     XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: "A1" });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Dates");
@@ -866,7 +866,7 @@ const _getDataInvoices = async (req: Request, res: Response) => {
     const parallelProcessing = [
         // Populate the invoices from aggregate
         Invoice.populate(invoices, [
-            { path: 'job', select: 'jobId scheduleDate ticket jobLocation jobSite tasks' },
+            { path: 'job', select: 'jobId scheduleDate ticket jobLocation jobSite tasks customerContactId', populate: [{ path: 'jobLocation', select: 'name address location'},{ path: 'jobSite', select: 'name address location'}, { path: 'customerContactId', select: 'name email'}]},
             { path: 'paymentTerm', select: 'name dueDays' },
             { path: 'customer', select: 'info.email auth.email profile address contact vendorId contactName contactEmail' },
             { path: 'customerContactId', select: 'name phone email' },
@@ -908,7 +908,9 @@ const _converInvoiceToRowExcel = (invoice: any): any => {
         total: '',
         paymentStatus: '',
         emailSendDate: '',
-        invoiceDate: ''
+        invoiceDate: '',
+        contactName: '',
+        contactEmail: '',
     };
     if (!invoice) {
         return row;
@@ -945,6 +947,8 @@ const _converInvoiceToRowExcel = (invoice: any): any => {
     row.paymentStatus = invoice.status;
     row.emailSendDate = invoice.lastEmailSent;
     row.invoiceDate = invoice.issuedDate || invoice.createdAt;
+    row.contactName = invoice.job?.customerContactId?.name;
+    row.contactEmail = invoice.job?.customerContactId?.email;
 
     return row;
 }
