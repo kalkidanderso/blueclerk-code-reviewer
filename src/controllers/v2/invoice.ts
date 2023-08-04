@@ -169,6 +169,9 @@ export const exportInvoicesToExcel = async (req: Request, res: Response) => {
         UNPAID: {
             font: { color: { rgb: "FF0000" }}
         },
+        PARTIALLY_PAID: {
+            font: { color: { rgb: "FA8029" }}
+        },
     };
 
     // Set the style for each cell in column A (Status) based on its value
