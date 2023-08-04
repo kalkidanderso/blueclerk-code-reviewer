@@ -933,7 +933,6 @@ const _converInvoiceToRowExcel = (invoice: any): any => {
     } else {
         //To check if invoice data is not provided with a job site, we can use the job field
         const jobSite = invoice?.job?.jobSite;
-        const jobSiteAddress = jobSite?.address;
         jobAddressName = jobSite?.name;
     }
 
