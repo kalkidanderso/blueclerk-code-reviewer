@@ -15,6 +15,7 @@ import { Customer } from '../../models/Customer';
 import { splitArray } from './common';
 import { User } from '../../models/User';
 import { param } from 'express-validator';
+import XLSX from "xlsx-js-style";
 
 /**
  * Receives the request to get invoices
@@ -109,7 +110,7 @@ export const getInvoices = async (req: Request, res: Response) => {
     const parallelProcessing = [
         // Populate the invoices from aggregate
         Invoice.populate(invoices, [
-            { path: 'job', select: 'jobId scheduleDate ticket jobLocation jobSite tasks',  populate: [{ path: 'jobLocation', select: 'name address location'},{ path: 'jobSite', select: 'name address location'}] },
+            { path: 'job', select: 'jobId scheduleDate ticket jobLocation jobSite tasks', populate: [{ path: 'jobLocation', select: 'name address location' }, { path: 'jobSite', select: 'name address location' }] },
             { path: 'paymentTerm', select: 'name dueDays' },
             { path: 'customer', select: 'info.email auth.email profile address contact vendorId contactName contactEmail' },
             { path: 'customerContactId', select: 'name phone email' },
@@ -153,12 +154,36 @@ export const getInvoices = async (req: Request, res: Response) => {
 export const exportInvoicesToExcel = async (req: Request, res: Response) => {
     const invoices = await _getDataInvoices(req, res) as any[];
     const rows = invoices.map((invoice: any) => _converInvoiceToRowExcel(invoice));
-    const XLSX = require("xlsx");
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    const headers = ["Invoice ID", "Subdivision", "Job Address", "Customer", "Customer PO", "Total", "Payment Status", "Email Send Date", "Invoice Date", "Contact Name", "Contact Email"]
-    XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: "A1" });
+
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Dates");
+    const worksheet = XLSX.utils.json_to_sheet(rows, { cellStyles: true });
+    const headers = ["Payment Status", "Invoice ID", "Invoice Date", "Customer", "Subdivision", "Job Address", "PO", "Total", "Email Send Date", "Contact Name", "Contact Email"]
+    const columnWidths = [{ wch: 14.17 }, { wch: 11.58 }, { wch: 12.17 }, { wch: 14.17 }, { wch: 14.38 }, { wch: 14.38 }, { wch: 8.38 }, { wch: 14.17 }, { wch: 12.17 }, { wch: 14.17 }, { wch: 14.17 }];
+    worksheet['!cols'] = columnWidths;
+    XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: "A1" });
+
+    const cellStyles: any = {
+        PAID: {
+            font: { color: { rgb: "00B04E" }}
+        },
+        UNPAID: {
+            font: { color: { rgb: "FF0000" }}
+        },
+    };
+
+    // Set the style for each cell in column A (Status) based on its value
+    for (let rowIndex = 0; rowIndex <= rows.length; rowIndex++) {
+        const cellRefStatus = XLSX.utils.encode_cell({ c: 0, r: rowIndex });
+        let cellStatus = worksheet[cellRefStatus];
+        if (cellStatus && cellStatus.v in cellStyles) {
+            const cellStyle = cellStyles[cellStatus.v];
+            if (cellStyles) {
+                cellStatus["s"] = cellStyle;
+            }
+        }
+    }
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
     const buf = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
 
 
@@ -843,7 +868,7 @@ const _getDataInvoices = async (req: Request, res: Response) => {
     // Sort query that default to sort by the recent ones
     let sortQuery = { createdAt: -1, _id: -1 };
 
-    let invoicesQuery:any = [
+    let invoicesQuery: any = [
         {
             $match: { ...query }
         },
@@ -866,7 +891,7 @@ const _getDataInvoices = async (req: Request, res: Response) => {
     const parallelProcessing = [
         // Populate the invoices from aggregate
         Invoice.populate(invoices, [
-            { path: 'job', select: 'jobId scheduleDate ticket jobLocation jobSite tasks customerContactId', populate: [{ path: 'jobLocation', select: 'name address location'},{ path: 'jobSite', select: 'name address location'}, { path: 'customerContactId', select: 'name email'}]},
+            { path: 'job', select: 'jobId scheduleDate ticket jobLocation jobSite tasks customerContactId', populate: [{ path: 'jobLocation', select: 'name address location' }, { path: 'jobSite', select: 'name address location' }, { path: 'customerContactId', select: 'name email' }] },
             { path: 'paymentTerm', select: 'name dueDays' },
             { path: 'customer', select: 'info.email auth.email profile address contact vendorId contactName contactEmail' },
             { path: 'customerContactId', select: 'name phone email' },
@@ -884,31 +909,33 @@ const _getDataInvoices = async (req: Request, res: Response) => {
 
 
 /**
- * Convert invoice to row to be used one xcel
+ * Convert invoice to row to be used on excel
  * @param invoice the invoice will be converted
  * @returns {
- *      invoiceID,
- *      subDivision,
- *      jobAddress,
- *      customer,
- *      customerPO,
- *      total,
- *      paymentStatus,
- *      emailSendDate,
+ *      paymentStatus
+ *      invoiceID
  *      invoiceDate
+ *      customer
+ *      subDivision
+ *      jobAddress
+ *      customerPO
+ *      total
+ *      emailSendDate
+ *      contactName
+ *      contactEmail
 *   }
 */
 const _converInvoiceToRowExcel = (invoice: any): any => {
     const row = {
+        paymentStatus: '',
         invoiceID: '',
+        invoiceDate: '',
+        customer: '',
         subDivision: '',
         jobAddress: '',
-        customer: '',
         customerPO: '',
         total: '',
-        paymentStatus: '',
         emailSendDate: '',
-        invoiceDate: '',
         contactName: '',
         contactEmail: '',
     };
@@ -945,15 +972,15 @@ const _converInvoiceToRowExcel = (invoice: any): any => {
     }
 
 
+    row.paymentStatus = invoice.status;
     row.invoiceID = invoice?.invoiceId?.substring(8);
-    row.jobAddress = jobAddressName;
-    row.subDivision = subDivision;
+    row.invoiceDate = invoice.issuedDate || invoice.createdAt;
     row.customer = invoice?.customer?.profile?.displayName;
+    row.subDivision = subDivision;
+    row.jobAddress = jobAddressName;
     row.customerPO = invoice.customerPO || invoice.job?.customerPO || invoice.job?.ticket?.customerPO;
     row.total = invoice.total;
-    row.paymentStatus = invoice.status;
     row.emailSendDate = invoice.lastEmailSent;
-    row.invoiceDate = invoice.issuedDate || invoice.createdAt;
     row.contactName = customerContact?.name;
     row.contactEmail = customerContact?.email;
 
