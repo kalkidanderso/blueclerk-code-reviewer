@@ -36,6 +36,16 @@ export default function () {
         invoiceController.getInvoices
     )
 
+    router.post(
+        '/exportInvoices',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.getInvoices),
+        invoiceController.exportInvoicesToExcel
+    )
+
     // Bounced Emails
     router.post(
         '/store-bounced-emails',
