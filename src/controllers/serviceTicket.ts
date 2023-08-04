@@ -1097,7 +1097,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     // If job types changed, check if there any running jobs
                     if (isJobTypesUpdated) {
                         const jobs = await Job.find({ ticket: serviceTicket._id });
-                        if (jobs.find(job => job.status !== JobStatus.PENDING && job.status !== JobStatus.RESCHEDULED)) {
+                        if (jobs.find(job => job.status !== JobStatus.PENDING && job.status !== JobStatus.RESCHEDULED && job.status !== JobStatus.CANCELED)) {
                             return res.json({ status: Status.Error, message: 'Cannot update ticket when tied to a job in progress' });
                         }
                     }
