@@ -309,7 +309,7 @@ export const sendPORequest = async (req: Request, res: Response) => {
 
     const ticket = await ServiceTicket 
         .findOne({company, _id: params.ticketId})
-        .populate('customer')
+        .populate({ path: 'customer', populate: { path: 'discountPrices.discountItem'}})
         .populate('customerContactId')
         .populate('companyLocation')
         .populate('jobLocation')
@@ -800,15 +800,21 @@ const _generatePORequestPdf = async (company: ICompany, ticket: IServiceTicket) 
             let discountPrices = customer.discountPrices?.sort((a, b) => {
                 return a.quantity - b.quantity
             });
-            discountPrices = discountPrices.filter(disc => disc.discountItem);
-    
+            discountPrices = discountPrices.filter(disc => disc.discountItem && ((disc.discountItem as IItem)?.isActive ?? true));
+            
+            //Count All Item Quantity
+            let allQty = 0;
+            ticket.tasks.forEach(task =>{
+                allQty += task.quantity || 1;
+            })
+
             // Get the max quantity that should be discounted
             const maxDiscountQty = discountPrices[discountPrices.length - 1]?.quantity;
-            const totalItemDiscounted = ticket.tasks.length > maxDiscountQty ? maxDiscountQty : ticket.tasks.length;
-    
+            const totalItemDiscounted = allQty > maxDiscountQty ? maxDiscountQty : ticket.tasks.length;
+            
             // Find the discount item based on how many item that gonna be discounted
-            const customerDiscount = customer.discountPrices?.find(disc => disc.quantity === totalItemDiscounted);
-            const discountItem = await Item.findById(customerDiscount?.discountItem);
+            const customerDiscount = customer.discountPrices?.find(disc => disc.quantity === totalItemDiscounted && ((disc.discountItem as IItem)?.isActive ?? true));
+            const discountItem = await Item.findById((customerDiscount?.discountItem as IItem)?._id);
     
             if (discountItem) {
                 const discountAmount = discountItem.charges ?? 0;

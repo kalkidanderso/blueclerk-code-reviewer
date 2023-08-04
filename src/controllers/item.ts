@@ -551,39 +551,43 @@ export const updateDiscountItem = async (req: Request, res: Response, next: Next
     const company = <ICompany>req.company;
 
     let customer, custDiscountPrice;
-    const item = await DiscountItem.findOne({ _id: params.discountItemId, isActive: true, company: company._id });
+    let item = await DiscountItem.findOne({ _id: params.discountItemId, company: company._id });
 
-    if (!item) {
-        return res.json({ status: Status.Error, message: 'Discount Item not found' });
-    }
-
-    // Discount Item assigned to another specific customer
-    if (item.customer?.toString() !== params.customerId?.toString() || item.noOfItems !== params.noOfItems) {
-        if (item.customer) {
-            const oldCustomer = await Customer.findById(item.customer);
-            const oldCustDiscPrice = oldCustomer.discountPrices.find(dp => dp.quantity === item.noOfItems);
-            oldCustDiscPrice.discountItem = null;
-            await oldCustomer.save();
+    if (item) {
+        // Discount Item assigned to another specific customer
+        if (item.customer?.toString() !== params.customerId?.toString() || item.noOfItems !== params.noOfItems) {
+            if (item.customer) {
+                const oldCustomer = await Customer.findById(item.customer);
+                const oldCustDiscPrice = oldCustomer.discountPrices.find(dp => dp.quantity === item.noOfItems);
+                oldCustDiscPrice.discountItem = null;
+                await oldCustomer.save();
+            }
+    
+            try {
+                // Check if customer already have discount item for that quantity of items
+                ({ customer, custDiscountPrice } = await _checkCustomerDiscountItem(params, company, customer, custDiscountPrice));
+            } catch (err) {
+                Sentry.captureException(err);
+                return res.json({ status: Status.Error, message: err.message || Messages.GenericError });
+            }
+        } else {
+            customer = await Customer.findOne({ _id: params.customerId }).populate({ path: 'discountPrices.discountItem' });
+            custDiscountPrice = customer?.discountPrices?.find((discountPrice) => discountPrice.quantity === Number(params.noOfItems));
         }
-
-        try {
-            // Check if customer already have discount item for that quantity of items
-            ({ customer, custDiscountPrice } = await _checkCustomerDiscountItem(params, company, customer, custDiscountPrice));
-        } catch (err) {
-            Sentry.captureException(err);
-            return res.json({ status: Status.Error, message: err.message || Messages.GenericError });
-        }
+        item.customer = customer?._id;
+        item.noOfItems = params.noOfItems;
     } else {
-        customer = await Customer.findOne({ _id: params.customerId }).populate({ path: 'discountPrices.discountItem' });
-        custDiscountPrice = customer?.discountPrices?.find((discountPrice) => discountPrice.quantity === Number(params.noOfItems));
+        item = await Item.findOne({ _id: params.discountItemId, company: company._id });
+        if (!item) {
+            return res.json({ status: Status.Error, message: 'Discount Item not found' });
+        }
     }
 
     item.name = params.title || item.name;
     item.description = params.description;
     item.tax = params.tax ?? 0;
     item.charges = params.charges ?? 0;
-    item.customer = customer?._id;
-    item.noOfItems = params.noOfItems;
+    item.isActive = params.isActive ?? true; 
 
     await item.save();
 
