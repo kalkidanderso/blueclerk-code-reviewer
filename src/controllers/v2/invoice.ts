@@ -937,6 +937,14 @@ const _converInvoiceToRowExcel = (invoice: any): any => {
         jobAddressName = jobSite?.name;
     }
 
+    let customerContact;
+    if (invoice?.customerContactId) {
+        customerContact = invoice?.customerContactId;
+    } else {
+        //To check if invoice data is not provided with a customer contact, we can use the job field
+        customerContact = invoice?.job?.customerContactId;
+    }
+
 
     row.invoiceID = invoice?.invoiceId?.substring(8);
     row.jobAddress = jobAddressName;
@@ -947,8 +955,8 @@ const _converInvoiceToRowExcel = (invoice: any): any => {
     row.paymentStatus = invoice.status;
     row.emailSendDate = invoice.lastEmailSent;
     row.invoiceDate = invoice.issuedDate || invoice.createdAt;
-    row.contactName = invoice.job?.customerContactId?.name;
-    row.contactEmail = invoice.job?.customerContactId?.email;
+    row.contactName = customerContact?.name;
+    row.contactEmail = customerContact?.email;
 
     return row;
 }
