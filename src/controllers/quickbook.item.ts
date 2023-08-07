@@ -157,13 +157,18 @@ export const syncQBItem = async (req: Request, res: Response) => {
       // Item not exist on QB, create it
       if (!qbItems) {
         
-        console.log("create qb item");
+        // console.log("create qb item");
 
         await _createQBItem(req, res, company, blueClerkItem, (error, errMsg, qbItem) => {
         
+          if(errMsg){
+            
           console.log(errMsg);
-          console.log(error);
-        
+            Sentry.captureException('Syncing failed creating', errMsg);
+            return res.json({ status: Status.Error, message: 'Item synced failed.'+ errMsg });
+
+
+          }
         
           if (qbItem) {
             // QB Item created, update DB Item & JobType's quickbookId
@@ -174,14 +179,18 @@ export const syncQBItem = async (req: Request, res: Response) => {
         })
       } else {
 
-        console.log("update qb item");
 
         // QB Item exist, update DB Item in quickbook
         await _updateQBItem(req, res, company, blueClerkItem, async (error, errMsg) => {
         
-          console.log(errMsg);
-          console.log(error);
-       
+          if(errMsg){
+            console.log(errMsg);
+
+            Sentry.captureException('Syncing failed updating', errMsg);
+            return res.json({ status: Status.Error, message: 'Item synced failed.'+ errMsg });
+
+
+          }
           if (!error && !errMsg) {
             
             return res.json({ status: Status.Success, message: 'Item synced successfully.', createdItems, updatedItems });
