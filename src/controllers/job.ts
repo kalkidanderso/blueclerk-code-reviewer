@@ -2727,6 +2727,35 @@ export const updateJobTask = async (req: Request, res: Response) => {
         }     
     }
 
+    if (techAllJobTypesStatus.every(status => status === JobStatus.PARTIALLY_COMPLETED)) {
+        // All new job type task are FINISHED, Job is FINISHED
+        taskStatus = JobStatus.PARTIALLY_COMPLETED;
+        action += `|Partially Completed the technician task|`;
+    }
+
+    if (allTaskJobTypeStatus.every(status => status === JobStatus.PARTIALLY_COMPLETED)) {
+        // All new technician status are FINISHED, Job is FINISHED
+        job.endTime = new Date();
+        job.timeSpent = moment().diff(moment(job.startTime), 'minutes');
+        job.completeOnTime = !job.scheduledEndTime ? true : job.scheduledEndTime >= job.endTime;
+        jobStatus = JobStatus.PARTIALLY_COMPLETED;
+        action += `|Partially Completed the job|`;
+        // Send SMS if job is finished
+        try {
+            if(job.customerContactId?.phone) {
+                const standarizedPhone = standarizePhoneNumberE164(job.customerContactId.phone);
+                const today = new Date()
+                const todayDate = `${today.getMonth() + 1}/${today.getDate()}`;
+                const message = `BlueClerk: Dear ${job.customerContactId.name}, ${job.company?.info?.companyName || 'N/A'} has completed ${job.jobId} at ${job.jobSite?.name || job.jobLocation?.name || 'N/A'} on ${todayDate}.\n\nText STOP to opt-out.`
+                // If job is finished a SMS is sent
+                await sendSMS(standarizedPhone, message);
+            }
+        }
+        catch(err) {
+            Sentry.captureException(err);
+        }     
+    }
+
     // Log a track history
     const history = {
         user: user._id,
@@ -2734,7 +2763,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
         date: new Date()
     };
 
-    if (jobStatus == JobStatus.FINISHED) {
+    if (jobStatus == JobStatus.FINISHED || jobStatus == JobStatus.PARTIALLY_COMPLETED) {
         //Commission Calculation
         let invoiceCommissionEntry: any[] = [];
 
@@ -2756,9 +2785,12 @@ export const updateJobTask = async (req: Request, res: Response) => {
                     if (commissionTierId) {
                         const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
                         if (commissionTier?.charge){
-                            balance += commissionTier.charge * (j.quantity || 1);
-                            contractorCommissionEntry.commission += commissionTier.charge * (j.quantity || 1);
-                            contractorCommissionEntry.commissionAmount += commissionTier.charge * (j.quantity || 1);
+                            let quantity = j.quantity;
+                            if(j.status == JobStatus.PARTIALLY_COMPLETED) quantity = j.completedCount;
+
+                            balance += commissionTier.charge * (quantity || 1);
+                            contractorCommissionEntry.commission += commissionTier.charge * (quantity || 1);
+                            contractorCommissionEntry.commissionAmount += commissionTier.charge * (quantity || 1);
                         }
                     }
                     await Company.findByIdAndUpdate(
@@ -4148,7 +4180,7 @@ const _updateTask = async ({ job, taskJobType, user, params, status }: { job: IJ
             if (params.completedCount > taskJobType.quantity) {
                 completedCount = taskJobType.completedCount;
             }
-            
+            taskJobType.completedComment = params.completedComment;
             taskJobType.completedCount = completedCount;
         }
     }
