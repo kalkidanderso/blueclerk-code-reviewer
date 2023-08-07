@@ -1197,7 +1197,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                                 job.save();
                             }
 
-                            return res.json({'status': Status.Success, 'message': 'Ticket updated successfully.', invalidJobTypes})
+                            return res.json({'status': Status.Success, 'message': `${serviceTicket.type} updated successfully.`, invalidJobTypes})
                         }
                     )
                 }
