@@ -354,14 +354,16 @@ export const syncQBItems = async (req: Request, res: Response) => {
 
         // Iterate all created Job Types
         const newJobTypes = jobTypesCreated.map(jobType => {
+          console.log('jobType', jobType)
+
           const newItem = new Item({
-            name: jobType.title,
-            description: jobType.description,
-            sku: jobType.sku,
+            name: jobType?.title,
+            description: jobType?.description,
+            sku: jobType?.sku,
             tiers: [...company.itemTier?.list],
             company: company._id,
-            jobType: jobType._id,
-            quickbookId: jobType.quickbookId,
+            jobType: jobType?._id,
+            quickbookId: jobType?.quickbookId,
           })
 
           itemsToCreate = [
@@ -471,6 +473,7 @@ export const _transferQBItems = async (req: Request, res: Response, company: ICo
 
 export const _updateQBItem = async (req: Request, res: Response, company: ICompany, item: IItem, next: (error: number, errorMessage: string) => void) => {
   _refreshToken(req, res, company, async (err, errMsg, company) => {
+    console.log('item', item)
     if (err === 0) {
       return res.json({ status: Status.Error, message: errMsg });
     }
@@ -487,6 +490,8 @@ export const _updateQBItem = async (req: Request, res: Response, company: ICompa
     const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
     qbo.getItem(item.quickbookId, async (err: any, qbItem: IQBItem) => {
+
+      console.log('qbItem', qbItem)
       if(qbItem){
 
       qbItem.Description = item.description;
