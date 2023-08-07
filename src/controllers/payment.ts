@@ -17,6 +17,7 @@ import { AdvancePayment, AdvancePaymentEmployee, AdvancePaymentVendor } from '..
 import * as Sentry from '@sentry/node';
 import { IJob, Job } from '../models/Job';
 import { IJobCommission, JobCommission } from '../models/JobCommission';
+import * as InvoiceLogController from "../controllers/invoiceLogs";
 
 
 /**
@@ -679,6 +680,8 @@ export const createPayment = async (req: Request, res: Response) => {
         // Save the new payment
         payment.amountPaid = roundTwoDecimal(payment.amountPaid);
         await payment.save();
+        // @ts-ignore
+        InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'PAID', customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id});
 
         if (company.qbAuthorized) {
             /**
@@ -721,6 +724,7 @@ export const createPayment = async (req: Request, res: Response) => {
             });
 
         } else {
+
             return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
         }
 
@@ -1121,7 +1125,7 @@ export const updatePayment = async (req: Request, res: Response) => {
 
         // Save the updated payment
         await payment.save();
-
+      
         if (company.qbAuthorized && payment.quickbookId) {
             // Sync the update to Payment in QuickBooks
             _updateQBPayment(req, res, company, payment, async (err, errMsg, qbPayment) => {
@@ -1605,7 +1609,8 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
         }
 
     }
-
+    
+  
     return res.json({ status: Status.Success, message: 'Payment void successfully', payment });
 
 }

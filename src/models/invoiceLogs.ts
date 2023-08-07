@@ -5,6 +5,9 @@ export const enum logType {
     UPDATED = 'UPDATED',
     VOID = 'VOID',
     DUPLICATE = 'DUPLICATE',
+    PAYMENT_RECORDED = 'PAYMENT_RECORDED',
+    PAYMENT_UPDATED = 'PAYMENT_UPDATED',
+    PAYMENT_VOID = 'PAYMENT_VOID',
     EMAIL_SENT = 'EMAIL_SENT'
 }
 export interface IInvoiceLogs extends Document {
