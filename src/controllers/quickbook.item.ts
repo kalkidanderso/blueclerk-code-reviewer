@@ -487,6 +487,7 @@ export const _updateQBItem = async (req: Request, res: Response, company: ICompa
     const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
     qbo.getItem(item.quickbookId, async (err: any, qbItem: IQBItem) => {
+      if(qbItem){
 
       qbItem.Description = item.description;
       qbItem.FullyQualifiedName = item.name;
@@ -508,6 +509,14 @@ export const _updateQBItem = async (req: Request, res: Response, company: ICompa
 
           return next(null, null);
         })
+      }
+      else{
+        Sentry.captureException("QB Item not found");
+
+        return res.json({ status: Status.Error, message: "QB Item not found" });
+
+
+      }
     });
   });
 }
