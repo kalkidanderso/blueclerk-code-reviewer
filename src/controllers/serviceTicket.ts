@@ -1051,6 +1051,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     if (params.jobTypeId) {
                         jobTypeId = params.jobTypeId
                     }
+                    let type = params.type;
 
                     // Update isHomeOccupied and or homeOwner
                     let isHomeOccupied = params.isHomeOccupied
@@ -1097,7 +1098,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     // If job types changed, check if there any running jobs
                     if (isJobTypesUpdated) {
                         const jobs = await Job.find({ ticket: serviceTicket._id });
-                        if (jobs.find(job => job.status !== JobStatus.PENDING && job.status !== JobStatus.RESCHEDULED)) {
+                        if (jobs.find(job => job.status !== JobStatus.PENDING && job.status !== JobStatus.RESCHEDULED && job.status !== JobStatus.CANCELED)) {
                             return res.json({ status: Status.Error, message: 'Cannot update ticket when tied to a job in progress' });
                         }
                     }
@@ -1121,6 +1122,11 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                             date: new Date()
                         });
                     }
+
+                    if (type === 'Ticket' && serviceTicket.ticketId.includes('PO Request')) {
+                        serviceTicket.ticketId = serviceTicket.ticketId?.replace("PO Request","Ticket");
+                    } 
+
                     serviceTicket.updateOne(
                         {
                             note: params.note,
@@ -1137,6 +1143,8 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                             track: track,
                             isHomeOccupied: isHomeOccupied,
                             homeOwner: homeOwnerId,
+                            ticketId: serviceTicket.ticketId,
+                            type
                         },
                         async (err: any)=> {
 
@@ -1189,7 +1197,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                                 job.save();
                             }
 
-                            return res.json({'status': Status.Success, 'message': 'Ticket updated successfully.', invalidJobTypes})
+                            return res.json({'status': Status.Success, 'message': `${serviceTicket.type} updated successfully.`, invalidJobTypes})
                         }
                     )
                 }

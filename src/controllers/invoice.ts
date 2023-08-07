@@ -1196,7 +1196,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
 
     let invoiceItems: any[] = []
     // Find Customer object to see the itemTier, customPrice, & payment term info
-    const customerObj = await Customer.findById(customer).populate({path: 'paymentTerm'});
+    const customerObj = await Customer.findById(customer).populate({path: 'paymentTerm'}).populate({path: 'discountPrices.discountItem'});
     if (!customerObj) {
         return res.json({status: Status.Error, message: 'Customer not found'});
     }
@@ -1335,15 +1335,21 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         let discountPrices = customerObj.discountPrices?.sort((a, b) => {
             return a.quantity - b.quantity
         });
-        discountPrices = discountPrices.filter(disc => disc.discountItem);
+        discountPrices = discountPrices.filter(disc => disc.discountItem && ((disc.discountItem as IItem)?.isActive ?? true));
+
+        //Count All Item Quantity
+        let allQty = 0;
+        for (const jobTypeitem of jobTypeitems) {
+            allQty += ((jobTypeitem as any).quantity || 1);
+        }
 
         // Get the max quantity that should be discounted
         const maxDiscountQty = discountPrices[discountPrices.length - 1]?.quantity;
-        const totalItemDiscounted = jobTypeitems.length > maxDiscountQty ? maxDiscountQty : jobTypeitems.length;
+        const totalItemDiscounted = allQty > maxDiscountQty ? maxDiscountQty : jobTypeitems.length;
 
         // Find the discount item based on how many item that gonna be discounted
-        const customerDiscount = customerObj.discountPrices?.find(disc => disc.quantity === totalItemDiscounted);
-        const discountItem = await Item.findById(customerDiscount?.discountItem);
+        const customerDiscount = customerObj.discountPrices?.find(disc => disc.quantity === totalItemDiscounted && ((disc.discountItem as IItem)?.isActive ?? true));
+        const discountItem = await Item.findById((customerDiscount?.discountItem as IItem)?._id);
 
         if (discountItem) {
             const discountAmount = discountItem.charges ?? 0;
