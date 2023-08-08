@@ -2739,21 +2739,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
         job.timeSpent = moment().diff(moment(job.startTime), 'minutes');
         job.completeOnTime = !job.scheduledEndTime ? true : job.scheduledEndTime >= job.endTime;
         jobStatus = JobStatus.PARTIALLY_COMPLETED;
-        action += `|Partially Completed the job|`;
-        // Send SMS if job is finished
-        try {
-            if(job.customerContactId?.phone) {
-                const standarizedPhone = standarizePhoneNumberE164(job.customerContactId.phone);
-                const today = new Date()
-                const todayDate = `${today.getMonth() + 1}/${today.getDate()}`;
-                const message = `BlueClerk: Dear ${job.customerContactId.name}, ${job.company?.info?.companyName || 'N/A'} has completed ${job.jobId} at ${job.jobSite?.name || job.jobLocation?.name || 'N/A'} on ${todayDate}.\n\nText STOP to opt-out.`
-                // If job is finished a SMS is sent
-                await sendSMS(standarizedPhone, message);
-            }
-        }
-        catch(err) {
-            Sentry.captureException(err);
-        }     
+        action += `|Partially Completed the job|`; 
     }
 
     // Log a track history
@@ -2763,7 +2749,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
         date: new Date()
     };
 
-    if (jobStatus == JobStatus.FINISHED || jobStatus == JobStatus.PARTIALLY_COMPLETED) {
+    if (jobStatus == JobStatus.FINISHED) {
         //Commission Calculation
         let invoiceCommissionEntry: any[] = [];
 
@@ -2786,7 +2772,6 @@ export const updateJobTask = async (req: Request, res: Response) => {
                         const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
                         if (commissionTier?.charge){
                             let quantity = j.quantity;
-                            if(j.status == JobStatus.PARTIALLY_COMPLETED) quantity = j.completedCount;
 
                             balance += commissionTier.charge * (quantity || 1);
                             contractorCommissionEntry.commission += commissionTier.charge * (quantity || 1);
