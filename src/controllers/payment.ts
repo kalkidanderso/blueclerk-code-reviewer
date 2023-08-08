@@ -17,7 +17,7 @@ import { AdvancePayment, AdvancePaymentEmployee, AdvancePaymentVendor } from '..
 import * as Sentry from '@sentry/node';
 import { IJob, Job } from '../models/Job';
 import { IJobCommission, JobCommission } from '../models/JobCommission';
-import * as InvoiceLogController from "../controllers/invoiceLogs";
+// import * as InvoiceLogController from "../controllers/invoiceLogs";
 
 
 /**
@@ -681,7 +681,6 @@ export const createPayment = async (req: Request, res: Response) => {
         payment.amountPaid = roundTwoDecimal(payment.amountPaid);
         await payment.save();
         // @ts-ignore
-        InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'PAID', customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id});
 
         if (company.qbAuthorized) {
             /**
@@ -1641,6 +1640,8 @@ export const _handleMultipleInvoices = async (
         invoice: invoice,
         amountPaid: roundTwoDecimal(paramInvoice.amountPaid)
     });
+    // @ts-ignore
+    // InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'PAYMENT_RECORDED', amountPaid:paramInvoice.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id});
 
     payment.amountPaid = payment.amountPaid ?? 0;
     payment.amountPaid += paramInvoice.amountPaid;
