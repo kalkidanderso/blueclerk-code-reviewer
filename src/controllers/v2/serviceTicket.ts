@@ -428,8 +428,13 @@ export const sendPORequest = async (req: Request, res: Response) => {
  */
 const _fillInitialQueryTickets = (bodyParams: any, queryParams: any, query: any, type: "Ticket" | "PO Request" | "All PO Request") => {
     const { workType, companyLocation } = queryParams;
-    const { technicianIds, status, startDate, endDate, customerId } = bodyParams;
+    const { technicianIds, status, startDate, endDate, customerId, bouncedEmailFlag } = bodyParams;
     let technicianIdsArr: any[];
+    
+    if (bouncedEmailFlag) {
+        query['$and'].push({ bouncedEmailFlag: true });
+    }
+
     if (technicianIds) {
         // Validate is technician ids is already array or object
         technicianIdsArr = Array.isArray(technicianIds)
