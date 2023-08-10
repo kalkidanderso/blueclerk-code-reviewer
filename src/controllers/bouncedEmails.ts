@@ -85,13 +85,13 @@ export const markReadInvoiceNBounce = async (req: Request, res: Response) => {
 export const markReadPOBounce = async (req: Request, res: Response) => {
     try {
 
-        const {invoiceId} = req.body
+        const { id } = req.body
         
         await ServiceTicket
-        .findOneAndUpdate(
-            { '_id': invoiceId.trim() },
-            { $set: { bouncedEmailFlag: false } }
-        );
+            .findOneAndUpdate(
+                { '_id': id.trim() },
+                { $set: { bouncedEmailFlag: false } }
+            );
 
         res.status(200).json({message: 'Success'})
 
