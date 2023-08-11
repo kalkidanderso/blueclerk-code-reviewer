@@ -61,11 +61,11 @@ mongoose.connect(
 // Application/Server configs
 const app = require('express')();
 
-// Sentry.init({
-//   dsn: "https://7ce3dc3af480456e9351a3df61cd166a@o4505155845226496.ingest.sentry.io/4505156270686208",
-//   tracesSampleRate: 1.0,
-//   environment: process.env.ENVIRONMENT
-// });
+Sentry.init({
+  dsn: "https://7ce3dc3af480456e9351a3df61cd166a@o4505155845226496.ingest.sentry.io/4505156270686208",
+  tracesSampleRate: 1.0,
+  environment: process.env.ENVIRONMENT
+});
 
 
 app.use(timeout('1200s'));
