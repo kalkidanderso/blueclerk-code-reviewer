@@ -19,7 +19,7 @@ import { IServiceTicket, ServiceTicket } from '../../models/ServiceTicket';
 import { PORequest } from '../../models/PORequest';
 import { INotificationServiceTicket, NotificationServiceTicket } from '../../models/NotificationDiscriminator';
 import { NotificationTypes } from '../../models/Notification';
-import { handleMutltipleTechniciansTasks } from '../job';
+import { createJobReport, handleMutltipleTechniciansTasks } from '../job';
 
 /**
  * Receives the request to get jobs
@@ -388,6 +388,13 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
         .populate({
             path: 'ticket',
         })
+        .populate({
+            path: 'customer',
+        })
+        .populate({
+            path: 'tasks.technician',
+            select: 'profile.displayName'
+        })
         .then(async (job: IJob) => {
             const track = job.track ? job.track : [];
 
@@ -606,7 +613,7 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                         customerPhone: params.customerPhone || job.customerPhone || '',
                         customerEmail: params.customerEmail || job.customerEmail || '',
                         customerName: params.customerName || params.customerName,
-                        customer: job.customer,
+                        customer: job.customer._id ?? job.customer,
                         homeOwner: params.homeOwnerId || job.homeOwner,
                         jobLocation: params.jobLocationId || job.jobLocation,
                         jobSite: params.jobSiteId,
@@ -625,7 +632,8 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                         scheduledStartTime: params.scheduledStartTime,
                         scheduledEndTime: params.scheduledEndTime,
                         companyLocation: job.companyLocation,
-                        workType: job.workType
+                        workType: job.workType,
+                        status: JobStatus.PENDING
                     });
 
                     if (imagesUrl?.length) {
@@ -665,7 +673,21 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
 
                     await serviceTicket.save();
                 }
-                return res.json({ 'status': Status.Success, 'message': 'Job updated successfully.' });
+
+                let customerName = job.customer ?
+                job.customer.profile?.displayName :
+                (job.ticket ? (job.ticket.customer ? job.ticket.customer?.profile?.displayName : null) : null);
+
+                let date = job.scheduleDate;
+                let technicianName = null;
+                if (job.tasks.length > 1) {
+                    technicianName = 'Multiple Techs';
+                } else {
+                    technicianName = job.tasks[0].technician.profile.displayName;
+                }
+
+                await createJobReport(job._id, job.company, customerName, technicianName, date, company._id);
+                return res.json({ 'status': Status.Success, 'message': 'Job edited successfully.' });
             } catch (err) {
                 Sentry.captureException(err);
                 return res.json({ 'status': Status.Error, 'message': err.message });

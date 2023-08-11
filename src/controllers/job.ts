@@ -1563,7 +1563,7 @@ export const getJobsStream = async (req: Request, res: Response, sio: any) => {
 
 }
 
-const createJobReport = async (jobId: any, companyId: any, customerName: string | null, technicianName: string | null, date: any, contractor?: any) => {
+export const createJobReport = async (jobId: any, companyId: any, customerName: string | null, technicianName: string | null, date: any, contractor?: any) => {
     const job = await Job.findOne({ _id: jobId, $or: [{ contractor: companyId }, { 'tasks.contractor': companyId }, { company: companyId }], status: JobStatus.FINISHED }).select('_id').exec();
     if (job) {
         const scans = await Scan.find({ job: job }, 'comment timeOfScan').select('_id').exec();
@@ -2727,14 +2727,11 @@ export const updateJobTask = async (req: Request, res: Response) => {
         }     
     }
 
-    if (techAllJobTypesStatus.every(status => status === JobStatus.PARTIALLY_COMPLETED)) {
-        // All new job type task are FINISHED, Job is FINISHED
+    if (techAllJobTypesStatus.includes(JobStatus.PARTIALLY_COMPLETED)) {
+        // All new job type task are Prtially Completed, Job is Prtially Completed
         taskStatus = JobStatus.PARTIALLY_COMPLETED;
         action += `|Partially Completed the technician task|`;
-    }
-
-    if (allTaskJobTypeStatus.every(status => status === JobStatus.PARTIALLY_COMPLETED)) {
-        // All new technician status are FINISHED, Job is FINISHED
+        
         job.endTime = new Date();
         job.timeSpent = moment().diff(moment(job.startTime), 'minutes');
         job.completeOnTime = !job.scheduledEndTime ? true : job.scheduledEndTime >= job.endTime;
