@@ -43,6 +43,7 @@ import fs from 'fs';
 import { handleJobReportPdf } from '../services/pdf';
 import { JobCommission } from '../models/JobCommission';
 import { CommissionHistory } from '../models/CommissionHistory';
+import { Contact } from '../models/Contact';
 
 const PdfPrinter = require('pdfmake')
 /**
@@ -445,6 +446,39 @@ const _createJob = async (
 
     for (const task of job.tasks) {
         await _addOrRemoveJobRoutes(task.technician, job.scheduleDate, 'ADD', job._id);
+    }
+
+    // SMS sending on job scheduled
+    const sendJobScheduleMessage = async (phone : string, name : string) => {
+        try {
+            const jobCompany = await Company.findById(job.company);
+            const jobSite = await JobSite.findById(job.jobSite);
+            const jobLocation = await JobLocation.findById(job.jobLocation);
+            const standarizedPhone = standarizePhoneNumberE164(phone);
+            const message = `BlueClerk: Dear ${name}, ${jobCompany?.info?.companyName || 'N/A'} has scheduled ${job.jobId} at ${jobSite?.name || jobLocation?.name || 'N/A'} on ${job.scheduleDate.toDateString()}.\n\nText STOP to opt-out.`
+            // If job is finished a SMS is sent
+            await sendSMS(standarizedPhone, message);
+        }
+        catch(err) {
+            Sentry.captureException(err);
+        }   
+    }
+
+    const jobContact = await Contact.findById(job.customerContactId);
+
+    // SMS to contact
+    if(job.customerContactId) {
+        if (jobContact && jobContact?.phone) {
+            sendJobScheduleMessage(jobContact?.phone, jobContact.name,)
+        }
+    }
+
+    // SMS to home owner
+    if(job.isHomeOccupied && job.isHomeOccupied === true) {
+        const jobhomeOwner = await HomeOwner.findById(job.homeOwner);
+        if(jobhomeOwner && jobhomeOwner?.contact?.phone && jobhomeOwner?.contact?.phone !== jobContact?.phone) {
+            sendJobScheduleMessage(jobhomeOwner.contact.phone, jobhomeOwner?.profile?.firstName)
+        }
     }
 
     scheduleEmails(req, res, job, (req: Request, res: Response, newJob: IJob) => { })
