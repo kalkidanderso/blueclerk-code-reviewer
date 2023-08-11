@@ -21,7 +21,7 @@ import * as bouncedEmails from '../controllers/bouncedEmails';
 
 
 
-export default function () {
+export default function (sio: any) {
 
     const router: express.Router = express.Router()
 
@@ -131,6 +131,17 @@ export default function () {
         isLogin(),
         getCompanyId(),
         userPermissionController.updateUserPermission
+    )
+
+    router.post(
+        '/updatePartialJob',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Update),
+        (req, res) => {
+            jobController.updatePartialJob(req, res, sio)
+        }
     )
 
     return router

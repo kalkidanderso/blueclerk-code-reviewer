@@ -271,7 +271,7 @@ const _createJob = async (
 
     let tasks;
     try {
-        tasks = await _handleMutltipleTechniciansTasks({ req, res, parentJob, paramTasks, serviceTicket });
+        tasks = await handleMutltipleTechniciansTasks({ req, res, parentJob, paramTasks, serviceTicket });
     } catch (error) {
         Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message });
@@ -2928,13 +2928,24 @@ export const editJob = async (req: Request, res: Response) => {
                 // Handle param technician
                 let tasks;
                 try {
-                    tasks = await _handleMutltipleTechniciansTasks({ req, res, parentJob: job, paramTasks, serviceTicket });
+                    tasks = await handleMutltipleTechniciansTasks({ req, res, parentJob: job, paramTasks, serviceTicket });
                 } catch (error) {
                     Sentry.captureException(error);
                     return res.json({ status: Status.Error, message: error.message });
                 }
                 job.tasks = tasks;
                 action += `|Updated Tasks|`;
+            }
+            
+            if (job.status == JobStatus.PARTIALLY_COMPLETED && job.scheduleDate != params.scheduleDate) {
+                job.status = JobStatus.PENDING; 
+                job.tasks.forEach(task => {
+                    task.jobTypes.forEach(( jobType ) => {
+                        if (jobType.status == JobStatus.PARTIALLY_COMPLETED) {
+                            jobType.status = 1; //Paused
+                        }
+                    })
+                });
             }
 
             job.scheduleDate = params.scheduleDate;
@@ -4231,7 +4242,7 @@ const _handleTaskCharges = async ({ job, taskJobType, item, customer, params, is
     return;
 }
 
-const _handleMutltipleTechniciansTasks = async ({
+export const handleMutltipleTechniciansTasks = async ({
     req,
     res,
     parentJob,

@@ -200,7 +200,7 @@ sio.on('disconnect', (socket: any) => {
   console.log('Disconnected at ', new Date());
 })
 app.use('/api/v1', routesV1(sio))
-app.use('/api/v2', routesV2())
+app.use('/api/v2', routesV2(sio))
 new CronJob('0 0 1 * *', function () {
   // console.log('You will see this message every second');
 
