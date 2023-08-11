@@ -59,7 +59,8 @@ export const login = (req: Request, res: Response, sio: any) => {
                 user.permissions.role != Role.SUPPLIER_ADMIN &&
                 user.permissions.role != Role.ADMIN_EMPLOYEE &&
                 user.permissions.role != Role.GLOBAL_ADMIN &&
-                user.permissions.role != Role.CUSTOMER_CONTACT
+                user.permissions.role != Role.CUSTOMER_CONTACT &&
+                user.permissions.role != Role.CONTRACTOR
             ) {
                 const employee = <IEmployee>user
 
@@ -98,7 +99,8 @@ export const login = (req: Request, res: Response, sio: any) => {
             } else if (
                 user.permissions.role == Role.GLOBAL_ADMIN ||
                 user.permissions.role == Role.COMPANY_ADMIN ||
-                user.permissions.role == Role.ADMIN_EMPLOYEE
+                user.permissions.role == Role.ADMIN_EMPLOYEE || 
+                user.permissions.role == Role.CONTRACTOR
             ) {
 
                 user.comparePassword(params.password, (isMatching: Boolean) => {
