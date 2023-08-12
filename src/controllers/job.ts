@@ -455,7 +455,10 @@ const _createJob = async (
             const jobSite = await JobSite.findById(job.jobSite);
             const jobLocation = await JobLocation.findById(job.jobLocation);
             const standarizedPhone = standarizePhoneNumberE164(phone);
-            const message = `BlueClerk: Dear ${name}, ${jobCompany?.info?.companyName || 'N/A'} has scheduled ${job.jobId} at ${jobSite?.name || jobLocation?.name || 'N/A'} on ${params.scheduleDate}.\n\nText STOP to opt-out.`
+            const formatJobDate = new Date(params.scheduleDate ?? parentJob?.scheduleDate).toLocaleDateString('en-US', {
+                timeZone: 'Europe/Amsterdam'
+            });
+            const message = `BlueClerk: Dear ${name}, ${jobCompany?.info?.companyName || 'N/A'} has scheduled ${job.jobId} at ${jobSite?.name || jobLocation?.name || 'N/A'} on ${new Date(formatJobDate).toDateString()}.\n\nText STOP to opt-out.`
             // If job is finished a SMS is sent
             await sendSMS(standarizedPhone, message);
         }
