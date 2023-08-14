@@ -458,7 +458,15 @@ const _createJob = async (
             const formatJobDate = new Date(params.scheduleDate ?? parentJob?.scheduleDate).toLocaleDateString('en-US', {
                 timeZone: 'Europe/Amsterdam'
             });
-            const message = `BlueClerk: Dear ${name}, ${jobCompany?.info?.companyName || 'N/A'} has scheduled ${job.jobId} at ${jobSite?.name || jobLocation?.name || 'N/A'} on ${new Date(formatJobDate).toDateString()}.\n\nText STOP to opt-out.`
+            let formatedTime = '';
+            if(params.scheduledStartTime) {
+                const jobTime = params.scheduledStartTime.split('T')[1].split(':');
+                formatedTime = ` at ${jobTime[0]}:${jobTime[1]}`;
+            }
+            else if(job.scheduleTimeAMPM !== 0) {
+                formatedTime = job.scheduleTimeAMPM === 1 ? ' in the morning' : ' in the afternoon';
+            }
+            const message = `BlueClerk: Dear ${name}, ${jobCompany?.info?.companyName || 'N/A'} has scheduled ${job.jobId} at ${jobSite?.name || jobLocation?.name || 'N/A'} on ${new Date(formatJobDate).toDateString()}${formatedTime}.\n\nText STOP to opt-out.`
             // If job is finished a SMS is sent
             await sendSMS(standarizedPhone, message);
         }
