@@ -157,13 +157,18 @@ export const syncQBItem = async (req: Request, res: Response) => {
       // Item not exist on QB, create it
       if (!qbItems) {
         
-        console.log("create qb item");
+        // console.log("create qb item");
 
         await _createQBItem(req, res, company, blueClerkItem, (error, errMsg, qbItem) => {
         
+          if(errMsg){
+            
           console.log(errMsg);
-          console.log(error);
-        
+            Sentry.captureException('Syncing failed creating', errMsg);
+            return res.json({ status: Status.Error, message: 'Item synced failed.'+ errMsg });
+
+
+          }
         
           if (qbItem) {
             // QB Item created, update DB Item & JobType's quickbookId
@@ -174,14 +179,18 @@ export const syncQBItem = async (req: Request, res: Response) => {
         })
       } else {
 
-        console.log("update qb item");
 
         // QB Item exist, update DB Item in quickbook
         await _updateQBItem(req, res, company, blueClerkItem, async (error, errMsg) => {
         
-          console.log(errMsg);
-          console.log(error);
-       
+          if(errMsg){
+            console.log(errMsg);
+
+            Sentry.captureException('Syncing failed updating', errMsg);
+            return res.json({ status: Status.Error, message: 'Item synced failed.'+ errMsg });
+
+
+          }
           if (!error && !errMsg) {
             
             return res.json({ status: Status.Success, message: 'Item synced successfully.', createdItems, updatedItems });
@@ -345,14 +354,16 @@ export const syncQBItems = async (req: Request, res: Response) => {
 
         // Iterate all created Job Types
         const newJobTypes = jobTypesCreated.map(jobType => {
+          console.log('jobType', jobType)
+
           const newItem = new Item({
-            name: jobType.title,
-            description: jobType.description,
-            sku: jobType.sku,
+            name: jobType?.title,
+            description: jobType?.description,
+            sku: jobType?.sku,
             tiers: [...company.itemTier?.list],
             company: company._id,
-            jobType: jobType._id,
-            quickbookId: jobType.quickbookId,
+            jobType: jobType?._id,
+            quickbookId: jobType?.quickbookId,
           })
 
           itemsToCreate = [
@@ -462,6 +473,7 @@ export const _transferQBItems = async (req: Request, res: Response, company: ICo
 
 export const _updateQBItem = async (req: Request, res: Response, company: ICompany, item: IItem, next: (error: number, errorMessage: string) => void) => {
   _refreshToken(req, res, company, async (err, errMsg, company) => {
+    console.log('item', item)
     if (err === 0) {
       return res.json({ status: Status.Error, message: errMsg });
     }
@@ -478,6 +490,9 @@ export const _updateQBItem = async (req: Request, res: Response, company: ICompa
     const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
     qbo.getItem(item.quickbookId, async (err: any, qbItem: IQBItem) => {
+
+      console.log('qbItem', qbItem)
+      if(qbItem){
 
       qbItem.Description = item.description;
       qbItem.FullyQualifiedName = item.name;
@@ -499,6 +514,14 @@ export const _updateQBItem = async (req: Request, res: Response, company: ICompa
 
           return next(null, null);
         })
+      }
+      else{
+        Sentry.captureException("QB Item not found");
+
+        return res.json({ status: Status.Error, message: "QB Item not found" });
+
+
+      }
     });
   });
 }
