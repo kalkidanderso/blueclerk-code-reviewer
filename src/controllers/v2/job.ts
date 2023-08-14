@@ -9,10 +9,10 @@ import {
     splitArray, fillQueryCommon, getFilteredCustomerIds,
     getFilteredJobLocationsIds, getFilteredJobSitesIds, getFilteredTechniciansIds
 } from './common';
-import { DefaultPageSize, JobStatus, Messages, ServiceTicketSource, SocketEvents, Status } from '../../common/constants';
+import { DefaultCommission, DefaultPageSize, InvoiceStatus, JobStatus, Messages, ServiceTicketSource, SocketEvents, Status } from '../../common/constants';
 import { IJobReport, JobReport } from '../../models/JobReport';
 import * as Sentry from '@sentry/node';
-import { IUser } from '../../models/User';
+import { IUser, User } from '../../models/User';
 import { Item } from '../../models/Item';
 import { JobCommission } from '../../models/JobCommission';
 import { IServiceTicket, ServiceTicket } from '../../models/ServiceTicket';
@@ -20,6 +20,9 @@ import { PORequest } from '../../models/PORequest';
 import { INotificationServiceTicket, NotificationServiceTicket } from '../../models/NotificationDiscriminator';
 import { NotificationTypes } from '../../models/Notification';
 import { createJobReport, handleMutltipleTechniciansTasks } from '../job';
+import { Invoice } from '../../models/Invoice';
+import { Customer } from '../../models/Customer';
+import { InvoiceCommission } from '../../models/InvoiceCommission';
 
 /**
  * Receives the request to get jobs
@@ -402,26 +405,155 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
             
             const track = job.track ? job.track : [];
 
+            let needUpdate = false;
+            const newJobTypes:any = [];
+            //Update Completed Count when job is completed
+            if (params.isCompletedJob) {
+                let newTasks = JSON.parse(params.newJobTasks);
+                if (newTasks) {
+                    job.tasks.forEach((task) => {
+                        let newTask = newTasks.find((res: any) => res._id == task._id);
+                        task.jobTypes.forEach((jobType) => {
+                            let newJobType = newTask?.jobTypes?.find((res: any) => res._id == jobType._id);
+                            if (newJobType) {
+                                jobType.completedCount = newJobType.completedCount;
+
+                                if ((jobType.completedCount || jobType.quantity) < jobType.quantity) {
+                                    jobType.status = JobStatus.PARTIALLY_COMPLETED;
+                                    needUpdate = true;
+                                }
+                            }
+                            newJobTypes.unshift(jobType);
+                        });
+                    })
+                }
+            } else {
+                needUpdate = true;
+            }
+
+            if (!needUpdate) {
+                return res.json({ 'status': Status.Success, 'message': 'Job edited successfully.', ticket: newTicket});
+            }
+
+            if (params.isCompletedJob && params.updateInvoice) {
+                const invoice = await Invoice.findOne({job: job._id});
+                // Find Customer object to see the itemTier, customPrice, * payment term info
+                const customerObj = await Customer.findById(invoice.customer).populate({path: 'paymentTerm'});
+
+                const oldTotal = invoice.total;
+                let subTotalBeforeTax: number = 0;
+                let total: number = 0;
+                let taxAmount: number = 0;
+                let paymentApplied = invoice.paymentApplied ?? 0;
+                let balanceDue = invoice.balanceDue ?? (invoice.total - paymentApplied) ?? invoice.total;
+                let paid = invoice.paid;
+                let status = invoice.status;
+
+                invoice.items.forEach((item, index) => {
+                    const newItem = newJobTypes[index];
+                    if (newItem) {
+                        const quantity = newItem.completedCount || newItem.quantity;
+                        let price = item.price;
+                        const subTotal = price * quantity;
+
+                        item.quantity = newItem.completedCount || newItem.quantity;
+                        item.subTotal = subTotal;
+                    }
+
+                    let itemTaxAmount: number = 0
+                    if (item.tax > 0) {
+                        itemTaxAmount = item.subTotal * item.tax / 100;
+                        taxAmount += itemTaxAmount;
+                    }
+
+                    subTotalBeforeTax += item.subTotal;
+                    total += item.subTotal;
+                });
+                
+                // Add the grand total with the tax amount
+                total += taxAmount;
+                balanceDue += (total - oldTotal);
+
+                // Check if invoice updated and several conditions met
+                if (balanceDue <= 0 || (paymentApplied >= total)) {
+                    /**
+                     * Invoice updated to the point balanceDue paid off or even minus,
+                     * if minus, will put the extra payment to cust's credit,
+                     * then mark invoice as PAID
+                     */
+                    customerObj.credit += Math.abs(balanceDue);
+                    paymentApplied = total;
+                    balanceDue = 0;
+                    status = InvoiceStatus.PAID;
+                    paid = true;
+                } else {
+                    /**
+                     * Balance due still existed or even come back,
+                     * make sure status goes to PARTIALLY PAID or UNPAID
+                     */
+                    status = paymentApplied > 0 ? InvoiceStatus.PARTIALLY_PAID : InvoiceStatus.UNPAID;
+                    paid = false;
+                }
+
+                  // Update company and technician commission when charges is updated and invoice is not draft
+                  if (!invoice.isDraft && invoice.job) {
+                    const invoiceCommission = await InvoiceCommission.findOne({invoice: invoice._id});
+
+                    if (invoiceCommission.technicians) {
+                        const totalTechnician = invoiceCommission.technicians.length;
+                        for (const invoiceCommissionTechnician of invoiceCommission.technicians) {
+                            if (invoiceCommissionTechnician.contractor) {
+                                const contractor = await Company.findOne({_id: invoiceCommissionTechnician.contractor}).exec();
+                                if (contractor && contractor.commissionType != "fixed") {
+                                    if (Number(total) !== Number(oldTotal)) {
+                                        const getCommission = (t: any) => (t / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                        const oldCommission = getCommission(oldTotal)
+                                        let commission = getCommission(total)
+                                        commission = Number(commission.toFixed(2))
+                                        contractor.balance -= Number(oldCommission.toFixed(2));
+                                        contractor.balance += Number(commission.toFixed(2));
+                                        invoiceCommissionTechnician.commissionAmount = Number(commission.toFixed(2) || 0);
+                                    }
+
+                                    contractor.save();
+                                    invoiceCommission.save();
+                                }
+                            }
+
+                            if (invoiceCommissionTechnician.technician && !invoiceCommissionTechnician.contractor) {
+                                const technician = await User.findOne({_id: invoiceCommissionTechnician.technician}).exec();
+                                if (technician) {
+                                    if (Number(total) !== Number(oldTotal)) {
+                                        const oldCommission = (oldTotal / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                        const commission = (total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
+                                        invoiceCommissionTechnician.commissionAmount = Number(commission.toFixed(2));
+                                        technician.balance -= Number(oldCommission.toFixed(2));
+                                        technician.balance += Number(commission.toFixed(2));
+                                    }
+
+                                    technician.save();
+                                    invoiceCommission.save();
+                                }
+                            }
+                        }
+                    }
+                }
+
+                invoice.subTotal = helper.roundTwoDecimal(subTotalBeforeTax);
+                invoice.total = helper.roundTwoDecimal(total);
+                invoice.balanceDue = helper.roundTwoDecimal(balanceDue);
+                invoice.paymentApplied = helper.roundTwoDecimal(paymentApplied);
+                invoice.status = status;
+                invoice.paid = paid;
+
+                await invoice.save();
+            }
+
             switch (params.action) {
                 //Close Job-No Further Action
                 case 0:
                     job.status = JobStatus.FINISHED;
 
-                    if (params.isCompletedJob) {
-                        job.tasks.forEach((task) => {
-                            task.jobTypes.forEach((jobType) => {
-                                if ((jobType.completedCount || 0) < jobType.quantity && jobType.status != 2) {
-
-                                    
-                                    //Split Quantity
-                                    if (jobType.completedCount) {
-                                        jobType.quantity = jobType.completedCount;
-                                        jobType.status = JobStatus.FINISHED;
-                                    }
-                                }
-                            });
-                        })
-                    }
                     //Commission Calculation
                     job.commission = await _calculateJobCommission(job.tasks, job._id);
 
@@ -447,7 +579,7 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                     job.tasks.forEach((task) => {
                         const newJobTypes: any = [];
                         task.jobTypes.forEach((jobType) => {
-                            if ((jobType.completedCount || 0) < jobType.quantity && jobType.status != 2) {
+                            if ((jobType.completedCount || 0) < jobType.quantity && jobType.status == 7) {
                                 //Split Quantity
                                 ticketJobTypes.push({
                                     quantity: jobType.quantity - jobType.completedCount,
@@ -483,7 +615,6 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                     const newData: any = {
                         isHomeOccupied: ticketDetail.isHomeOccupied,
                         createdAt: Date.now(),
-                        dueDate: ticketDetail.dueDate,
                         createdBy: user._id,
                         company: ticketDetail.company,
                         note: ticketDetail.note,
@@ -570,7 +701,7 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                     job.tasks.forEach((task) => {
                         const newJobTypes: any = [];
                         task.jobTypes.forEach((jobType) => {
-                            if ((jobType.completedCount || 0) < jobType.quantity && jobType.status != 2) {
+                            if ((jobType.completedCount || 0) < jobType.quantity && jobType.status == 7) {
                                 if (jobType.completedCount) {
                                     jobType.quantity = jobType.completedCount;
                                     jobType.status = JobStatus.FINISHED;
@@ -715,6 +846,16 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
             Sentry.captureException(err);
             return res.json({ 'status': Status.Error, 'message': err.message });
         });
+}
+
+export const getJobInvoice = async (req: Request, res: Response, sio: any) => {
+    const { jobId } = req.params;
+    let invoice = await Invoice.findOne({job: jobId})
+
+    return res.json({
+        status: Status.Success,
+        invoice,
+    });
 }
 
 /**

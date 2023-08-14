@@ -144,6 +144,15 @@ export default function (sio: any) {
         }
     )
 
+    router.get(
+        '/getJobInvoice/:jobId',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Detail),
+        jobController.getJobInvoice
+    )
+
     return router
 
 }
