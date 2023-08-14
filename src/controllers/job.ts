@@ -2727,11 +2727,21 @@ export const updateJobTask = async (req: Request, res: Response) => {
         }     
     }
 
-    if (techAllJobTypesStatus.includes(JobStatus.PARTIALLY_COMPLETED)) {
+    if (techAllJobTypesStatus.every(status => status === JobStatus.PARTIALLY_COMPLETED)) {
         // All new job type task are Prtially Completed, Job is Prtially Completed
         taskStatus = JobStatus.PARTIALLY_COMPLETED;
         action += `|Partially Completed the technician task|`;
-        
+    }
+    
+    let canSetPartiallyJob = true;
+    allTaskJobTypeStatus.forEach((status: any) => {
+        if ([JobStatus.STARTED,JobStatus.PENDING,JobStatus.PAUSED].includes(status)) {
+            canSetPartiallyJob = false;
+        }
+    });
+    
+    if (canSetPartiallyJob) {
+        // All new job type task are Prtially Completed, Job is Prtially Completed
         job.endTime = new Date();
         job.timeSpent = moment().diff(moment(job.startTime), 'minutes');
         job.completeOnTime = !job.scheduledEndTime ? true : job.scheduledEndTime >= job.endTime;

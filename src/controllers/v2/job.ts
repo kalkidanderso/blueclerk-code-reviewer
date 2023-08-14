@@ -396,16 +396,32 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
             select: 'profile.displayName'
         })
         .then(async (job: IJob) => {
-            const track = job.track ? job.track : [];
-
+            let newTicket;
             let action = '';
             let ticketAction = '';
+            
+            const track = job.track ? job.track : [];
 
             switch (params.action) {
                 //Close Job-No Further Action
                 case 0:
                     job.status = JobStatus.FINISHED;
 
+                    if (params.isCompletedJob) {
+                        job.tasks.forEach((task) => {
+                            task.jobTypes.forEach((jobType) => {
+                                if ((jobType.completedCount || 0) < jobType.quantity && jobType.status != 2) {
+
+                                    
+                                    //Split Quantity
+                                    if (jobType.completedCount) {
+                                        jobType.quantity = jobType.completedCount;
+                                        jobType.status = JobStatus.FINISHED;
+                                    }
+                                }
+                            });
+                        })
+                    }
                     //Commission Calculation
                     job.commission = await _calculateJobCommission(job.tasks, job._id);
 
@@ -460,7 +476,7 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                     job.commission = await _calculateJobCommission(job.tasks, job._id);
 
                     //Action History
-                    action = `|Close Job and Create New ${params.type}|`;
+                    action = `|Closed Job and Created New ${params.type}|`;
                     ticketAction = `|Closeed Job and Created New ${params.type} by ${user.profile.displayName}|`;
                     
 
@@ -479,10 +495,10 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                         homeOwner: ticketDetail.homeOwner,
                         homeJobLocation: ticketDetail.homeJobLocation,
                         homeJobSite: ticketDetail.homeJobSite,
-                        customerContactId: ticketDetail.customerContactId,
+                        customerContactId: ticketDetail.customerContactId ?? job.customerContactId,
                         companyLocation: ticketDetail.companyLocation,
                         workType: ticketDetail.workType,
-                        source: ticketDetail.source,
+                        source: `${job.jobId} partially completed`,
                         images: ticketDetail.images,
                         tasks: ticketJobTypes,
                         type: params.type,
@@ -510,6 +526,8 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                         if (err) {
                             return res.json({'status': Status.Error, 'message': Messages.GenericError})
                         }
+
+                        newTicket = await serviceTicket.populate("customer").populate("customerContactId").execPopulate();
 
                         await company.updateOne({currentJobId: company.currentJobId+1 })
                         .exec(async (err: any)=>{
@@ -573,7 +591,7 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                     //Commission Calculation
                     job.commission = await _calculateJobCommission(job.tasks, job._id);
                     //Action History
-                    action = `|Close Job and Create New Job|`;
+                    action = `|Closed Job and Created New Job|`;
                     ticketAction = `|Closeed Job and Created New Job by ${user.profile.displayName}|`;
   
                     let jobId = `Job ${company.currentJobId + 1}`;
@@ -687,7 +705,7 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                 }
 
                 await createJobReport(job._id, job.company, customerName, technicianName, date, company._id);
-                return res.json({ 'status': Status.Success, 'message': 'Job edited successfully.' });
+                return res.json({ 'status': Status.Success, 'message': 'Job edited successfully.', ticket: newTicket});
             } catch (err) {
                 Sentry.captureException(err);
                 return res.json({ 'status': Status.Error, 'message': err.message });
