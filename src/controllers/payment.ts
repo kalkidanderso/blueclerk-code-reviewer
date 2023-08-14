@@ -1103,7 +1103,7 @@ export const updatePayment = async (req: Request, res: Response) => {
         }
 
         // If amount changed, recalculate invoice & customer balance
-        if (!paramsInvoices.length && newAmountPaid && diffAmountPaid !== 0) {
+        if (!paramsInvoices.length && newAmountPaid) {
             /**
              * If invoice full paid and the new amount still cover the whole invoice,
              * the deducted amount will only deduct customer's credit
