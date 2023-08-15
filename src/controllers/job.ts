@@ -3698,7 +3698,7 @@ export const getJobReportEmailTemplate = async (req: Request, res: Response) => 
     const jobLocation = jobReport.job?.jobLocation?.address?.street;
     const jobTypesText = [...new Set(jobTypes)].join(', ') ?? jobReport.job?.jobType?.title;
 
-    const message = `Dear Test ${customerName}, Please see Job Report for ${reportNumber}, from ${companyName} for job address ${jobLocation} on ${workDate} ${workTime}`;
+    const message = `Dear Test ${customerName},\n\nPlease see Job Report for ${reportNumber}, from ${companyName} for job address ${jobLocation} on ${workDate}${workTime}.\n\nThank you for doing business with ${companyName}.\n{{small_company_logo}}`;
 
 
     return res.json({
@@ -3708,7 +3708,7 @@ export const getJobReportEmailTemplate = async (req: Request, res: Response) => 
             from: companyEmail,
             to: recipientEmails,
             subject: `${companyName} has sent you a job report`,
-            message: message
+            message: eval('`' + message + '`')
         }
     });
 

@@ -531,7 +531,7 @@ export const sendReportEmailToCustomer = async (options: any) => {
 
   message = message?.replace(/{{small_company_logo}}/gi, `<img style=\"width:150px\" src=\"${companyLogo}\" alt=\"${companyName}\" />`);
   // Replace \n to <br /> in HTML
-  message = message?.replace(/\\n/gi, '<br />');
+  message = message?.replace(/\n/gi, '<br />');
 
   const SENDER = `"${companyName}" <${APP_EMAIL_NOREPLY ?? customerEmail ?? companyEmail}>`;
   const RECIPIENT = recipientEmails;
