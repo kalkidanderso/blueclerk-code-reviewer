@@ -222,6 +222,7 @@ export const getCustomerAllContacts = async (req: Request, res: Response) => {
 
     // Add the Customer's email for the first value
     contacts.push({
+        id: customer._id,
         name: customer.profile?.displayName,
         email: customer.info?.email,
         phone: customer.contact?.phone
@@ -230,6 +231,7 @@ export const getCustomerAllContacts = async (req: Request, res: Response) => {
     // Push all the contacts from the Customer
     for (const contact of <IContact[]>customer.contacts) {
         contacts.push({
+            id: contact?.id,
             name: contact?.name,
             email: contact?.email,
             phone: contact?.phone
