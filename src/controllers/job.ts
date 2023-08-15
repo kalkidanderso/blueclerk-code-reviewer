@@ -3577,6 +3577,135 @@ export const sendJobReport = (req: Request, res: Response) => {
         });
 }
 
+export const getJobReportEmailTemplate = async (req: Request, res: Response) => {
+
+    const params = req.query;
+    const company = <ICompany>req.company;
+    let companyId = req.companyId;
+    let jobReport;
+
+    try {
+        jobReport = await JobReport.findOne({ _id: params.jobReportId, $or: [{ contractor: companyId }, { company: companyId }] })
+        .populate({
+            path: 'job',
+            populate: [
+                {
+                    path: 'ticket',
+                    select: '-__v',
+                    populate: [
+                        { path: 'track', select: 'track.user track.action track.date' },
+                        { path: 'jobLocation' },
+                        { path: 'jobSite' },
+                        { path: 'customerContactId' },
+                        { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
+                    ]
+                },
+                {
+                    path: 'request',
+                    select: '-__v',
+                    populate: [
+                        { path: 'track', select: 'track.user track.action track.date' },
+                        { path: 'jobLocation' },
+                        { path: 'jobSite' },
+                        { path: 'customerContact' },
+                        { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
+                    ]
+                },
+                // TODO: To be deprecated
+                { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'tasks.technician', select: 'profile auth.email contact' },
+                { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName' },
+                { path: 'customerContactId', select: '-id -__v' },
+                { path: 'type', select: 'title description sku' },
+                // TODO: To be deprecated
+                { path: 'tasks.jobType', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
+                { path: 'tasks.timeUpdatedBy', select: 'profile.displayName' },
+                { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
+                { path: 'createdBy', select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone' },
+                { path: 'homeOwner', select: 'profile info contact' },
+                'jobSite', 'jobLocation'
+            ]
+        })
+        .populate({
+            path: 'scans',
+            populate: [{
+                path: 'equipment',
+                select: 'info.model info.serialNumber info.nfcTag images info.location',
+                populate: [
+                    { path: 'brand', select: 'title' },
+                    { path: 'type', select: 'title' }
+                ]
+            }]
+        })
+        .populate('PurchaseOrder')
+        .populate({
+            path: 'invoice',
+            populate: [
+                { path: 'paymentTerm', select: '-__v' },
+                { path: 'customerContactId', select: '-__v' }
+            ]
+        });
+       
+    } catch (err) {
+        // Sentry.captureException(err);
+        return res.json({ 'status': Status.Error, 'message': err.message });
+    }
+
+    if (!jobReport) {
+        return res.json({ 'status': Status.Error, 'message': "Report was not found" });
+    }
+        
+    const jobTypes: any = [];
+
+    jobReport.job.tasks?.forEach((task: ITask) => {
+        task?.jobTypes?.forEach((taskJobType: any) => {
+            let fullJobTitle = `${taskJobType?.jobType?.title}`;
+            fullJobTitle += taskJobType?.jobType?.description
+                ? ` (${taskJobType?.jobType?.description})`
+                : '';
+
+            jobTypes.push(fullJobTitle);
+        });
+    });
+
+    const customer = <ICustomer>jobReport.job?.customer;
+    const customerContact = <IContact>jobReport.job?.customerContactId;
+    let recipientEmails = [];
+
+    recipientEmails =  [{email: (customerContact?.email?.length > 0
+            ? customerContact.email
+            : customer?.info?.email
+        )}];
+
+
+    const companyName = company.info?.companyName;
+    const companyEmail = company.info?.companyEmail;
+    const customerName = jobReport.job.customer?.profile?.displayName;
+    const customerEmail = jobReport.job.customer?.info?.email;
+    const reportNumber = jobReport.job.jobId;
+    const workDate = moment(jobReport.job.scheduleDate).format('MMMM DD');
+    const scheduleStartTime = jobReport.job.scheduleStartTime ? `, ${jobReport.job.scheduleStartTime}` : '';
+    const workTime = jobReport.job.scheduleTimeAMPM === 1 ? ', AM' : (jobReport.job.scheduleTimeAMPM === 2 ? ', PM' : scheduleStartTime);
+    const jobLocation = jobReport.job?.jobLocation?.address?.street;
+    const jobTypesText = [...new Set(jobTypes)].join(', ') ?? jobReport.job?.jobType?.title;
+
+    const message = `Dear Test ${customerName}, Please see Job Report for ${reportNumber}, from ${companyName} for job address ${jobLocation} on ${workDate} ${workTime}`;
+
+
+    return res.json({
+        status: Status.Success,
+        jobReport: jobReport,
+        emailTemplate: {
+            from: companyEmail,
+            to: recipientEmails,
+            subject: `${companyName} has sent you a job report`,
+            message: message
+        }
+    });
+
+} 
+    
 export const getJobReportPDF = (req: Request, res: Response) => {
 
     const params = req.params;

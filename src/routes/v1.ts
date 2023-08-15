@@ -1851,6 +1851,17 @@ export default function (sio: any) {
         jobController.sendJobReport
     )
 
+    router.get(
+        '/getJobReportEmailTemplate',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Get_Invoice_Detail),
+        validate(Validations.getJobReportEmailTemplate),
+        jobController.getJobReportEmailTemplate
+        
+    )
+
     router.post(
         '/createPOInvoice',
         passport.authenticate('jwt', { session: false }),
