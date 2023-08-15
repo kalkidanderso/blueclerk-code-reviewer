@@ -182,9 +182,9 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                                                     }],
                                                     width: '25%',
                                                 }, {
-                                                    ...generateField('START', moment(jobReport.job?.startTime).format('MMM. DD, YYYY HH:mm'), '12.5%')
+                                                    ...generateField('START', moment(jobReport.job?.startTime).format('MMM. DD, YYYY hh:mm A'), '12.5%')
                                                 }, {
-                                                    ...generateField('END', moment(jobReport.job?.endTime).format('MMM. DD, YYYY HH:mm'), '12.5%')
+                                                    ...generateField('END', moment(jobReport.job?.endTime).format('MMM. DD, YYYY hh:mm A'), '12.5%')
                                                 }, ],
                                             },
                                             jobReport.job.customerContactId ? {
