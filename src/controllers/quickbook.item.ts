@@ -57,7 +57,6 @@ export const _createQBItem = async (req: Request, res: Response, company: ICompa
 
     // Initiate node-quickbooks object with the refreshed company token
     const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
-
     // Construct QB Item Entry
     const qbItemEntry: IQBItem = {
       Name: item.name,
@@ -291,7 +290,15 @@ export const syncQBItems = async (req: Request, res: Response) => {
         }
       })
 
-      console.log("processing QB items",qbItems.length)
+      // console.log("processing QB items",qbItems.length);
+      
+      // console.log("company",company);
+      // console.log("company - ",company.costing.list);
+      // let defaultCosting=[];
+
+      // company?.costing?.list.map((costItem:any)=>{
+      //   defaultCosting.push({tier:costItem._id})
+      // })
 
       // Iterate all QuickBooks items
       for (var qbIndex=0;qbIndex<qbItems.length;qbIndex++)
@@ -324,7 +331,7 @@ export const syncQBItems = async (req: Request, res: Response) => {
               name: qbItem.Name,
               description: qbItem.Description,
               sku: qbItem.Sku,
-              productCost: qbItem.UnitPrice,
+              productCost: qbItem.PurchaseCost,
               tiers: [...company.itemTier?.list],
               company: company._id,
               itemType: "Product",
@@ -366,7 +373,9 @@ export const syncQBItems = async (req: Request, res: Response) => {
                 tiers: [...company.itemTier?.list],
                 company: company._id,
                 itemType: qbItem.Type,
+                costing:company?.costing?.list,
                 // jobType: jobType?._id,
+                
                 quickbookId: qbItem.Id,
               })
 
@@ -390,7 +399,6 @@ export const syncQBItems = async (req: Request, res: Response) => {
           }
 
         }
-        console.log("completed",qbIndex,"out of ",qbItems.length)
       }
       // )
 
@@ -406,8 +414,8 @@ export const syncQBItems = async (req: Request, res: Response) => {
           let itemExist=itemsToCreate.findIndex(item=>{return item.quickbookId==jobType.quickbookId&& item.name==jobType.title});
           if(itemExist>-1){
             let newItem=itemsToCreate[itemExist];
-            console.log("newItem");
-            console.log(newItem);
+            // console.log("newItem");
+            // console.log(newItem);
             // @ts-ignore
             itemsToCreate[itemExist]={...newItem,jobType:jobType._id};
           }
@@ -420,7 +428,8 @@ export const syncQBItems = async (req: Request, res: Response) => {
               sku: jobType?.sku,
               tiers: [...company.itemTier?.list],
               company: company._id,
-              jobType: jobType?._id,
+                costing:company?.costing?.list,
+                jobType: jobType?._id,
               quickbookId: jobType?.quickbookId,
             })
   
