@@ -2727,13 +2727,20 @@ export const updateJobTask = async (req: Request, res: Response) => {
         }     
     }
 
-    if (techAllJobTypesStatus.every(status => status === JobStatus.PARTIALLY_COMPLETED)) {
+    let canSetPartiallyTask = techAllJobTypesStatus.includes(JobStatus.PARTIALLY_COMPLETED);
+    techAllJobTypesStatus.forEach((status: any) => {
+        if ([JobStatus.STARTED,JobStatus.PENDING,JobStatus.PAUSED].includes(status)) {
+            canSetPartiallyTask = false;
+        }
+    });
+
+    if (canSetPartiallyTask) {
         // All new job type task are Prtially Completed, Job is Prtially Completed
         taskStatus = JobStatus.PARTIALLY_COMPLETED;
         action += `|Partially Completed the technician task|`;
     }
-    
-    let canSetPartiallyJob = true;
+
+    let canSetPartiallyJob = allTaskJobTypeStatus.includes(JobStatus.PARTIALLY_COMPLETED);
     allTaskJobTypeStatus.forEach((status: any) => {
         if ([JobStatus.STARTED,JobStatus.PENDING,JobStatus.PAUSED].includes(status)) {
             canSetPartiallyJob = false;
@@ -2942,17 +2949,6 @@ export const editJob = async (req: Request, res: Response) => {
                 }
                 job.tasks = tasks;
                 action += `|Updated Tasks|`;
-            }
-            
-            if (job.status == JobStatus.PARTIALLY_COMPLETED && job.scheduleDate != params.scheduleDate) {
-                job.status = JobStatus.PENDING; 
-                job.tasks.forEach(task => {
-                    task.jobTypes.forEach(( jobType ) => {
-                        if (jobType.status == JobStatus.PARTIALLY_COMPLETED) {
-                            jobType.status = 1; //Paused
-                        }
-                    })
-                });
             }
 
             job.scheduleDate = params.scheduleDate;

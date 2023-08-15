@@ -21,8 +21,7 @@ import { INotificationServiceTicket, NotificationServiceTicket } from '../../mod
 import { NotificationTypes } from '../../models/Notification';
 import { createJobReport, handleMutltipleTechniciansTasks } from '../job';
 import { Invoice } from '../../models/Invoice';
-import { Customer } from '../../models/Customer';
-import { InvoiceCommission } from '../../models/InvoiceCommission';
+import { HomeOwner } from '../../models/HomeOwner';
 
 /**
  * Receives the request to get jobs
@@ -435,120 +434,6 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                 return res.json({ 'status': Status.Success, 'message': 'Job edited successfully.', ticket: newTicket});
             }
 
-            if (params.isCompletedJob && params.updateInvoice) {
-                const invoice = await Invoice.findOne({job: job._id});
-                // Find Customer object to see the itemTier, customPrice, * payment term info
-                const customerObj = await Customer.findById(invoice.customer).populate({path: 'paymentTerm'});
-
-                const oldTotal = invoice.total;
-                let subTotalBeforeTax: number = 0;
-                let total: number = 0;
-                let taxAmount: number = 0;
-                let paymentApplied = invoice.paymentApplied ?? 0;
-                let balanceDue = invoice.balanceDue ?? (invoice.total - paymentApplied) ?? invoice.total;
-                let paid = invoice.paid;
-                let status = invoice.status;
-
-                invoice.items.forEach((item, index) => {
-                    const newItem = newJobTypes[index];
-                    if (newItem) {
-                        const quantity = newItem.completedCount || newItem.quantity;
-                        let price = item.price;
-                        const subTotal = price * quantity;
-
-                        item.quantity = newItem.completedCount || newItem.quantity;
-                        item.subTotal = subTotal;
-                    }
-
-                    let itemTaxAmount: number = 0
-                    if (item.tax > 0) {
-                        itemTaxAmount = item.subTotal * item.tax / 100;
-                        taxAmount += itemTaxAmount;
-                    }
-
-                    subTotalBeforeTax += item.subTotal;
-                    total += item.subTotal;
-                });
-                
-                // Add the grand total with the tax amount
-                total += taxAmount;
-                balanceDue += (total - oldTotal);
-
-                // Check if invoice updated and several conditions met
-                if (balanceDue <= 0 || (paymentApplied >= total)) {
-                    /**
-                     * Invoice updated to the point balanceDue paid off or even minus,
-                     * if minus, will put the extra payment to cust's credit,
-                     * then mark invoice as PAID
-                     */
-                    customerObj.credit += Math.abs(balanceDue);
-                    paymentApplied = total;
-                    balanceDue = 0;
-                    status = InvoiceStatus.PAID;
-                    paid = true;
-                } else {
-                    /**
-                     * Balance due still existed or even come back,
-                     * make sure status goes to PARTIALLY PAID or UNPAID
-                     */
-                    status = paymentApplied > 0 ? InvoiceStatus.PARTIALLY_PAID : InvoiceStatus.UNPAID;
-                    paid = false;
-                }
-
-                  // Update company and technician commission when charges is updated and invoice is not draft
-                  if (!invoice.isDraft && invoice.job) {
-                    const invoiceCommission = await InvoiceCommission.findOne({invoice: invoice._id});
-
-                    if (invoiceCommission.technicians) {
-                        const totalTechnician = invoiceCommission.technicians.length;
-                        for (const invoiceCommissionTechnician of invoiceCommission.technicians) {
-                            if (invoiceCommissionTechnician.contractor) {
-                                const contractor = await Company.findOne({_id: invoiceCommissionTechnician.contractor}).exec();
-                                if (contractor && contractor.commissionType != "fixed") {
-                                    if (Number(total) !== Number(oldTotal)) {
-                                        const getCommission = (t: any) => (t / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
-                                        const oldCommission = getCommission(oldTotal)
-                                        let commission = getCommission(total)
-                                        commission = Number(commission.toFixed(2))
-                                        contractor.balance -= Number(oldCommission.toFixed(2));
-                                        contractor.balance += Number(commission.toFixed(2));
-                                        invoiceCommissionTechnician.commissionAmount = Number(commission.toFixed(2) || 0);
-                                    }
-
-                                    contractor.save();
-                                    invoiceCommission.save();
-                                }
-                            }
-
-                            if (invoiceCommissionTechnician.technician && !invoiceCommissionTechnician.contractor) {
-                                const technician = await User.findOne({_id: invoiceCommissionTechnician.technician}).exec();
-                                if (technician) {
-                                    if (Number(total) !== Number(oldTotal)) {
-                                        const oldCommission = (oldTotal / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
-                                        const commission = (total / totalTechnician) * (technician.commission ?? DefaultCommission.EMPLOYEE_COMMISSION) / 100;
-                                        invoiceCommissionTechnician.commissionAmount = Number(commission.toFixed(2));
-                                        technician.balance -= Number(oldCommission.toFixed(2));
-                                        technician.balance += Number(commission.toFixed(2));
-                                    }
-
-                                    technician.save();
-                                    invoiceCommission.save();
-                                }
-                            }
-                        }
-                    }
-                }
-
-                invoice.subTotal = helper.roundTwoDecimal(subTotalBeforeTax);
-                invoice.total = helper.roundTwoDecimal(total);
-                invoice.balanceDue = helper.roundTwoDecimal(balanceDue);
-                invoice.paymentApplied = helper.roundTwoDecimal(paymentApplied);
-                invoice.status = status;
-                invoice.paid = paid;
-
-                await invoice.save();
-            }
-
             switch (params.action) {
                 //Close Job-No Further Action
                 case 0:
@@ -696,7 +581,7 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                         })
                     })
                     break;
-                //Close Job and Create New Job
+                //Reschedule
                 case 2:
                     job.tasks.forEach((task) => {
                         const newJobTypes: any = [];
@@ -717,13 +602,9 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                         task.status = JobStatus.FINISHED;
                     });
 
-                    //Chnges Job Status to be Completed
-                    job.status = JobStatus.FINISHED;
-                    //Commission Calculation
-                    job.commission = await _calculateJobCommission(job.tasks, job._id);
                     //Action History
-                    action = `|Closed Job and Created New Job|`;
-                    ticketAction = `|Closeed Job and Created New Job by ${user.profile.displayName}|`;
+                    action = `|Reacheduled Job|`;
+                    ticketAction = `|Rescheduled Job by ${user.profile.displayName}|`;
   
                     let jobId = `Job ${company.currentJobId + 1}`;
                     if (company.prefix) {
@@ -740,7 +621,6 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                     }
 
                     let tasks;
-                    
                     let paramTasks: TaskEntry[] = params.tasks ?? [];
                     // To handle any over-stringified strings
                     if (!Array.isArray(paramTasks)) {
@@ -752,50 +632,130 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                         Sentry.captureException(error);
                         return res.json({ status: Status.Error, message: error.message });
                     }
-                
 
-                    let newJob = new Job({
-                        scheduleDate: moment(params.scheduleDate).format("YYYY-MM-DD"),
-                        jobId: jobId,
-                        ticket: params.ticketId || job.ticket?._id || null,
-                        isHomeOccupied: params.isHomeOccupied || job.isHomeOccupied,
-                        customerPhone: params.customerPhone || job.customerPhone || '',
-                        customerEmail: params.customerEmail || job.customerEmail || '',
-                        customerName: params.customerName || params.customerName,
-                        customer: job.customer._id ?? job.customer,
-                        homeOwner: params.homeOwnerId || job.homeOwner,
-                        jobLocation: params.jobLocationId || job.jobLocation,
-                        jobSite: params.jobSiteId,
-                        homeJobLocation: params.homeJobLocationId,
-                        homeJobSite: params.homeJobSiteId,
-                        customerContactId: params.customerContactId,
-                        customerPO: params.customerPO,
-                        images: job.images,
-                        tasks,
-                        company: company._id,
-                        description: params.description,
-                        createdAt: Date.now(),
-                        createdBy: user._id,
-                        track: track,
-                        scheduleTimeAMPM: params.scheduleTimeAMPM || 0,
-                        scheduledStartTime: params.scheduledStartTime,
-                        scheduledEndTime: params.scheduledEndTime,
-                        companyLocation: job.companyLocation,
-                        workType: job.workType,
-                        status: JobStatus.PENDING
-                    });
+                    job.tasks = job.tasks.concat(tasks);
+                    job.scheduleDate = params.scheduleDate;
+                    job.description = params.description;
 
-                    if (imagesUrl?.length) {
-                        imagesUrl.forEach(imageUrl => job.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() }));
+                    let newStartTime: any = null
+                    let newEndTime: any = null
+                    let date;
+                    if (params.scheduledStartTime) {
+                        date = new Date(params.scheduleDate)
+                        newStartTime = new Date(params.scheduledStartTime)
+                        if (newStartTime != job.scheduledStartTime) {
+                            action += '|Updated ScheduledStartTime|';
+                        }
+                        job.scheduledStartTime = newStartTime;
                     }
 
-                    await newJob.save(async (err: any) => {
-                        if (err) {
-                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    if (params.scheduledEndTime) {
+                        date = new Date(params.scheduleDate)
+                        newEndTime = new Date(params.scheduledEndTime)
+                        if (newEndTime != job.scheduledEndTime) {
+                            action += '|Updated ScheduledEndTime|';
+                        }
+                        job.scheduledEndTime = newEndTime;
+                    }
+        
+                    if (params.equipmentId != undefined && params.equipmentId !== '""') {
+                        if (params.equipmentId != job.equipmentId) {
+                            action += '|Updated EquipmentId|';
+                        }
+                        job.equipmentId = params.equipmentId;
+                    }
+        
+                    if (params.jobLocationId) {
+                        if (params.jobLocationId != job.jobLocation) {
+                            action += '|Updated JobLocationId|';
+                        }
+                        job.jobLocation = params.jobLocationId;
+                    }
+        
+                    if (params.jobSiteId) {
+                        if (params.jobSiteId != job.jobSite) {
+                            action += '|Updated JobSiteId|';
+                        }
+                        job.jobSite = params.jobSiteId;
+                    }
+        
+                    if (params.homeJobLocationId) {
+                        if (params.homeJobLocationId != job.homeJobLocation) {
+                            action += '|Updated HomeJobLocationId|';
+                        }
+                        job.homeJobLocation = params.homeJobLocationId;
+                    }
+        
+                    if (params.homeJobSiteId) {
+                        if (params.homeJobSiteId != job.homeJobSite) {
+                            action += '|Updated HomeJobSiteId|';
+                        }
+                        job.homeJobSite = params.homeJobSiteId;
+                    }
+        
+                    if (params.isHomeOccupied 
+                        || params.isHomeOccupied === false 
+                        || params.isHomeOccupied === true) {
+        
+                        if (params.isHomeOccupied !== job.isHomeOccupied) {
+                            action  += '|Updated Home Occupied Status|'
+                        }
+        
+                        job.isHomeOccupied = params.isHomeOccupied;
+                    }
+
+                    if(params.isHomeOccupied === true) {
+                        if(params.homeOwnerId && params.homeOwnerId !== job.homeOwner) {
+                            const newHomeOwner = await HomeOwner.findOne({ _id: params.homeOwnerId });
+                            if(!newHomeOwner) {
+                                return res.json({ 'status': Status.NotFound, 'message': 'Provided homeOwnerId does not correspond with any home owner' });
+                            }
+                            job.homeOwner = params.homeOwnerId;
+                            action  += '|Updated Home Owner|'
+                        }
+                        else {
+                            if(params.isHomeOccupied === true && !job.homeOwner) {
+                                return res.json({ 'status': Status.Error, 'message': 'Home Owner is required when home is occupied' });
+                            }
+                        }
+                    }
+                    else if(params.isHomeOccupied === false) {
+                        job.homeOwner = null;
+                        action  += '|Updated Home Owner|'
+                    }
+
+                    if (params.customerContactId) {
+                        if (params.customerContactId !== job.customerContactId) {
+                            action += '|Updated Contact Associated|';
+                        }
+                        job.customerContactId = params.customerContactId;
+                    }
+
+                    if (params.customerPO) {
+                        if (params.customerPO !== job.customerPO) {
+                            action += '|Updated Customer PO|';
+                        }
+                        job.customerPO = params.customerPO;
+                    }
+
+                    if (imagesUrl?.length) {
+                        if (JSON.stringify(imagesUrl) !== JSON.stringify(job.images)) {
+                            action += '|Updated image|';
                         }
 
-                        await company.updateOne({currentJobId: company.currentJobId+1 }).exec(async (err: any)=>{})
-                    })
+                        imagesUrl.forEach(imageUrl => {
+                            job.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() });
+                        });
+                    }
+
+                    if (params.scheduleTimeAMPM) {
+                        if (params.scheduleTimeAMPM !== job.scheduleTimeAMPM) {
+                            action += '|Updated ScheduleTimeAMPM|';
+                        }
+                        job.scheduleTimeAMPM = params.scheduleTimeAMPM; 
+                    }
+
+                    job.status = JobStatus.STARTED;
                     break;
                 default:
                     break;
