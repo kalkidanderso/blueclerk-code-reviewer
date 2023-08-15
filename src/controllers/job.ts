@@ -3472,6 +3472,9 @@ export const sendJobReport = (req: Request, res: Response) => {
                 { path: 'tasks.timeUpdatedBy', select: 'profile.displayName' },
                 { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
                 { path: 'createdBy', select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone' },
+                { path: 'homeOwner' },
+                { path: 'jobLocation', select: 'name' },
+                { path: 'jobSite', select: 'name' },
             ],
         }).populate({
             path: 'scans',
@@ -3504,10 +3507,12 @@ export const sendJobReport = (req: Request, res: Response) => {
 
                 const customer = <ICustomer>report.job?.customer;
                 const customerContact = <IContact>report.job?.customerContactId;
+                const filepath = req.file?.path ?? `${ACCOUNT_RECEIVABLE_REPORT_PDF_PATH}/${report.id}.pdf`;
 
+                await _generateJobReportPDF(report);
+                
                 let paramRecipients: string[];
                 let recipientEmails: string[];
-                let ccEmails: string[] = [];
                 let copyToMyself: boolean;
                 try {
                     // Handle the stringify array of recipients value
@@ -3535,7 +3540,7 @@ export const sendJobReport = (req: Request, res: Response) => {
 
                     // Add the user's email himself if he want to receive copy email
                     if (copyToMyself) {
-                        ccEmails.push(user.auth?.email);
+                        recipientEmails.push(user.auth?.email)
                     }
                 } catch (error) {
                     Sentry.captureException(error);
@@ -3545,13 +3550,16 @@ export const sendJobReport = (req: Request, res: Response) => {
                 sendReportEmailToCustomer({
                     companyName: company.info?.companyName,
                     companyEmail: company.info?.companyEmail,
+                    companyLogo: company.info?.logoUrl,
                     customerName: report.job.customer?.profile?.displayName,
                     customerEmail: report.job.customer?.info?.email,
-                    recipientEmails,
-                    ccEmails,
+                    recipientEmails: recipientEmails,
+                    jobReportPdf: filepath,
                     reportNumber: report.job.jobId,
                     jobTypes: [...new Set(jobTypes)].join(', ') ?? report.job?.jobType?.title,
                     workDate: report.job.scheduleDate,
+                    subject: params.subject,
+                    message: params.message
                 });
 
                 let history = report.emailHistory ? report.emailHistory : [];
@@ -4244,6 +4252,36 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
 
 // PRIVATE METHODS
 
+const _generateJobReportPDF = async (report: any) => {
+    // Initialize PDF Make
+    const pdfMake = new PdfPrinter(FONT_SETS.ROBOTO);
+    // Generate the PDF content
+    const generatePdf = await handleJobReportPdf(report);
+    // Construct the PDF full path
+    const fullPath = `${ACCOUNT_RECEIVABLE_REPORT_PDF_PATH}/${report.id}.pdf`;
+    // Check if folder path exist, create if not
+    if (!fs.existsSync(ACCOUNT_RECEIVABLE_REPORT_PDF_PATH)) {
+        fs.mkdirSync(ACCOUNT_RECEIVABLE_REPORT_PDF_PATH);
+    }
+    // Check if existing Invoice PDF exist, remove if any
+    if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+    }
+
+    const pdfDoc = pdfMake.createPdfKitDocument(generatePdf);
+    const writeStream = fs.createWriteStream(fullPath);
+    pdfDoc.pipe(writeStream);
+    pdfDoc.end();
+
+    return await new Promise((resolve, reject) => {
+        writeStream.on('finish', () => {
+            resolve('');
+        })
+            .on('error', (error) => {
+                reject('Error in _generateInvoicePdf: ' + error);
+            });
+    });
+}
 /**
  * To update Task's property when pause, finish, or update the endTime
  */
