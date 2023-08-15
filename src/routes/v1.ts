@@ -1856,7 +1856,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoice_Detail),
         validate(Validations.getJobReportEmailTemplate),
         jobController.getJobReportEmailTemplate
         
