@@ -361,15 +361,13 @@ const JobSchema = new Schema({
                 type: Number
             },
             completedCount: {
-                type: Number,
-                default: 0
+                type: Number
             },
             completedComment: {
                 type: String,
             },
             jobCostingQuantity: {
-                type: Number,
-                default: 0
+                type: Number
             },
         }],
         paid: {

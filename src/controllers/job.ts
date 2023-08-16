@@ -1565,6 +1565,7 @@ export const getJobsStream = async (req: Request, res: Response, sio: any) => {
 
 export const createJobReport = async (jobId: any, companyId: any, customerName: string | null, technicianName: string | null, date: any, contractor?: any) => {
     const job = await Job.findOne({ _id: jobId, $or: [{ contractor: companyId }, { 'tasks.contractor': companyId }, { company: companyId }], status: JobStatus.FINISHED }).select('_id').exec();
+    const oldJobReport = await JobReport.findOne({ job: job });
     if (job) {
         const scans = await Scan.find({ job: job }, 'comment timeOfScan').select('_id').exec();
         const purchaseOrders = await PurchaseOrder.find({ job: job }).select('_id').exec();
@@ -1582,6 +1583,12 @@ export const createJobReport = async (jobId: any, companyId: any, customerName: 
         if (contractor) {
             // jobReport.contractor = contractor;
             jobReport.contractor = null;
+        }
+        
+        if (oldJobReport) {
+            // Case when job is reopen from completed status
+            jobReport.invoice = oldJobReport.invoice;
+            jobReport.invoiceCreated = oldJobReport.invoiceCreated;   
         }
         return jobReport.save().then((jobReport: IJobReport) => jobReport);
     }
@@ -2783,7 +2790,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
                     const jobType = await Item.findOne({ jobType: j.jobType })
                     const commissionTierId = contractor.commissionTier
                     if (commissionTierId) {
-                        const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
+                        const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId));
                         if (commissionTier?.charge){
                             let quantity = j.quantity;
 
