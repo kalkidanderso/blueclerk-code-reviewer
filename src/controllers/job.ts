@@ -2392,7 +2392,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                         && job.homeOwner?.contact?.phone 
                         && (standarizePhoneNumberE164(job.homeOwner?.contact?.phone) !== standarizePhoneNumberE164(job.customerContactId?.phone))
                     ) {
-                        sendJobCompleteSMS(job.homeOwner.contact.phone, job.homeOwner.displayName);
+                        sendJobCompleteSMS(job.homeOwner.contact.phone, job.homeOwner?.profile?.displayName);
                     } 
                 }
                 if (linkedJob) {
@@ -2794,7 +2794,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
             && homeOwner?.contact?.phone 
             && (standarizePhoneNumberE164(homeOwner?.contact?.phone) !== standarizePhoneNumberE164(job.customerContactId?.phone))
         ) {
-            sendJobCompleteSMS(homeOwner.contact.phone, homeOwner.profile.displayName);
+            sendJobCompleteSMS(homeOwner.contact.phone, homeOwner.profile?.displayName);
         } 
     }
 
