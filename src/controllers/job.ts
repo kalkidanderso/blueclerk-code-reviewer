@@ -1964,7 +1964,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
         })
         .populate({
             path: 'homeOwner',
-            select: 'profile'
+            select: 'profile contact'
         })
         .populate({
             path: 'technician',
@@ -2680,7 +2680,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
         .populate({ path: 'jobLocation', select: 'name'})
         .populate({ path: 'jobSite', select: 'name'})
 
-    // Check if job exist and job status is not FINISHED or CANCELED
+        // Check if job exist and job status is not FINISHED or CANCELED
     if (!job)
         return res.json({ status: Status.Error, message: 'Job not found' });
 
@@ -2770,19 +2770,32 @@ export const updateJobTask = async (req: Request, res: Response) => {
         jobStatus = JobStatus.FINISHED;
         action += `|Finishing the job|`;
         // Send SMS if job is finished
-        try {
-            if(job.customerContactId?.phone) {
-                const standarizedPhone = standarizePhoneNumberE164(job.customerContactId.phone);
-                const today = new Date()
-                const todayDate = `${today.getMonth() + 1}/${today.getDate()}`;
-                const message = `BlueClerk: Dear ${job.customerContactId.name}, ${job.company?.info?.companyName || 'N/A'} has completed ${job.jobId} at ${job.jobSite?.name || job.jobLocation?.name || 'N/A'} on ${todayDate}.\n\nText STOP to opt-out.`
-                // If job is finished a SMS is sent
-                await sendSMS(standarizedPhone, message);
+        const today = new Date()
+        const todayDate = today.toDateString();
+        const sendJobCompleteSMS = async (phone : string, name : string) => {
+            try {
+                if(job.customerContactId?.phone) {
+                    const standarizedPhone = standarizePhoneNumberE164(phone);    
+                    // If job is finished a SMS is sent
+                    const message = `BlueClerk: Dear ${name}, ${job.company?.info?.companyName || 'N/A'} has completed ${job.jobId} at ${job.jobSite?.name || job.jobLocation?.name || 'N/A'} on ${todayDate}.\n\nText STOP to opt-out.`
+                    await sendSMS(standarizedPhone, message);
+                }
             }
+            catch(err) {
+                Sentry.captureException(err);
+            }     
         }
-        catch(err) {
-            Sentry.captureException(err);
-        }     
+        if(job.customerContactId?.phone) {
+            sendJobCompleteSMS(job.customerContactId?.phone, job.customerContactId.name)
+        }
+        const homeOwner = await HomeOwner.findById(job.homeOwner);
+        if(
+            job.isHomeOccupied 
+            && homeOwner?.contact?.phone 
+            && (standarizePhoneNumberE164(homeOwner?.contact?.phone) !== standarizePhoneNumberE164(job.customerContactId?.phone))
+        ) {
+            sendJobCompleteSMS(homeOwner.contact.phone, homeOwner.profile.displayName);
+        } 
     }
 
     // Log a track history
