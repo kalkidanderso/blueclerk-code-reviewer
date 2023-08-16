@@ -1516,7 +1516,58 @@ export const createPOInvoice = (req: Request, res: Response) => {
             })
         });
 }
+const  findAddedAndRemovedItems=(original:any, updated:any) =>{
+    const added = [];
+    const removed = [];
+  
+    const originalIds = original.map((item:any) => item.item.toString());
+    const updatedIds = updated.map((item:any) => item.item.toString());
+  
+    for (const item of original) {
+      if (!updatedIds.includes(item.item.toString())) {
+        removed.push(item);
+      }
+    }
+  
+    for (const item of updated) {
+      if (!originalIds.includes(item.item.toString())) {
+        added.push(item);
+      }
+    }
+  
+    return { added, removed };
+  }
+const changesManage=(newObj:any,oldObj:any)=>{
+    let logs: any[]=[];
 
+    Object.keys(newObj).map(key=>{
+        if(key=="items"){
+            // if(newObj[key].length==oldObj[key].length)
+            {
+              
+                const { added, removed } = findAddedAndRemovedItems(oldObj[key], newObj[key]);
+                console.log(added);
+                console.log(removed)
+                logs.push("ITEM_REMOVED "+removed.length)
+                logs.push("ITEM_ADDED "+added.length)
+
+            }
+            // else if(newObj[key].length<oldObj[key].length){
+            //     logs.push("ITEM_REMOVED")
+            // }
+            // else if(newObj[key].length>oldObj[key].length){
+            //     logs.push("ITEM_ADDED")
+
+            // }
+
+        }
+        if(newObj[key]!=oldObj[key]){
+            logs.push(key+"_CHANGED")
+        }
+    })
+    // console.log(logs);
+    return logs;
+}
 export const updateInvoice = (req: Request, res: Response) => {
 
     const params = req.body
@@ -1551,10 +1602,12 @@ export const updateInvoice = (req: Request, res: Response) => {
             // Retrieve payment term for this invoice
             let paymentTerm: IPaymentTerm;
             if (params.paymentTermId) {
+                
                 paymentTerm = await PaymentTerm.findOne({ _id: params.paymentTermId, isActive: true });
                 if (!paymentTerm) {
                     return res.json({ status: Status.Error, message: 'Payment Term not found' });
-                }
+                } 
+           
             }
 
             // Retrieve customer contact for this invoice
@@ -1812,6 +1865,25 @@ export const updateInvoice = (req: Request, res: Response) => {
                             total += shippingCost;
                         }
 
+                         const changes= changesManage({
+                            jobPurchaseOrders: purchaseOrderIds,
+                            items: invoiceItems,
+                            shippingCost: helper.roundTwoDecimal(shippingCost),
+                            taxAmount: helper.roundTwoDecimal(taxAmount),
+                            subTotal: helper.roundTwoDecimal(subTotalBeforeTax),
+                            total: helper.roundTwoDecimal(total),
+                            balanceDue: helper.roundTwoDecimal(balanceDue),
+                            paymentApplied: helper.roundTwoDecimal(paymentApplied),
+                            status, paid,
+                            charges, issuedDate, dueDate, note: params.note,
+                            isDraft: params.isDraft,
+                            customerPO: params.customerPO,
+                            customerContactId: customerContact,
+                            jobLocation: params.jobLocationId === null ? null : jobLocation?._id,
+                            jobSite: params.jobSiteId === null ? null : jobSite?._id,
+                            vendorId: params.vendorId,
+                            invoiceId
+                        },invoice);
                         invoice.updateOne({
                             jobPurchaseOrders: purchaseOrderIds,
                             items: invoiceItems,
@@ -1846,7 +1918,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                                 invoice.paymentTerm = params.paymentTermId ? paymentTerm?._id : null;
                                 await invoice.save();
                                 // @ts-ignore
-                                InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'UPDATED', customer: invoice.customer,companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
+                                InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: changes.join(","), customer: invoice.customer,companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
                                 , createdBy: user._id });
 
                                 // To handle the switch of Invoice isDraft
@@ -1999,6 +2071,25 @@ export const updateInvoice = (req: Request, res: Response) => {
                     shippingCost = parseFloat(params.shippingCost);
                     total += shippingCost;
                 }
+                const changes= changesManage({
+                    items: invoiceItems,
+                    charges: helper.roundTwoDecimal(charges),
+                    shippingCost: helper.roundTwoDecimal(shippingCost),
+                    taxAmount: helper.roundTwoDecimal(taxAmount),
+                    subTotal: helper.roundTwoDecimal(subTotalBeforeTax),
+                    total: helper.roundTwoDecimal(total),
+                    balanceDue: helper.roundTwoDecimal(balanceDue),
+                    paymentApplied: helper.roundTwoDecimal(paymentApplied),
+                    status, paid,
+                    issuedDate, dueDate, note: params.note,
+                    isDraft: params.isDraft,
+                    customerPO: params.customerPO,
+                    customerContactId: customerContact,
+                    jobLocation: params.jobLocationId === null ? null : jobLocation?._id,
+                    jobSite: params.jobSiteId === null ? null : jobSite?._id,
+                    vendorId: params.vendorId,
+                    invoiceId
+                },invoice);
 
                 invoice.updateOne({
                     items: invoiceItems,
@@ -2032,7 +2123,9 @@ export const updateInvoice = (req: Request, res: Response) => {
                          */
                         invoice.paymentTerm = params.paymentTermId ? paymentTerm?._id : null;
                         await invoice.save();
-
+                        // @ts-ignore
+                        InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: changes.join(","), customer: invoice.customer,companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
+                        , createdBy: user._id });
                         // To handle the switch of Invoice isDraft
                         _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
                             if (errMsg) {
