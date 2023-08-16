@@ -487,8 +487,11 @@ const _createJob = async (
     // SMS to home owner
     if(job.isHomeOccupied && job.isHomeOccupied === true) {
         const jobhomeOwner = await HomeOwner.findById(job.homeOwner);
-        if(jobhomeOwner && jobhomeOwner?.contact?.phone && jobhomeOwner?.contact?.phone !== jobContact?.phone) {
-            sendJobScheduleMessage(jobhomeOwner.contact.phone, jobhomeOwner?.profile?.firstName)
+        if(jobhomeOwner 
+            && jobhomeOwner?.contact?.phone 
+            && (standarizePhoneNumberE164(jobhomeOwner?.contact?.phone) !== standarizePhoneNumberE164(jobContact?.phone))
+        ) {
+            sendJobScheduleMessage(jobhomeOwner.contact.phone, jobhomeOwner?.profile?.displayName)
         }
     }
 
@@ -2034,7 +2037,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     })
                     .populate({
                         path: 'homeOwner',
-                        select: 'profile'
+                        select: 'profile contact'
                     })
                     .populate({
                         path: 'technician',
@@ -2365,19 +2368,32 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
 
                 const jobReport = await createJobReport(job._id, job.company, customerName, technicianName, date, companyId);
                 if (params.status == JobStatus.FINISHED) {
-                    try {
-                        if(job.customerContactId?.phone) {
-                            const standarizedPhone = standarizePhoneNumberE164(job.customerContactId.phone);
-                            const today = new Date()
-                            const todayDate = `${today.getMonth() + 1}/${today.getDate()}`;
-                            // If job is finished a SMS is sent
-                            const message = `BlueClerk: Dear ${job.customerContactId.name}, ${job.company?.info?.companyName || 'N/A'} has completed ${job.jobId} at ${job.jobSite?.name || job.jobLocation?.name || 'N/A'} on ${todayDate}.\n\nText STOP to opt-out.`
-                            await sendSMS(standarizedPhone, message);
+                    const today = new Date()
+                    const todayDate = today.toDateString();
+                    const sendJobCompleteSMS = async (phone : string, name : string) => {
+                        try {
+                            if(job.customerContactId?.phone) {
+                                const standarizedPhone = standarizePhoneNumberE164(phone);    
+                                // If job is finished a SMS is sent
+                                const message = `BlueClerk: Dear ${name}, ${job.company?.info?.companyName || 'N/A'} has completed ${job.jobId} at ${job.jobSite?.name || job.jobLocation?.name || 'N/A'} on ${todayDate}.\n\nText STOP to opt-out.`
+                                await sendSMS(standarizedPhone, message);
+                            }
                         }
+                        catch(err) {
+                            Sentry.captureException(err);
+                        }     
                     }
-                    catch(err) {
-                        Sentry.captureException(err);
-                    }     
+
+                    if(job.customerContactId?.phone) {
+                        sendJobCompleteSMS(job.customerContactId.phone, job.customerContactId.name);
+                    }
+                    if(
+                        job.isHomeOccupied 
+                        && job.homeOwner?.contact?.phone 
+                        && (standarizePhoneNumberE164(job.homeOwner?.contact?.phone) !== standarizePhoneNumberE164(job.customerContactId?.phone))
+                    ) {
+                        sendJobCompleteSMS(job.homeOwner.contact.phone, job.homeOwner.displayName);
+                    } 
                 }
                 if (linkedJob) {
                     await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, companyId);
