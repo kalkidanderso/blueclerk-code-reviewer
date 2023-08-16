@@ -119,6 +119,7 @@ export interface ITaskJobType extends Document {
     price?: number
     completedCount?: number
     completedComment?: string
+    jobCostingQuantity?: number
 }
 
 const JobSchema = new Schema({
@@ -365,7 +366,11 @@ const JobSchema = new Schema({
             },
             completedComment: {
                 type: String,
-            }
+            },
+            jobCostingQuantity: {
+                type: Number,
+                default: 0
+            },
         }],
         paid: {
             type: Boolean,

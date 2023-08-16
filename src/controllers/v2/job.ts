@@ -416,6 +416,7 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                         task.jobTypes.forEach((jobType) => {
                             let newJobType = newTask?.jobTypes?.find((res: any) => res._id == jobType._id);
                             if (newJobType) {
+                                jobType.jobCostingQuantity = jobType.quantity;
                                 jobType.completedCount = newJobType.completedCount;
 
                                 if ((jobType.completedCount || jobType.quantity) < jobType.quantity) {
@@ -584,29 +585,6 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                     break;
                 //Reschedule
                 case 2:
-                    job.tasks.forEach((task) => {
-                        const newJobTypes: any = [];
-                        task.jobTypes.forEach((jobType) => {
-                            if ((jobType.completedCount || 0) < jobType.quantity && jobType.status == 7) {
-                                if (jobType.completedCount) {
-                                    jobType.quantity = jobType.completedCount;
-                                    jobType.status = JobStatus.FINISHED;
-
-                                    newJobTypes.push(jobType);
-                                }
-                            } else {
-                                newJobTypes.push(jobType);
-                            }
-                        });
-
-                        task.jobTypes = newJobTypes;
-                        task.status = JobStatus.FINISHED;
-                    });
-
-                    //Action History
-                    action = `|Reacheduled Job|`;
-                    ticketAction = `|Rescheduled Job by ${user.profile.displayName}|`;
-  
                     let jobId = `Job ${company.currentJobId + 1}`;
                     if (company.prefix) {
                         jobId = `Job ${company.prefix}-${company.currentJobId + 1}`;
@@ -621,7 +599,7 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                         paramsImageFile?.images?.forEach((image: any) => imagesUrl.push(image.location));
                     }
 
-                    let tasks;
+                    let tasks:any = [];
                     let paramTasks: TaskEntry[] = params.tasks ?? [];
                     // To handle any over-stringified strings
                     if (!Array.isArray(paramTasks)) {
@@ -634,6 +612,34 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                         return res.json({ status: Status.Error, message: error.message });
                     }
 
+                    job.tasks.forEach((task) => {
+                        let newJobTypes: any = [];
+                        task.jobTypes.forEach((jobType) => {
+                            if ((jobType.completedCount || 0) < jobType.quantity && jobType.status == 7) {
+                                if (jobType.completedCount) {
+                                    jobType.quantity = jobType.completedCount;
+                                    jobType.status = JobStatus.FINISHED;
+
+                                    newJobTypes.push(jobType);
+                                }
+                            } else {
+                                newJobTypes.push(jobType);
+                            }
+                        });
+                        task.status = JobStatus.FINISHED;
+
+                        tasks.forEach((newTask:any, index:number) => {
+                            if (newTask.technician.toString() == task.technician?._id.toString()) {
+                                newJobTypes = newJobTypes.concat(newTask.jobTypes);
+                                task.status = JobStatus.PENDING;
+        
+                                tasks.splice(index, 1);
+                            }
+                        })
+
+                        task.jobTypes = newJobTypes;
+                    });
+                    
                     job.tasks = job.tasks.concat(tasks);
                     job.scheduleDate = params.scheduleDate;
                     job.description = params.description;
@@ -757,6 +763,9 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                     }
 
                     job.status = JobStatus.STARTED;
+                     //Action History
+                     action = `|Reacheduled Job|`;
+                     ticketAction = `|Rescheduled Job by ${user.profile.displayName}|`;
                     break;
                 default:
                     break;

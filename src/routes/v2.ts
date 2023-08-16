@@ -16,6 +16,7 @@ import * as jobController from '../controllers/v2/job';
 import * as serviceTicketController from '../controllers/v2/serviceTicket';
 import * as userPermissionController from '../controllers/v2/userPermission';
 import * as bouncedEmails from '../controllers/bouncedEmails';
+import { uploadImageInS3 } from '../middleware/multer';
 
 
 
@@ -139,6 +140,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         checkUserPermissions(Permissions.Job_Update),
+        uploadImageInS3.fields([{ name: 'image' }, { name: 'images' }]),
         (req, res) => {
             jobController.updatePartialJob(req, res, sio)
         }

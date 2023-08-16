@@ -3853,7 +3853,7 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
                 .populate({ path: 'technician', select: 'profile' })
                 .populate({ path: 'createdBy', select: 'profile' })
                 .populate({ path: 'updatedBy', select: 'profile' });
-
+                
             return res.json({ status: Status.Success, jobs, jobRoutes });
 
         })
