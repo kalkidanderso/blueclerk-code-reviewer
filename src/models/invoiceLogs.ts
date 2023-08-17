@@ -1,10 +1,10 @@
 import mongoose, { Document, Schema } from 'mongoose'
 
 export const enum logType {
-    CREATED = 'CREATED',
-    UPDATED = 'UPDATED',
-    VOID = 'VOID',
-    DUPLICATE = 'DUPLICATE',
+    CREATED = 'INVOICE_CREATED',
+    UPDATED = 'INVOICE_UPDATED',
+    VOID = 'INVOICE_VOID',
+    DUPLICATE = 'INVOICE_DUPLICATE',
     PAYMENT_RECORDED = 'PAYMENT_RECORDED',
     PAYMENT_UPDATED = 'PAYMENT_UPDATED',
     PAYMENT_VOID = 'PAYMENT_VOID',
@@ -22,7 +22,8 @@ export interface IInvoiceLogs extends Document {
     createdAt?: Date
     createdBy: Schema.Types.ObjectId
     updatedAt?: Date
-    type: logType
+    type: logType,
+    info:String
 
 }
 
@@ -55,6 +56,7 @@ const InvoiceLogsSchema = new Schema({
         required: true
     },
     type: String,
+    info:String,
     createdBy: {
         type: Schema.Types.ObjectId,
         ref: 'User',
