@@ -416,6 +416,8 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                 if (newTasks) {
                     job.tasks.forEach((task) => {
                         let newTask = newTasks.find((res: any) => res._id == task._id);
+
+                        let allJobTypeStatus:any = [];
                         task.jobTypes.forEach((jobType) => {
                             let newJobType = newTask?.jobTypes?.find((res: any) => res._id == jobType._id);
                             if (newJobType) {
@@ -428,7 +430,13 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                                 }
                             }
                             newJobTypes.unshift(jobType);
+                            allJobTypeStatus.push(jobType.status);
                         });
+
+                        if (allJobTypeStatus.every((status: JobStatus) => status === JobStatus.FINISHED)) {
+                            // All new job type task are FINISHED, Job is FINISHED
+                            task.status = JobStatus.FINISHED;;
+                        }
                     })
                 }
                 if (needUpdate) {
@@ -439,7 +447,7 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
             }
 
             if (!needUpdate) {
-                return res.json({ 'status': Status.Success, 'message': 'Job edited successfully.', ticket: newTicket});
+                return res.json({ 'status': Status.Success, 'message': 'Job rescheduled successfully.', ticket: newTicket});
             }
 
             switch (params.action) {
@@ -505,7 +513,7 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                 }
 
                 await createJobReport(job._id, job.company, customerName, technicianName, date, company._id);
-                return res.json({ 'status': Status.Success, 'message': 'Job edited successfully.', ticket: newTicket, job: job});
+                return res.json({ 'status': Status.Success, 'message': 'Job rescheduled successfully.', ticket: newTicket, job: job});
             } catch (err) {
                 Sentry.captureException(err);
                 return res.json({ 'status': Status.Error, 'message': err.message });
@@ -1047,7 +1055,7 @@ const _splitJobAndReschedule = async (req: Request, res: Response, sio: any, job
         tasks.forEach((newTask:any, index:number) => {
             if (newTask.technician.toString() == task.technician?._id.toString()) {
                 newJobTypes = newJobTypes.concat(newTask.jobTypes);
-                task.status = JobStatus.PENDING;
+                task.status = JobStatus.PARTIALLY_COMPLETED;
 
                 tasks.splice(index, 1);
             }
@@ -1138,5 +1146,5 @@ const _splitJobAndReschedule = async (req: Request, res: Response, sio: any, job
         job.scheduleTimeAMPM = params.scheduleTimeAMPM; 
     }
 
-    job.status = JobStatus.STARTED;
+    job.status = JobStatus.PENDING;
 }
