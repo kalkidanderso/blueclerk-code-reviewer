@@ -1055,7 +1055,7 @@ const _splitJobAndReschedule = async (req: Request, res: Response, sio: any, job
         tasks.forEach((newTask:any, index:number) => {
             if (newTask.technician.toString() == task.technician?._id.toString()) {
                 newJobTypes = newJobTypes.concat(newTask.jobTypes);
-                task.status = JobStatus.PARTIALLY_COMPLETED;
+                task.status = JobStatus.PENDING;
 
                 tasks.splice(index, 1);
             }
