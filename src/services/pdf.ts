@@ -55,6 +55,22 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                 };
             }
         })) : [];
+    
+    const endTime = jobReport.job?.scheduledEndTime? `:${moment.utc(jobReport.job?.scheduledEndTime).format('hh:mma')}` : '';
+    const specificTime = `${moment.utc(jobReport.job?.scheduledStartTime).format('hh:mma')}${endTime}`
+    let time = 'N/A';
+    switch (jobReport.job?.scheduleTimeAMPM) {
+        case 0:
+            time = specificTime;
+            break;
+        case 1: 
+            time = 'AM';
+            break;
+        case 2:
+            time = 'PM';
+            break;
+       
+    }
     const serviceTicketNotes = jobReport.job.request?.requests?.filter((request: any) => request.note).map((request: any) => request.note).join('\n\n') || jobReport.job.ticket?.note;
     // ===================================
     // ===[ INITIALIZE PDF TEMPLATE ]=====
@@ -117,13 +133,13 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                                                 },
                                                 {
                                                     stack: [{
-                                                        text: jobReport.job.jobId || 'N/A',
+                                                        text: jobReport.job.jobId ? `Job Report - ${jobReport.job.jobId}` : 'N/A',
                                                         style: 'jobLabel'
                                                     }, {
                                                         text: '\nJOB DATE',
                                                         style: 'fieldLabelRight'
                                                     }, {
-                                                        text: moment(jobReport.job?.scheduleDate).format('MMM. DD, YYYY') || 'N/A',
+                                                        text: moment.utc(jobReport.job?.scheduleDate).format('ll') || 'N/A',
                                                         style: 'boldGreyRight'
                                                     }]
                                                 }
@@ -181,11 +197,17 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                                                         style: jobReport.job.isHomeOccupied ? 'boldGreen' : 'boldGrey'
                                                     }],
                                                     width: '25%',
-                                                }, {
-                                                    ...generateField('START', moment(jobReport.job?.startTime).format('MMM. DD, YYYY hh:mm A'), '12.5%')
-                                                }, {
-                                                    ...generateField('END', moment(jobReport.job?.endTime).format('MMM. DD, YYYY hh:mm A'), '12.5%')
-                                                }, ],
+                                                },{
+                                                    ...generateField('TIME', time, '20,5%')
+                                                } 
+                                                
+                                                
+                                                // {
+                                                //     ...generateField('START TIME', moment.utc(jobReport.job?.scheduledStartTime).format('hh:mm A'), '12.5%')
+                                                // }, {
+                                                //     ...generateField('END TIME', moment.utc(jobReport.job?.scheduledEndTime).format('hh:mm A'), '12.5%')
+                                                // }, 
+                                            ],
                                             },
                                             jobReport.job.customerContactId ? {
                                                 columns: [{
