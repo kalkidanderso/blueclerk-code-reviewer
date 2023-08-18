@@ -17,7 +17,8 @@ import { AdvancePayment, AdvancePaymentEmployee, AdvancePaymentVendor } from '..
 import * as Sentry from '@sentry/node';
 import { IJob, Job } from '../models/Job';
 import { IJobCommission, JobCommission } from '../models/JobCommission';
-// import * as InvoiceLogController from "../controllers/invoiceLogs";
+import { logType } from 'src/models/invoiceLogs';
+import * as InvoiceLogController from "../controllers/invoiceLogs";
 
 
 /**
@@ -675,6 +676,9 @@ export const createPayment = async (req: Request, res: Response) => {
             payment.amountPaid = params.amount;
             // Handle invoice balance due, underpayment, and overpayment
             await _calculateInvoiceBalance(invoice, customer, parseFloat(params.amount));
+            // @ts-ignore
+            InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_RECORDED, info:"Payment of $"+payment.amountPaid +" recorded", amountPaid:payment.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id});
+
         }
 
         // Save the new payment
@@ -1101,7 +1105,7 @@ export const updatePayment = async (req: Request, res: Response) => {
 
     try {
         if (payment?.line.length && paramsInvoices.length) {
-            const invoiceLine = await _handleUpdateMultipleInvoices(paramsInvoices, payment, customer, company);
+            const invoiceLine = await _handleUpdateMultipleInvoices(paramsInvoices, payment, customer, company,oldAmountPaid);
             invoices.push(...invoiceLine);
         }
 
@@ -1118,6 +1122,9 @@ export const updatePayment = async (req: Request, res: Response) => {
                 // Otherwise, recalculate invoice & customer balance
                 await _calculateInvoiceBalance(invoice, customer, diffAmountPaid)
             }
+
+               // @ts-ignore
+        InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_UPDATED, info:"Payment of $"+oldAmountPaid +" updated to $"+payment.amountPaid, amountPaid:payment.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: payment.updatedBy});
 
             invoices.push(invoice);
         }
@@ -1536,6 +1543,8 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
 
     const params = req.body;
     const company = <ICompany>req.company;
+    const user = <IUser>req.user;
+
     let payment: IPayment;
     let paymentVendor: IPaymentVendor;
     let paymentEmployee: IPaymentEmployee;
@@ -1595,7 +1604,7 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
         }
 
         try {
-            await _handleVoidPayment(params.type, invoiceIds, payment, customer);
+            await _handleVoidPayment(params.type, invoiceIds, payment, customer,user);
             await _handleVoidPaymentContractor(params.type, paymentVendor, company._id);
         } catch (err) {
             Sentry.captureException(err);
@@ -1640,11 +1649,11 @@ export const _handleMultipleInvoices = async (
         invoice: invoice,
         amountPaid: roundTwoDecimal(paramInvoice.amountPaid)
     });
-    // @ts-ignore
-    // InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: 'PAYMENT_RECORDED', amountPaid:paramInvoice.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id});
-
+ 
     payment.amountPaid = payment.amountPaid ?? 0;
     payment.amountPaid += paramInvoice.amountPaid;
+// @ts-ignore
+    InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_RECORDED, info:"Payment of $"+paramInvoice.amountPaid+" recorded", amountPaid:paramInvoice.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id});
 
     await _calculateInvoiceBalance(invoice, customer, parseFloat(paramInvoice.amountPaid));
 
@@ -1652,7 +1661,7 @@ export const _handleMultipleInvoices = async (
 }
 
 // To handle update payment with multiple invoices
-export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payment: IPayment, customer: ICustomer, company: ICompany): Promise<IInvoice[]> => {
+export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payment: IPayment, customer: ICustomer, company: ICompany,oldAmountPaid:any): Promise<IInvoice[]> => {
     const invoices: IInvoice[] = [];
     let newAmountPaid, diffAmountPaid = 0;
     let paymentAmountPaid = 0;
@@ -1687,6 +1696,9 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
         }
 
         invoices.push(invoiceLine);
+        // @ts-ignore
+        InvoiceLogController.create({invoiceId: invoiceLine.invoiceId, invoice: invoiceLine._id, type: logType.PAYMENT_UPDATED, info:"Payment of $"+oldAmountPaid+" updated to $"+payment.amountPaid, amountPaid:payment.amountPaid, customer: invoice.customer, companyLocation: invoiceLine.companyLocation, workType: invoiceLine.workType, company: invoiceLine.company, createdBy: payment.updatedBy});
+
     }
 
     payment.line.forEach(paymentLine => {
@@ -1697,7 +1709,7 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
     return invoices;
 }
 
-export const _handleVoidPayment = async (paymentType: string, invoiceIds: string[], payment: IPayment, customer: ICustomer) => {
+export const _handleVoidPayment = async (paymentType: string, invoiceIds: string[], payment: IPayment, customer: ICustomer,user:IUser) => {
 
     const invoices = await Invoice.find({ _id: { $in: [...new Set(invoiceIds)] } })
 
@@ -1767,6 +1779,9 @@ export const _handleVoidPayment = async (paymentType: string, invoiceIds: string
 
                 await invoice.save();
             }
+            // @ts-ignore
+    InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_VOID, info:"Payment of $"+payment.amountPaid+" voided", amountPaid:payment.amountPaid*-1, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id});
+
         }
     } else {
         throw new Error('Invoice not found');

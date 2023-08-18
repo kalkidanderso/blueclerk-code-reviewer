@@ -5,6 +5,7 @@ export const enum logType {
     UPDATED = 'INVOICE_UPDATED',
     VOID = 'INVOICE_VOID',
     DUPLICATE = 'INVOICE_DUPLICATE',
+    PAID = 'INVOICE_PAID',
     PAYMENT_RECORDED = 'PAYMENT_RECORDED',
     PAYMENT_UPDATED = 'PAYMENT_UPDATED',
     PAYMENT_VOID = 'PAYMENT_VOID',
@@ -21,7 +22,8 @@ export interface IInvoiceLogs extends Document {
     customer: Schema.Types.ObjectId,
     createdAt?: Date
     createdBy: Schema.Types.ObjectId
-    updatedAt?: Date
+    updatedAt?: Date,
+    amountPaid:String,
     type: logType,
     info:String
 
@@ -57,6 +59,8 @@ const InvoiceLogsSchema = new Schema({
     },
     type: String,
     info:String,
+    amountPaid:String,
+
     createdBy: {
         type: Schema.Types.ObjectId,
         ref: 'User',
