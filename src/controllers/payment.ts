@@ -1653,7 +1653,7 @@ export const _handleMultipleInvoices = async (
     payment.amountPaid = payment.amountPaid ?? 0;
     payment.amountPaid += paramInvoice.amountPaid;
 // @ts-ignore
-    InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_RECORDED, info:"Payment of $"+paramInvoice.amountPaid+" recorded", amountPaid:paramInvoice.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id});
+    InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_RECORDED, info:"Payment of $"+paramInvoice.amountPaid+" recorded", amountPaid:paramInvoice.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy:payment.createdBy});
 
     await _calculateInvoiceBalance(invoice, customer, parseFloat(paramInvoice.amountPaid));
 

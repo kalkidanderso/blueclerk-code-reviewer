@@ -524,7 +524,8 @@ export const createInvoice = (req: Request, res: Response) => {
             })
             .then((invoice: IInvoice) => {
                 // @ts-ignore
-                InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.CREATED, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
+                InvoiceLogController.create({
+                    invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.CREATED, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
                     , createdBy: user._id
                 });
                 if (company.qbAuthorized && !invoice.isDraft) {
@@ -1499,7 +1500,8 @@ export const createPOInvoice = (req: Request, res: Response) => {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
                     // @ts-ignore
-                    InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.CREATED, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
+                    InvoiceLogController.create({
+                        invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.CREATED, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
                         , createdBy: user._id
                     });
 
@@ -1521,26 +1523,51 @@ export const createPOInvoice = (req: Request, res: Response) => {
 const findAddedAndRemovedItems = (original: any, updated: any) => {
     const added = [];
     const removed = [];
+    const updatedItems = [];
 
     const originalIds = original.map((item: any) => item.item.toString());
     const updatedIds = updated.map((item: any) => item.item.toString());
 
-    for (const item of original) {
+    for (const [index, item] of original.entries()) {
         if (!updatedIds.includes(item.item.toString())) {
             removed.push(item);
         }
-    }
+        
+        if (updatedIds.includes(item.item.toString())) {
 
-    for (const item of updated) {
-        if (!originalIds.includes(item.item.toString())) {
-            added.push(item);
+            if (original[index].quantity != updated[index].quantity ) {
+                updatedItems.push({
+                    "name": item?.name,
+                    "new": updated[index].quantity,
+                    "old": original[index].quantity,
+                });
+
+            }
         }
     }
 
-    return { added, removed };
+    for (const [index, item] of updated.entries()){
+
+        if (!originalIds.includes(item.item.toString())) {
+            added.push(item);
+        }
+        // if (originalIds.includes(item.item.toString())) {
+
+        //     if (original[index].quantity != updated[index].quantity ) {
+        //         updatedItems.push({
+        //             "name": item?.name,
+        //             "new": updated[index].quantity,
+        //             "old": original[index].quantity,
+        //         });
+
+        //     }
+        // }
+
+    }
+
+    return { added, removed, updatedItems };
 }
 const getInvoiceLogsPefix = (key: string) => {
-
 
     switch (key) {
         case "status":
@@ -1589,19 +1616,14 @@ const changesManage = (newObj: any, oldObj: any) => {
     let logs: any[] = [];
 
     Object.keys(newObj).map(key => {
-        console.log(key, newObj[key], oldObj[key])
+
         if (key == "dueDate") {
 
-            console.log(new Date(newObj[key]).getTime() == new Date(oldObj[key]).getTime());
-            console.log(new Date(newObj[key]).getTime(), new Date(oldObj[key]).getTime());
             if (new Date(newObj[key]).getTime() != new Date(oldObj[key]).getTime()) { logs.push(getInvoiceLogsPefix(key)); }
 
         }
         else if (key == "issuedDate") {
-            console.log("key", key);
 
-            console.log(new Date(newObj[key]).getTime() == new Date(oldObj[key]).getTime());
-            console.log(new Date(newObj[key]).getTime(), new Date(oldObj[key]).getTime());
             if (new Date(newObj[key]).getTime() != new Date(oldObj[key]).getTime()) { logs.push(getInvoiceLogsPefix(key)); }
 
 
@@ -1610,7 +1632,7 @@ const changesManage = (newObj: any, oldObj: any) => {
             // if(newObj[key].length==oldObj[key].length)
             {
 
-                const { added, removed } = findAddedAndRemovedItems(oldObj[key], newObj[key]);
+                const { added, removed, updatedItems } = findAddedAndRemovedItems(oldObj[key], newObj[key]);
 
                 if (added.length) {
                     logs.push(getInvoiceLogsPefix("ITEMS_ADDED") + " " + added.length);
@@ -1621,17 +1643,30 @@ const changesManage = (newObj: any, oldObj: any) => {
                     logs.push(getInvoiceLogsPefix("ITEMS_REMOVED") + " " + removed.length);
 
                 }
+               
+                if (updatedItems.length) {
+
+                    updatedItems.map((itemUpdates: any) => {
+
+                        logs.push(itemUpdates.name + " quantity changed from "+itemUpdates.old +" to " + itemUpdates.new)
+
+                    });
+
+                }
 
             }
 
 
         }
 
-        else if (newObj[key] != oldObj[key]) {
-            logs.push(getInvoiceLogsPefix(key));
+        else if (key == "customerPO") {
+            if (newObj[key] != oldObj[key]) {
+                logs.push(getInvoiceLogsPefix(key));
+            }
         }
     })
-    console.log(logs);
+
+
     return logs;
 }
 export const updateInvoice = (req: Request, res: Response) => {
@@ -1984,7 +2019,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                                 invoice.paymentTerm = params.paymentTermId ? paymentTerm?._id : null;
                                 await invoice.save();
                                 // @ts-ignore
-                                InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type:logType.UPDATED ,info:changes.join(","), customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
+                                InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.UPDATED, info: changes.join(","), customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
                                     , createdBy: user._id
                                 });
 
@@ -2191,7 +2226,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                         invoice.paymentTerm = params.paymentTermId ? paymentTerm?._id : null;
                         await invoice.save();
                         // @ts-ignore
-                        InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type:logType.UPDATED ,info:changes.join(","),  customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
+                        InvoiceLogController.create({
+                            invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.UPDATED, info: changes.join(","), customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
                             , createdBy: user._id
                         });
                         // To handle the switch of Invoice isDraft
