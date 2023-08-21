@@ -54,7 +54,7 @@ interface ITechnicianCommissionJob {
 }
 
 interface IVendorPaymentExcelRow {
-    mobNumber?: string;
+    jobNumber?: string;
     date?: string;
     subdivision?: string;
     jobAdress?: string;
@@ -1586,10 +1586,12 @@ export const exportVendorPayments = async (req: Request, res: Response) => {
         });
 
         if (payments.length < 1) {
-            const contractorName = payments[0].contractor.info.displayName || payments[0].contractor.info.displayName;
+            return res.json({status: 0, message: 'Payments not found'});
         }
+
+        const contractorName = payments[0].contractor?.info.displayName || payments[0].contractor.info.companyName;
         let rows: IVendorPaymentExcelRow[]  = []; 
-        payments.map((payment: any) => {
+        payments.map((payment: IPaymentVendor) => {
             rows = [ ..._converPaymentToRowExcel(payment), ...rows];
         });
 
@@ -1857,7 +1859,7 @@ export const _handleVoidPayment = async (paymentType: string, invoiceIds: string
     return;
 }
 
-const _converPaymentToRowExcel = (payment: any): IVendorPaymentExcelRow[] => {
+const _converPaymentToRowExcel = (payment: IPaymentVendor): IVendorPaymentExcelRow[] => {
     const rows: IVendorPaymentExcelRow[] = [];
     
     if (!payment) {
@@ -1866,7 +1868,7 @@ const _converPaymentToRowExcel = (payment: any): IVendorPaymentExcelRow[] => {
 
     if (payment.invoices) {
         
-        payment.invoices.forEach(invoice => {
+        payment.invoices.forEach((invoice: IInvoice) => {
             rows.push({
                 jobNumber: invoice.job?.jobId,
                 date: moment.utc(payment.paidAt).format('ll'),
