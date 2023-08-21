@@ -424,7 +424,7 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                                 jobType.jobCostingQuantity = newJobType.completedCount;
                                 jobType.completedCount = newJobType.completedCount;
 
-                                if ((jobType.completedCount || jobType.quantity) < jobType.quantity) {
+                                if ((jobType.completedCount ?? jobType.quantity) < jobType.quantity) {
                                     jobType.status = JobStatus.PARTIALLY_COMPLETED;
                                     needUpdate = true;
                                 }
@@ -915,9 +915,9 @@ const _splitJobAndCreateTicket = async (req: Request, res: Response, sio: any, j
         company: ticketDetail.company,
         note: ticketDetail.note,
         ticketId: ticketId,
-        jobLocation: ticketDetail.jobLocationId,
-        jobSite: ticketDetail.jobSiteId,
-        jobType: ticketDetail.jobTypeId,
+        jobLocation: ticketDetail.jobLocation,
+        jobSite: ticketDetail.jobSite,
+        jobType: ticketDetail.jobType,
         customer: ticketDetail.customer,
         homeOwner: ticketDetail.homeOwner,
         homeJobLocation: ticketDetail.homeJobLocation,
@@ -938,7 +938,7 @@ const _splitJobAndCreateTicket = async (req: Request, res: Response, sio: any, j
     };
 
     if (params.type == "Ticket") {
-        newData.customerPo = ticketDetail.customerPO;
+        newData.customerPO = ticketDetail.customerPO;
     }
     
     let serviceTicket: IServiceTicket;
