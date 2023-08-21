@@ -684,6 +684,22 @@ export default function (sio: any) {
         validate(Validations.updateItem),
         itemController.updateItem
     )
+    router.post(
+        '/disableItem',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        validate(Validations.updateItem),
+        itemController.updateItem
+    )
+    router.post(
+        '/checkItemExist',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        validate(Validations.updateItem),
+        itemController.disabledItemExists
+    )
 
     router.post(
         '/updateItems',

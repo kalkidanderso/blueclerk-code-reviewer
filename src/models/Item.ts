@@ -35,6 +35,7 @@ export interface IItem extends Document {
     itemType:ItemTypes,
     salePrice:number,
     productCost:number,
+    isDisabled:boolean,
     quickbookId?: string
     createdAt?: Date
     updatedAt?: Date
@@ -86,6 +87,11 @@ const ItemSchema = new Schema({
     isFixed: {
         type: Boolean,
         default: true
+    },
+    isDisabled:{
+        type: Boolean,
+        default: false
+    
     },
     charges: {
         type: Number,

@@ -119,6 +119,56 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
     }
 
 }
+export const disabledItemExists = (req: Request, res: Response) => {
+    
+    const params = req.body;
+    Item.findOne({ name: params.name,isDisabled:true },
+        (err: any, item: IItem) => {
+
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+
+            if (item == null || item == undefined) {
+                return res.json({ 'status': Status.Success, 'message': 'Item does not exist' })
+            }
+            if(item){
+                return res.json({ 'status': Status.Success, 'message': 'Item Exist successfully',item })
+
+            }
+
+        
+
+        }
+    )
+}
+
+export const disableItem = (req: Request, res: Response) => {
+    
+    const params = req.body;
+    Item.findOne({ _id: params.itemId },
+        (err: any, item: IItem) => {
+
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+
+            if (item == null || item == undefined) {
+                return res.json({ 'status': Status.Error, 'message': 'Invalid item id' })
+            }
+
+            item.updateOne({ isDisabled:true},
+                (err: any, raw: any) => {
+                    if (err) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
+
+                    return res.json({ 'status': Status.Success, 'message': 'Item disabled successfully' })
+                })
+
+        }
+    )
+}
 
 export const updateItem = (req: Request, res: Response) => {
     
