@@ -859,6 +859,8 @@ const _splitJobAndCreateTicket = async (req: Request, res: Response, sio: any, j
     }
 
     const ticketJobTypes: any = [];
+
+    let isJobHaveItems: boolean = false;
     job.tasks.forEach((task) => {
         const newJobTypes: any = [];
         task.jobTypes.forEach((jobType) => {
@@ -882,11 +884,22 @@ const _splitJobAndCreateTicket = async (req: Request, res: Response, sio: any, j
         });
 
         task.jobTypes = newJobTypes;
-        task.status = JobStatus.FINISHED;
+        if (newJobTypes.length) {
+            isJobHaveItems = true;
+            task.status = JobStatus.FINISHED;
+        }else{
+            task.status = JobStatus.CANCELED;
+        }
     });
+    
+    if (isJobHaveItems) {
+        //Chnges Job Status to be Completed
+        job.status = JobStatus.FINISHED;
+    } else {
+        //Chnges Job Status to be Canceled
+        job.status = JobStatus.CANCELED;
+    }
 
-    //Chnges Job Status to be Completed
-    job.status = JobStatus.FINISHED;
     //Commission Calculation
     job.commission = await _calculateJobCommission(job.tasks, job._id);
     // Create Job Report for Job
