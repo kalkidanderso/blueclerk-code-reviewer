@@ -1602,7 +1602,7 @@ const getInvoiceLogsPefix = (key: string) => {
             return "Balance due changed";
         case "customerPO":
             // code block
-            return "Sales order number changed";
+            return "PO number changed";
         case "paid":
             // code block
             return "Payment status changed";
@@ -1659,7 +1659,7 @@ const changesManage = (newObj: any, oldObj: any) => {
 
         }
 
-        else if (key == "customerPO") {
+        else if (key == "customerPO" || key=="dueDate") {
             if (newObj[key] != oldObj[key]) {
                 logs.push(getInvoiceLogsPefix(key));
             }
