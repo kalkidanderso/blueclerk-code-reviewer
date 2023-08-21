@@ -43,6 +43,7 @@ import fs from 'fs';
 import { handleJobReportPdf } from '../services/pdf';
 import { JobCommission } from '../models/JobCommission';
 import { CommissionHistory } from '../models/CommissionHistory';
+import { Contact } from '../models/Contact';
 
 const PdfPrinter = require('pdfmake')
 /**
@@ -445,6 +446,53 @@ const _createJob = async (
 
     for (const task of job.tasks) {
         await _addOrRemoveJobRoutes(task.technician, job.scheduleDate, 'ADD', job._id);
+    }
+
+    // SMS sending on job scheduled
+    const sendJobScheduleMessage = async (phone : string, name : string) => {
+        try {
+            const jobCompany = await Company.findById(job.company);
+            const jobSite = await JobSite.findById(job.jobSite);
+            const jobLocation = await JobLocation.findById(job.jobLocation);
+            const standarizedPhone = standarizePhoneNumberE164(phone);
+            const formatJobDate = new Date(params.scheduleDate ?? parentJob?.scheduleDate).toLocaleDateString('en-US', {
+                timeZone: 'Europe/Amsterdam'
+            });
+            let formatedTime = '';
+            if(params.scheduledStartTime) {
+                const jobTime = params.scheduledStartTime.split('T')[1].split(':');
+                formatedTime = ` at ${jobTime[0]}:${jobTime[1]}`;
+            }
+            else if(job.scheduleTimeAMPM !== 0) {
+                formatedTime = job.scheduleTimeAMPM === 1 ? ' in the morning' : ' in the afternoon';
+            }
+            const message = `BlueClerk: Dear ${name}, ${jobCompany?.info?.companyName || 'N/A'} has scheduled ${job.jobId} at ${jobSite?.name || jobLocation?.name || 'N/A'} on ${new Date(formatJobDate).toDateString()}${formatedTime}.\n\nText STOP to opt-out.`
+            // If job is finished a SMS is sent
+            await sendSMS(standarizedPhone, message);
+        }
+        catch(err) {
+            Sentry.captureException(err);
+        }   
+    }
+
+    const jobContact = await Contact.findById(job.customerContactId);
+
+    // SMS to contact
+    if(job.customerContactId) {
+        if (jobContact && jobContact?.phone) {
+            sendJobScheduleMessage(jobContact?.phone, jobContact.name,)
+        }
+    }
+
+    // SMS to home owner
+    if(job.isHomeOccupied && job.isHomeOccupied === true) {
+        const jobhomeOwner = await HomeOwner.findById(job.homeOwner);
+        if(jobhomeOwner 
+            && jobhomeOwner?.contact?.phone 
+            && (standarizePhoneNumberE164(jobhomeOwner?.contact?.phone) !== standarizePhoneNumberE164(jobContact?.phone))
+        ) {
+            sendJobScheduleMessage(jobhomeOwner.contact.phone, jobhomeOwner?.profile?.displayName)
+        }
     }
 
     scheduleEmails(req, res, job, (req: Request, res: Response, newJob: IJob) => { })
@@ -1916,7 +1964,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
         })
         .populate({
             path: 'homeOwner',
-            select: 'profile'
+            select: 'profile contact'
         })
         .populate({
             path: 'technician',
@@ -1989,7 +2037,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     })
                     .populate({
                         path: 'homeOwner',
-                        select: 'profile'
+                        select: 'profile contact'
                     })
                     .populate({
                         path: 'technician',
@@ -2320,19 +2368,32 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
 
                 const jobReport = await createJobReport(job._id, job.company, customerName, technicianName, date, companyId);
                 if (params.status == JobStatus.FINISHED) {
-                    try {
-                        if(job.customerContactId?.phone) {
-                            const standarizedPhone = standarizePhoneNumberE164(job.customerContactId.phone);
-                            const today = new Date()
-                            const todayDate = `${today.getMonth() + 1}/${today.getDate()}`;
-                            // If job is finished a SMS is sent
-                            const message = `BlueClerk: Dear ${job.customerContactId.name}, ${job.company?.info?.companyName || 'N/A'} has completed ${job.jobId} at ${job.jobSite?.name || job.jobLocation?.name || 'N/A'} on ${todayDate}.\n\nText STOP to opt-out.`
-                            await sendSMS(standarizedPhone, message);
+                    const today = new Date()
+                    const todayDate = today.toDateString();
+                    const sendJobCompleteSMS = async (phone : string, name : string) => {
+                        try {
+                            if(job.customerContactId?.phone) {
+                                const standarizedPhone = standarizePhoneNumberE164(phone);    
+                                // If job is finished a SMS is sent
+                                const message = `BlueClerk: Dear ${name}, ${job.company?.info?.companyName || 'N/A'} has completed ${job.jobId} at ${job.jobSite?.name || job.jobLocation?.name || 'N/A'} on ${todayDate}.\n\nText STOP to opt-out.`
+                                await sendSMS(standarizedPhone, message);
+                            }
                         }
+                        catch(err) {
+                            Sentry.captureException(err);
+                        }     
                     }
-                    catch(err) {
-                        Sentry.captureException(err);
-                    }     
+
+                    if(job.customerContactId?.phone) {
+                        sendJobCompleteSMS(job.customerContactId.phone, job.customerContactId.name);
+                    }
+                    if(
+                        job.isHomeOccupied 
+                        && job.homeOwner?.contact?.phone 
+                        && (standarizePhoneNumberE164(job.homeOwner?.contact?.phone) !== standarizePhoneNumberE164(job.customerContactId?.phone))
+                    ) {
+                        sendJobCompleteSMS(job.homeOwner.contact.phone, job.homeOwner?.profile?.displayName);
+                    } 
                 }
                 if (linkedJob) {
                     await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, companyId);
@@ -2619,7 +2680,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
         .populate({ path: 'jobLocation', select: 'name'})
         .populate({ path: 'jobSite', select: 'name'})
 
-    // Check if job exist and job status is not FINISHED or CANCELED
+        // Check if job exist and job status is not FINISHED or CANCELED
     if (!job)
         return res.json({ status: Status.Error, message: 'Job not found' });
 
@@ -2709,19 +2770,32 @@ export const updateJobTask = async (req: Request, res: Response) => {
         jobStatus = JobStatus.FINISHED;
         action += `|Finishing the job|`;
         // Send SMS if job is finished
-        try {
-            if(job.customerContactId?.phone) {
-                const standarizedPhone = standarizePhoneNumberE164(job.customerContactId.phone);
-                const today = new Date()
-                const todayDate = `${today.getMonth() + 1}/${today.getDate()}`;
-                const message = `BlueClerk: Dear ${job.customerContactId.name}, ${job.company?.info?.companyName || 'N/A'} has completed ${job.jobId} at ${job.jobSite?.name || job.jobLocation?.name || 'N/A'} on ${todayDate}.\n\nText STOP to opt-out.`
-                // If job is finished a SMS is sent
-                await sendSMS(standarizedPhone, message);
+        const today = new Date()
+        const todayDate = today.toDateString();
+        const sendJobCompleteSMS = async (phone : string, name : string) => {
+            try {
+                if(job.customerContactId?.phone) {
+                    const standarizedPhone = standarizePhoneNumberE164(phone);    
+                    // If job is finished a SMS is sent
+                    const message = `BlueClerk: Dear ${name}, ${job.company?.info?.companyName || 'N/A'} has completed ${job.jobId} at ${job.jobSite?.name || job.jobLocation?.name || 'N/A'} on ${todayDate}.\n\nText STOP to opt-out.`
+                    await sendSMS(standarizedPhone, message);
+                }
             }
+            catch(err) {
+                Sentry.captureException(err);
+            }     
         }
-        catch(err) {
-            Sentry.captureException(err);
-        }     
+        if(job.customerContactId?.phone) {
+            sendJobCompleteSMS(job.customerContactId?.phone, job.customerContactId.name)
+        }
+        const homeOwner = await HomeOwner.findById(job.homeOwner);
+        if(
+            job.isHomeOccupied 
+            && homeOwner?.contact?.phone 
+            && (standarizePhoneNumberE164(homeOwner?.contact?.phone) !== standarizePhoneNumberE164(job.customerContactId?.phone))
+        ) {
+            sendJobCompleteSMS(homeOwner.contact.phone, homeOwner.profile?.displayName);
+        } 
     }
 
     // Log a track history
