@@ -8,6 +8,9 @@
     "watch:tsc": "tsc --watch",
     "dev": "concurrently \"tsc --watch\" \"nodemon ./dist/server.js\""
   },
+  "prisma": {
+    "schema": "./src/database/schema.prisma"
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {
