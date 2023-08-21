@@ -53,6 +53,15 @@ interface ITechnicianCommissionJob {
     }
 }
 
+interface IVendorPaymentExcelRow {
+    mobNumber?: string;
+    date?: string;
+    subdivision?: string;
+    jobAdress?: string;
+    amount?: string;
+    techName?: string;
+}
+
 /**
  * To calculate invoice and customer payment amount related,
  * invoice's balanceDue, paymentApplied, status, and paid,
@@ -1288,7 +1297,6 @@ export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
 }
 
 export const getPayrollBalance = async (req: Request, res: Response) => {
-
     const params = req.query;
     const company = <ICompany>req.company;
     const vendors: any = [];
@@ -1529,6 +1537,86 @@ export const getPayrollReport = async (req: Request, res: Response) => {
     return res.json({ status: Status.Success, vendors, employees });
 }
 
+export const exportVendorPayments = async (req: Request, res: Response) => {
+    let query;
+    const params = req.query;
+    const company = <ICompany>req.company;
+    const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
+    const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
+    const companyLocation = params.companyLocation as string;
+
+    let filterByDivision: any = {};
+
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) { }
+        filterByDivision["companyLocation"] = { $in: companyLocationIds };
+    }
+
+    if (params.startDate && params.endDate) {
+        query = { paidAt: { $gte: startDate, $lte: endDate } }
+    }
+
+    const vendorQuery = { company: company._id, contractor: params.id, ...query, ...filterByDivision }
+            
+    try {
+        const payments = await PaymentVendor.find(vendorQuery)
+        .populate({
+            path: 'contractor',
+            select: 'info',
+        })
+        .populate({
+            path: 'invoices',
+            select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total',
+            populate: {
+                path: 'job',
+                populate: [
+                    { path: 'tasks', populate: {path: 'technician'}},
+                    
+                    { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                    { path: 'jobLocation', select: 'name' },
+                    { path: 'jobSite', select: 'name' },
+                ],
+            }
+        });
+
+        if (payments.length < 1) {
+            const contractorName = payments[0].contractor.info.displayName || payments[0].contractor.info.displayName;
+        }
+        let rows: IVendorPaymentExcelRow[]  = []; 
+        payments.map((payment: any) => {
+            rows = [ ..._converPaymentToRowExcel(payment), ...rows];
+        });
+
+        const XLSX = require("xlsx");
+        const worksheet = XLSX.utils.json_to_sheet(rows);
+        const headers = ["Job Number", "Date", "Subdivision", "Job Address", "Amount", "Technician Name"]
+        XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: "A1" });
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Dates");
+        const buf = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+        
+        const filename = `${contractorName} ${params.startDate}-${params.endDate}.xlsx`;
+        res.attachment(filename);
+        res.header('Access-Control-Expose-Headers', 'Content-Type, Location, Content-Disposition');
+        res.status(200).end(buf);
+    } catch (error: any) {
+        Sentry.captureException(error);
+        return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
+    }
+
+    
+    
+    
+
+    
+}
+
 export const voidPaymentContractor = async (req: Request, res: Response) => {
 
     const params = req.body;
@@ -1767,6 +1855,29 @@ export const _handleVoidPayment = async (paymentType: string, invoiceIds: string
     }
 
     return;
+}
+
+const _converPaymentToRowExcel = (payment: any): IVendorPaymentExcelRow[] => {
+    const rows: IVendorPaymentExcelRow[] = [];
+    
+    if (!payment) {
+        return rows;
+    }
+
+    if (payment.invoices) {
+        
+        payment.invoices.forEach(invoice => {
+            rows.push({
+                jobNumber: invoice.job?.jobId,
+                date: moment.utc(payment.paidAt).format('ll'),
+                subdivision: invoice.job?.jobLocation?.name,
+                jobAdress: invoice.job?.jobSite?.name,
+                amount: invoice.job?.charges,
+                techName: invoice.job?.technician?.name || invoice.job?.tasks[0]?.technician.profile.displayName,
+            })
+        })
+        return rows;
+    }
 }
 
 /**
