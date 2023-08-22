@@ -43,6 +43,7 @@ import fs from 'fs';
 import { handleJobReportPdf } from '../services/pdf';
 import { JobCommission } from '../models/JobCommission';
 import { CommissionHistory } from '../models/CommissionHistory';
+import { Contact } from '../models/Contact';
 
 const PdfPrinter = require('pdfmake')
 /**
@@ -445,6 +446,53 @@ const _createJob = async (
 
     for (const task of job.tasks) {
         await _addOrRemoveJobRoutes(task.technician, job.scheduleDate, 'ADD', job._id);
+    }
+
+    // SMS sending on job scheduled
+    const sendJobScheduleMessage = async (phone : string, name : string) => {
+        try {
+            const jobCompany = await Company.findById(job.company);
+            const jobSite = await JobSite.findById(job.jobSite);
+            const jobLocation = await JobLocation.findById(job.jobLocation);
+            const standarizedPhone = standarizePhoneNumberE164(phone);
+            const formatJobDate = new Date(params.scheduleDate ?? parentJob?.scheduleDate).toLocaleDateString('en-US', {
+                timeZone: 'Europe/Amsterdam'
+            });
+            let formatedTime = '';
+            if(params.scheduledStartTime) {
+                const jobTime = params.scheduledStartTime.split('T')[1].split(':');
+                formatedTime = ` at ${jobTime[0]}:${jobTime[1]}`;
+            }
+            else if(job.scheduleTimeAMPM !== 0) {
+                formatedTime = job.scheduleTimeAMPM === 1 ? ' in the morning' : ' in the afternoon';
+            }
+            const message = `BlueClerk: Dear ${name}, ${jobCompany?.info?.companyName || 'N/A'} has scheduled ${job.jobId} at ${jobSite?.name || jobLocation?.name || 'N/A'} on ${new Date(formatJobDate).toDateString()}${formatedTime}.\n\nText STOP to opt-out.`
+            // If job is finished a SMS is sent
+            await sendSMS(standarizedPhone, message);
+        }
+        catch(err) {
+            Sentry.captureException(err);
+        }   
+    }
+
+    const jobContact = await Contact.findById(job.customerContactId);
+
+    // SMS to contact
+    if(job.customerContactId) {
+        if (jobContact && jobContact?.phone) {
+            sendJobScheduleMessage(jobContact?.phone, jobContact.name,)
+        }
+    }
+
+    // SMS to home owner
+    if(job.isHomeOccupied && job.isHomeOccupied === true) {
+        const jobhomeOwner = await HomeOwner.findById(job.homeOwner);
+        if(jobhomeOwner 
+            && jobhomeOwner?.contact?.phone 
+            && (standarizePhoneNumberE164(jobhomeOwner?.contact?.phone) !== standarizePhoneNumberE164(jobContact?.phone))
+        ) {
+            sendJobScheduleMessage(jobhomeOwner.contact.phone, jobhomeOwner?.profile?.displayName)
+        }
     }
 
     scheduleEmails(req, res, job, (req: Request, res: Response, newJob: IJob) => { })
@@ -1916,7 +1964,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
         })
         .populate({
             path: 'homeOwner',
-            select: 'profile'
+            select: 'profile contact'
         })
         .populate({
             path: 'technician',
@@ -1989,7 +2037,7 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     })
                     .populate({
                         path: 'homeOwner',
-                        select: 'profile'
+                        select: 'profile contact'
                     })
                     .populate({
                         path: 'technician',
@@ -2320,19 +2368,32 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
 
                 const jobReport = await createJobReport(job._id, job.company, customerName, technicianName, date, companyId);
                 if (params.status == JobStatus.FINISHED) {
-                    try {
-                        if(job.customerContactId?.phone) {
-                            const standarizedPhone = standarizePhoneNumberE164(job.customerContactId.phone);
-                            const today = new Date()
-                            const todayDate = `${today.getMonth() + 1}/${today.getDate()}`;
-                            // If job is finished a SMS is sent
-                            const message = `BlueClerk: Dear ${job.customerContactId.name}, ${job.company?.info?.companyName || 'N/A'} has completed ${job.jobId} at ${job.jobSite?.name || job.jobLocation?.name || 'N/A'} on ${todayDate}.\n\nText STOP to opt-out.`
-                            await sendSMS(standarizedPhone, message);
+                    const today = new Date()
+                    const todayDate = today.toDateString();
+                    const sendJobCompleteSMS = async (phone : string, name : string) => {
+                        try {
+                            if(job.customerContactId?.phone) {
+                                const standarizedPhone = standarizePhoneNumberE164(phone);    
+                                // If job is finished a SMS is sent
+                                const message = `BlueClerk: Dear ${name}, ${job.company?.info?.companyName || 'N/A'} has completed ${job.jobId} at ${job.jobSite?.name || job.jobLocation?.name || 'N/A'} on ${todayDate}.\n\nText STOP to opt-out.`
+                                await sendSMS(standarizedPhone, message);
+                            }
                         }
+                        catch(err) {
+                            Sentry.captureException(err);
+                        }     
                     }
-                    catch(err) {
-                        Sentry.captureException(err);
-                    }     
+
+                    if(job.customerContactId?.phone) {
+                        sendJobCompleteSMS(job.customerContactId.phone, job.customerContactId.name);
+                    }
+                    if(
+                        job.isHomeOccupied 
+                        && job.homeOwner?.contact?.phone 
+                        && (standarizePhoneNumberE164(job.homeOwner?.contact?.phone) !== standarizePhoneNumberE164(job.customerContactId?.phone))
+                    ) {
+                        sendJobCompleteSMS(job.homeOwner.contact.phone, job.homeOwner?.profile?.displayName);
+                    } 
                 }
                 if (linkedJob) {
                     await createJobReport(linkedJob._id, linkedJob.company, customerName, technicianNameLinkedJob, date, companyId);
@@ -2619,7 +2680,7 @@ export const updateJobTask = async (req: Request, res: Response) => {
         .populate({ path: 'jobLocation', select: 'name'})
         .populate({ path: 'jobSite', select: 'name'})
 
-    // Check if job exist and job status is not FINISHED or CANCELED
+        // Check if job exist and job status is not FINISHED or CANCELED
     if (!job)
         return res.json({ status: Status.Error, message: 'Job not found' });
 
@@ -2709,19 +2770,32 @@ export const updateJobTask = async (req: Request, res: Response) => {
         jobStatus = JobStatus.FINISHED;
         action += `|Finishing the job|`;
         // Send SMS if job is finished
-        try {
-            if(job.customerContactId?.phone) {
-                const standarizedPhone = standarizePhoneNumberE164(job.customerContactId.phone);
-                const today = new Date()
-                const todayDate = `${today.getMonth() + 1}/${today.getDate()}`;
-                const message = `BlueClerk: Dear ${job.customerContactId.name}, ${job.company?.info?.companyName || 'N/A'} has completed ${job.jobId} at ${job.jobSite?.name || job.jobLocation?.name || 'N/A'} on ${todayDate}.\n\nText STOP to opt-out.`
-                // If job is finished a SMS is sent
-                await sendSMS(standarizedPhone, message);
+        const today = new Date()
+        const todayDate = today.toDateString();
+        const sendJobCompleteSMS = async (phone : string, name : string) => {
+            try {
+                if(job.customerContactId?.phone) {
+                    const standarizedPhone = standarizePhoneNumberE164(phone);    
+                    // If job is finished a SMS is sent
+                    const message = `BlueClerk: Dear ${name}, ${job.company?.info?.companyName || 'N/A'} has completed ${job.jobId} at ${job.jobSite?.name || job.jobLocation?.name || 'N/A'} on ${todayDate}.\n\nText STOP to opt-out.`
+                    await sendSMS(standarizedPhone, message);
+                }
             }
+            catch(err) {
+                Sentry.captureException(err);
+            }     
         }
-        catch(err) {
-            Sentry.captureException(err);
-        }     
+        if(job.customerContactId?.phone) {
+            sendJobCompleteSMS(job.customerContactId?.phone, job.customerContactId.name)
+        }
+        const homeOwner = await HomeOwner.findById(job.homeOwner);
+        if(
+            job.isHomeOccupied 
+            && homeOwner?.contact?.phone 
+            && (standarizePhoneNumberE164(homeOwner?.contact?.phone) !== standarizePhoneNumberE164(job.customerContactId?.phone))
+        ) {
+            sendJobCompleteSMS(homeOwner.contact.phone, homeOwner.profile?.displayName);
+        } 
     }
 
     // Log a track history
@@ -3472,6 +3546,9 @@ export const sendJobReport = (req: Request, res: Response) => {
                 { path: 'tasks.timeUpdatedBy', select: 'profile.displayName' },
                 { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
                 { path: 'createdBy', select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone' },
+                { path: 'homeOwner' },
+                { path: 'jobLocation', select: 'name' },
+                { path: 'jobSite', select: 'name' },
             ],
         }).populate({
             path: 'scans',
@@ -3504,10 +3581,12 @@ export const sendJobReport = (req: Request, res: Response) => {
 
                 const customer = <ICustomer>report.job?.customer;
                 const customerContact = <IContact>report.job?.customerContactId;
+                const filepath = req.file?.path ?? `${ACCOUNT_RECEIVABLE_REPORT_PDF_PATH}/${report.id}.pdf`;
 
+                await _generateJobReportPDF(report);
+                
                 let paramRecipients: string[];
                 let recipientEmails: string[];
-                let ccEmails: string[] = [];
                 let copyToMyself: boolean;
                 try {
                     // Handle the stringify array of recipients value
@@ -3535,7 +3614,7 @@ export const sendJobReport = (req: Request, res: Response) => {
 
                     // Add the user's email himself if he want to receive copy email
                     if (copyToMyself) {
-                        ccEmails.push(user.auth?.email);
+                        recipientEmails.push(user.auth?.email)
                     }
                 } catch (error) {
                     Sentry.captureException(error);
@@ -3545,13 +3624,16 @@ export const sendJobReport = (req: Request, res: Response) => {
                 sendReportEmailToCustomer({
                     companyName: company.info?.companyName,
                     companyEmail: company.info?.companyEmail,
+                    companyLogo: company.info?.logoUrl,
                     customerName: report.job.customer?.profile?.displayName,
                     customerEmail: report.job.customer?.info?.email,
-                    recipientEmails,
-                    ccEmails,
+                    recipientEmails: recipientEmails,
+                    jobReportPdf: filepath,
                     reportNumber: report.job.jobId,
                     jobTypes: [...new Set(jobTypes)].join(', ') ?? report.job?.jobType?.title,
                     workDate: report.job.scheduleDate,
+                    subject: params.subject,
+                    message: params.message
                 });
 
                 let history = report.emailHistory ? report.emailHistory : [];
@@ -3577,6 +3659,135 @@ export const sendJobReport = (req: Request, res: Response) => {
         });
 }
 
+export const getJobReportEmailTemplate = async (req: Request, res: Response) => {
+
+    const params = req.query;
+    const company = <ICompany>req.company;
+    let companyId = req.companyId;
+    let jobReport;
+
+    try {
+        jobReport = await JobReport.findOne({ _id: params.jobReportId, $or: [{ contractor: companyId }, { company: companyId }] })
+        .populate({
+            path: 'job',
+            populate: [
+                {
+                    path: 'ticket',
+                    select: '-__v',
+                    populate: [
+                        { path: 'track', select: 'track.user track.action track.date' },
+                        { path: 'jobLocation' },
+                        { path: 'jobSite' },
+                        { path: 'customerContactId' },
+                        { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
+                    ]
+                },
+                {
+                    path: 'request',
+                    select: '-__v',
+                    populate: [
+                        { path: 'track', select: 'track.user track.action track.date' },
+                        { path: 'jobLocation' },
+                        { path: 'jobSite' },
+                        { path: 'customerContact' },
+                        { path: 'createdBy', select: 'info.email auth.email profile.displayName address.state address.city address.state address.zipCode contactName' },
+                    ]
+                },
+                // TODO: To be deprecated
+                { path: 'technician', select: 'profile.displayName auth.email contact.phone permissions.role' },
+                { path: 'tasks.technician', select: 'profile auth.email contact' },
+                { path: 'customer', select: 'info.email auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone contactName' },
+                { path: 'customerContactId', select: '-id -__v' },
+                { path: 'type', select: 'title description sku' },
+                // TODO: To be deprecated
+                { path: 'tasks.jobType', select: 'title description sku' },
+                { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
+                { path: 'tasks.timeUpdatedBy', select: 'profile.displayName' },
+                { path: 'company', select: 'info.companyName info.logoUrl auth.email permissions.role address.street address.city address.state address.zipCode contact.phone contact.fax' },
+                { path: 'createdBy', select: 'info.companyName auth.email profile.displayName permissions.role address.street address.city address.state address.zipCode contact.phone' },
+                { path: 'homeOwner', select: 'profile info contact' },
+                'jobSite', 'jobLocation'
+            ]
+        })
+        .populate({
+            path: 'scans',
+            populate: [{
+                path: 'equipment',
+                select: 'info.model info.serialNumber info.nfcTag images info.location',
+                populate: [
+                    { path: 'brand', select: 'title' },
+                    { path: 'type', select: 'title' }
+                ]
+            }]
+        })
+        .populate('PurchaseOrder')
+        .populate({
+            path: 'invoice',
+            populate: [
+                { path: 'paymentTerm', select: '-__v' },
+                { path: 'customerContactId', select: '-__v' }
+            ]
+        });
+       
+    } catch (err) {
+        // Sentry.captureException(err);
+        return res.json({ 'status': Status.Error, 'message': err.message });
+    }
+
+    if (!jobReport) {
+        return res.json({ 'status': Status.Error, 'message': "Report was not found" });
+    }
+        
+    const jobTypes: any = [];
+
+    jobReport.job.tasks?.forEach((task: ITask) => {
+        task?.jobTypes?.forEach((taskJobType: any) => {
+            let fullJobTitle = `${taskJobType?.jobType?.title}`;
+            fullJobTitle += taskJobType?.jobType?.description
+                ? ` (${taskJobType?.jobType?.description})`
+                : '';
+
+            jobTypes.push(fullJobTitle);
+        });
+    });
+
+    const customer = <ICustomer>jobReport.job?.customer;
+    const customerContact = <IContact>jobReport.job?.customerContactId;
+    let recipientEmails = [];
+
+    recipientEmails =  [{email: (customerContact?.email?.length > 0
+            ? customerContact.email
+            : customer?.info?.email
+        )}];
+
+
+    const companyName = company.info?.companyName;
+    const companyEmail = company.info?.companyEmail;
+    const customerName = jobReport.job.customer?.profile?.displayName;
+    const customerEmail = jobReport.job.customer?.info?.email;
+    const reportNumber = jobReport.job.jobId;
+    const workDate = moment(jobReport.job.scheduleDate).format('MMMM DD');
+    const scheduleStartTime = jobReport.job.scheduleStartTime ? `, ${jobReport.job.scheduleStartTime}` : '';
+    const workTime = jobReport.job.scheduleTimeAMPM === 1 ? ', AM' : (jobReport.job.scheduleTimeAMPM === 2 ? ', PM' : scheduleStartTime);
+    const jobLocation = jobReport.job?.jobLocation?.address?.street;
+    const jobTypesText = [...new Set(jobTypes)].join(', ') ?? jobReport.job?.jobType?.title;
+
+    const message = `Dear Test ${customerName},\n\nPlease see Job Report for ${reportNumber}, from ${companyName} for job address ${jobLocation} on ${workDate}${workTime}.\n\nThank you for doing business with ${companyName}.\n{{small_company_logo}}`;
+
+
+    return res.json({
+        status: Status.Success,
+        jobReport: jobReport,
+        emailTemplate: {
+            from: companyEmail,
+            to: recipientEmails,
+            subject: `${companyName} has sent you a job report`,
+            message: eval('`' + message + '`')
+        }
+    });
+
+} 
+    
 export const getJobReportPDF = (req: Request, res: Response) => {
 
     const params = req.params;
@@ -4115,6 +4326,36 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
 
 // PRIVATE METHODS
 
+const _generateJobReportPDF = async (report: any) => {
+    // Initialize PDF Make
+    const pdfMake = new PdfPrinter(FONT_SETS.ROBOTO);
+    // Generate the PDF content
+    const generatePdf = await handleJobReportPdf(report);
+    // Construct the PDF full path
+    const fullPath = `${ACCOUNT_RECEIVABLE_REPORT_PDF_PATH}/${report.id}.pdf`;
+    // Check if folder path exist, create if not
+    if (!fs.existsSync(ACCOUNT_RECEIVABLE_REPORT_PDF_PATH)) {
+        fs.mkdirSync(ACCOUNT_RECEIVABLE_REPORT_PDF_PATH);
+    }
+    // Check if existing Invoice PDF exist, remove if any
+    if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+    }
+
+    const pdfDoc = pdfMake.createPdfKitDocument(generatePdf);
+    const writeStream = fs.createWriteStream(fullPath);
+    pdfDoc.pipe(writeStream);
+    pdfDoc.end();
+
+    return await new Promise((resolve, reject) => {
+        writeStream.on('finish', () => {
+            resolve('');
+        })
+            .on('error', (error) => {
+                reject('Error in _generateInvoicePdf: ' + error);
+            });
+    });
+}
 /**
  * To update Task's property when pause, finish, or update the endTime
  */

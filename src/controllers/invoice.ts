@@ -2347,12 +2347,13 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     const customer = <ICustomer>invoice.customer;
     const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
     const customerContact = <IContact>invoice.customerContactId;
+    const companyLocation = <ICompanyLocation>invoice.companyLocation;
 
     // Retrieve company email default
     const filepath = req.file?.path ?? `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
     const invoicePdfs = [{invoice, filepath}];
     const emailDefault = await EmailDefault.findOne({company, emailType: EmailTypes.INVOICE});
-
+    const sender_email = companyLocation?.billingAddress?.emailSender || user.auth?.email
     // Generate Invoice PDF
     await _generateInvoicePdf(company, invoice);
 
@@ -2386,7 +2387,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
         // Add the user's email himself if he want to receive copy email
         if (copyToMyself) {
-            recipientEmails.push(user.auth?.email);
+            recipientEmails.push(sender_email);
         }
     } catch (error) {
         Sentry.captureException(error);
@@ -2394,12 +2395,11 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
         return res.json({status: Status.Error, message: Messages.GenericError});
     }
 
-    const companyLocation = <ICompanyLocation>invoice.companyLocation;
     // Call AWS SES method
     sendInvoiceEmailToCustomer({
         subject: params.subject ?? emailDefault?.subject,
         message: params.message ?? emailDefault?.message,
-        sender_email: companyLocation?.billingAddress?.emailSender || user.auth?.email,
+        sender_email: sender_email,
         company_name: company.info?.companyName,
         company_email: company.info?.companyEmail,
         company_logo: company.info?.logoUrl,
@@ -2411,7 +2411,8 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
         invoice_due_date: moment(invoice.dueDate).format('MMMM DD, YYYY'),
         invoice_pdfs: invoicePdfs,
         term_name: paymentTerm?.name,
-        term_due_days: paymentTerm?.dueDays
+        term_due_days: paymentTerm?.dueDays,
+        has_cc: copyToMyself
     });
 
     // Update email history and last email sent info
