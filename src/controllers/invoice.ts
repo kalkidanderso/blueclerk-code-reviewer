@@ -524,7 +524,7 @@ export const createInvoice = (req: Request, res: Response) => {
             })
             .then((invoice: IInvoice) => {
                 const inoiceLogsObj:any={
-                    invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.CREATED, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
+                    invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.CREATED,info:"Invoice created", customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
                     , createdBy: user._id
                 }
                 InvoiceLogController.create(inoiceLogsObj);
