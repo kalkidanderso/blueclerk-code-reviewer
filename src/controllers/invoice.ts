@@ -1618,18 +1618,20 @@ const changesManage = (newObj: any, oldObj: any) => {
 
     Object.keys(newObj).map(key => {
 
-        if (key == "dueDate") {
+        // if (key == "dueDate") {
 
-            if (new Date(newObj[key]).getTime() != new Date(oldObj[key]).getTime()) { logs.push(getInvoiceLogsPefix(key)); }
+        //     if (new Date(newObj[key]).getTime() != new Date(oldObj[key]).getTime()) { logs.push(getInvoiceLogsPefix(key)); }
 
-        }
-        else if (key == "issuedDate") {
+        // }
+        // else if (key == "issuedDate") {
 
-            if (new Date(newObj[key]).getTime() != new Date(oldObj[key]).getTime()) { logs.push(getInvoiceLogsPefix(key)); }
+        //     if (new Date(newObj[key]).getTime() != new Date(oldObj[key]).getTime()) { logs.push(getInvoiceLogsPefix(key)); }
 
 
-        }
-        else if (key == "items") {
+        // }
+        // else 
+        
+        if (key == "items") {
             // if(newObj[key].length==oldObj[key].length)
             {
 
@@ -1660,7 +1662,7 @@ const changesManage = (newObj: any, oldObj: any) => {
 
         }
 
-        else if (key == "customerPO" || key=="dueDate") {
+        else if (key == "customerPO" ) {
             if (newObj[key] != oldObj[key]) {
                 logs.push(getInvoiceLogsPefix(key));
             }
@@ -1986,6 +1988,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                             vendorId: params.vendorId,
                             invoiceId
                         }, invoice);
+                        const oldInovice=invoice;
                         invoice.updateOne({
                             jobPurchaseOrders: purchaseOrderIds,
                             items: invoiceItems,
@@ -2019,12 +2022,14 @@ export const updateInvoice = (req: Request, res: Response) => {
                                  */
                                 invoice.paymentTerm = params.paymentTermId ? paymentTerm?._id : null;
                                 await invoice.save();
-
+                                if(!oldInovice.isDraft){
+                                    
                                 const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.UPDATED, info: changes.join(","), customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
                                 , createdBy: user._id
                             }
                                 InvoiceLogController.create(invoiceLogsObj);
 
+                            }
                                 // To handle the switch of Invoice isDraft
                                 _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
                                     if (errMsg) {
