@@ -523,11 +523,11 @@ export const createInvoice = (req: Request, res: Response) => {
 
             })
             .then((invoice: IInvoice) => {
-                // @ts-ignore
-                InvoiceLogController.create({
+                const inoiceLogsObj:any={
                     invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.CREATED, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
                     , createdBy: user._id
-                });
+                }
+                InvoiceLogController.create(inoiceLogsObj);
                 if (company.qbAuthorized && !invoice.isDraft) {
                     /**
                      * Check Customer & Job Locations data on QBooks,
@@ -1499,11 +1499,12 @@ export const createPOInvoice = (req: Request, res: Response) => {
                     if (invoiceError) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
-                    // @ts-ignore
-                    InvoiceLogController.create({
+
+                    const invoiceLogsObj:any={
                         invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.CREATED, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
                         , createdBy: user._id
-                    });
+                    }
+                    InvoiceLogController.create(invoiceLogsObj);
 
                     company.updateOne({ currentInvoiceId: currentInvoiceId + 1 })
                         .exec((companyError: any) => {
@@ -2018,10 +2019,11 @@ export const updateInvoice = (req: Request, res: Response) => {
                                  */
                                 invoice.paymentTerm = params.paymentTermId ? paymentTerm?._id : null;
                                 await invoice.save();
-                                // @ts-ignore
-                                InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.UPDATED, info: changes.join(","), customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
-                                    , createdBy: user._id
-                                });
+
+                                const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.UPDATED, info: changes.join(","), customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
+                                , createdBy: user._id
+                            }
+                                InvoiceLogController.create(invoiceLogsObj);
 
                                 // To handle the switch of Invoice isDraft
                                 _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
@@ -2225,11 +2227,12 @@ export const updateInvoice = (req: Request, res: Response) => {
                          */
                         invoice.paymentTerm = params.paymentTermId ? paymentTerm?._id : null;
                         await invoice.save();
-                        // @ts-ignore
-                        InvoiceLogController.create({
+                      
+                        const invoiceLogsObj:any={
                             invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.UPDATED, info: changes.join(","), customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
                             , createdBy: user._id
-                        });
+                        }
+                        InvoiceLogController.create(invoiceLogsObj);
                         // To handle the switch of Invoice isDraft
                         _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
                             if (errMsg) {
@@ -2639,8 +2642,9 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
     invoice.lastEmailSent = sendingDate;
     await invoice.save();
-    // @ts-ignore
-    InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.EMAIL_SENT, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id });
+
+    const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.EMAIL_SENT, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id }
+    InvoiceLogController.create(invoiceLogsObj);
 
 
     return res.json({ status: Status.Success, message: 'Invoice has been sent successfully.' });
@@ -2764,6 +2768,9 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
             invoiceSender = companyLocation?.billingAddress?.emailSender;
 
             await invoice.save();
+            const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.EMAIL_SENT, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id }
+            InvoiceLogController.create(invoiceLogsObj);
+        
         }
     } catch (error) {
         Sentry.captureException(error);
@@ -2822,9 +2829,8 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
         invoice_total_amount: totalInvoiceAmount,
         invoice_pdfs: invoicePdfs,
     });
-    // @ts-ignore
-    InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.EMAIL_SENT, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id });
 
+  
     return res.json({ status: Status.Success, message: 'Invoice has been sent successfully.' });
 
 }
@@ -4808,8 +4814,9 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
     invoice.isVoid = false;
     invoice = await new Invoice(invoice).save();
     if (invoice) {
-        // @ts-ignore
-        InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.DUPLICATE, oldInvoiceId: params.invoiceId, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id });
+
+        const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.DUPLICATE, oldInvoiceId: params.invoiceId, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id }
+        InvoiceLogController.create(invoiceLogsObj);
 
     }
 
@@ -5168,8 +5175,9 @@ export const voidInvoice = async (req: Request, res: Response) => {
         // Delete Invoice in QuickBooks when invoice have quickbook id
         await _voidQBInvoice(req, res, company, invoice);
     }
-    // @ts-ignore
-    InvoiceLogController.create({ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.VOID, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id });
+    
+    const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.VOID, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id }
+    InvoiceLogController.create(invoiceLogsObj);
     return res.json({ status: Status.Success, message: 'Invoice voided successfully', invoice });
 
 }

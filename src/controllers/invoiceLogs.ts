@@ -68,7 +68,8 @@ export const get = async (req: Request, res: Response) => {
                     { createdAt: new Date(cursor.createdAt), _id: { $lt: cursorId } }
                 ]
             };
-            // @ts-ignore
+
+            
 
             if (query['$and']) {
 
@@ -86,7 +87,7 @@ export const get = async (req: Request, res: Response) => {
                     { createdAt: new Date(cursor.createdAt), _id: { $gt: cursorId } }
                 ]
             };
-            // @ts-ignore
+
             if (query['$and']) {
                 
                     query['$and'].push({ ...paginationQuery });

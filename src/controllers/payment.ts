@@ -676,15 +676,15 @@ export const createPayment = async (req: Request, res: Response) => {
             payment.amountPaid = params.amount;
             // Handle invoice balance due, underpayment, and overpayment
             await _calculateInvoiceBalance(invoice, customer, parseFloat(params.amount));
-            // @ts-ignore
-            InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_RECORDED, info:"Payment of $"+payment.amountPaid +" recorded", amountPaid:payment.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id});
+
+            const invoiceLogsObj:any={invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_RECORDED, info:"Payment of $"+payment.amountPaid +" recorded", amountPaid:payment.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id};
+            InvoiceLogController.create(invoiceLogsObj);
 
         }
 
         // Save the new payment
         payment.amountPaid = roundTwoDecimal(payment.amountPaid);
         await payment.save();
-        // @ts-ignore
 
         if (company.qbAuthorized) {
             /**
@@ -1123,8 +1123,8 @@ export const updatePayment = async (req: Request, res: Response) => {
                 await _calculateInvoiceBalance(invoice, customer, diffAmountPaid)
             }
 
-               // @ts-ignore
-        InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_UPDATED, info:"Payment of $"+oldAmountPaid +" updated to $"+payment.amountPaid, amountPaid:payment.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: payment.updatedBy});
+               const invoiceLogsObj:any={invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_UPDATED, info:"Payment of $"+oldAmountPaid +" updated to $"+payment.amountPaid, amountPaid:payment.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: payment.updatedBy};
+             InvoiceLogController.create(invoiceLogsObj);
 
             invoices.push(invoice);
         }
@@ -1652,8 +1652,9 @@ export const _handleMultipleInvoices = async (
  
     payment.amountPaid = payment.amountPaid ?? 0;
     payment.amountPaid += paramInvoice.amountPaid;
-// @ts-ignore
-    InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_RECORDED, info:"Payment of $"+paramInvoice.amountPaid+" recorded", amountPaid:paramInvoice.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy:payment.createdBy});
+
+    const invoiceLogsObj:any={invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_RECORDED, info:"Payment of $"+paramInvoice.amountPaid+" recorded", amountPaid:paramInvoice.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy:payment.createdBy}
+    InvoiceLogController.create(invoiceLogsObj);
 
     await _calculateInvoiceBalance(invoice, customer, parseFloat(paramInvoice.amountPaid));
 
@@ -1696,8 +1697,9 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
         }
 
         invoices.push(invoiceLine);
-        // @ts-ignore
-        InvoiceLogController.create({invoiceId: invoiceLine.invoiceId, invoice: invoiceLine._id, type: logType.PAYMENT_UPDATED, info:"Payment of $"+oldAmountPaid+" updated to $"+payment.amountPaid, amountPaid:payment.amountPaid, customer: invoice.customer, companyLocation: invoiceLine.companyLocation, workType: invoiceLine.workType, company: invoiceLine.company, createdBy: payment.updatedBy});
+
+        const invoiceLogsObj:any={invoiceId: invoiceLine.invoiceId, invoice: invoiceLine._id, type: logType.PAYMENT_UPDATED, info:"Payment of $"+oldAmountPaid+" updated to $"+payment.amountPaid, amountPaid:payment.amountPaid, customer: invoiceLine.customer, companyLocation: invoiceLine.companyLocation, workType: invoiceLine.workType, company: invoiceLine.company, createdBy: payment.updatedBy}
+        InvoiceLogController.create(invoiceLogsObj);
 
     }
 
@@ -1779,8 +1781,9 @@ export const _handleVoidPayment = async (paymentType: string, invoiceIds: string
 
                 await invoice.save();
             }
-            // @ts-ignore
-    InvoiceLogController.create({invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_VOID, info:"Payment of $"+payment.amountPaid+" voided", amountPaid:payment.amountPaid*-1, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id});
+
+            const invoiceLogsObj:any={invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_VOID, info:"Payment of $"+payment.amountPaid+" voided", amountPaid:payment.amountPaid*-1, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id}
+            InvoiceLogController.create(invoiceLogsObj);
 
         }
     } else {

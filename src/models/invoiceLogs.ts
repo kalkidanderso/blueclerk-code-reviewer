@@ -1,4 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose'
+import { ICustomer } from './Customer';
+import { ICompanyLocation } from './CompanyLocation';
+import { IWorkType } from './WorkType';
 
 export const enum logType {
     CREATED = 'INVOICE_CREATED',
@@ -17,9 +20,9 @@ export interface IInvoiceLogs extends Document {
     invoice: Schema.Types.ObjectId,
     oldInvoiceId:Schema.Types.ObjectId,
     company: Schema.Types.ObjectId,
-    companyLocation: Schema.Types.ObjectId,
-    workType: Schema.Types.ObjectId,
-    customer: Schema.Types.ObjectId,
+    companyLocation: Schema.Types.ObjectId|ICompanyLocation,
+    workType: Schema.Types.ObjectId|IWorkType,
+    customer: Schema.Types.ObjectId|ICustomer,
     createdAt?: Date
     createdBy: Schema.Types.ObjectId
     updatedAt?: Date,
