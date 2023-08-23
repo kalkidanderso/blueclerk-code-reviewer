@@ -13,6 +13,7 @@ export interface IPayment extends Document {
     customer: Schema.Types.ObjectId | ICustomer
     invoice: Schema.Types.ObjectId | IInvoice
     invoices: [Schema.Types.ObjectId | IInvoice]
+    jobs: [Schema.Types.ObjectId | IJob]
     line: [{
         invoice: Schema.Types.ObjectId | IInvoice
         amountPaid: number
