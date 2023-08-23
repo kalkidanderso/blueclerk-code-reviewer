@@ -100,6 +100,8 @@ export const getJobs = async (req: Request, res: Response) => {
                             _id: 1,
                             profile: 1,
                             info: 1,
+                            contactName: 1,
+                            notes: 1
                         },
                     },
                 ],
