@@ -1950,7 +1950,7 @@ const _convertJobToRowExcel = (job: any, contractor: string): IJobExcelRow[] => 
             date: moment.utc(job.endTime).format('ll'),
             subdivision: job.jobLocation?.name,
             jobAdress: job.jobSite?.name,
-            amount: tech?.commissionAmount,
+            amount: `$${tech?.commissionAmount}`,
             techName: tech?.displayName,
         })
     })
