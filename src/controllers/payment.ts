@@ -761,8 +761,16 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
         return res.json({ statstus: Status.Error, message: 'Either invoiceIds, JobIds or startDate endDate is required' });
     }
 
-    const invoices = await Invoice.find({ ...invoiceQuery, isDraft: { $ne: true } }).populate({ path: 'commission' });
-    const jobs = await Job.find({ ...jobQuery, status: 2 }).populate({ path: 'commission' });
+    let invoices: IInvoice[] = []
+    let jobs: IJob[] = [];
+
+    if (Object.keys(invoiceQuery).length) {
+        invoices = await Invoice.find({ ...invoiceQuery, isDraft: { $ne: true } }).populate({ path: 'commission' });
+    }
+
+    if (Object.keys(jobQuery).length) {
+        jobs = await Job.find({ ...jobQuery, status: 2 }).populate({ path: 'commission' });
+    }
 
     const invoiceIds = invoices.map(invoice => invoice._id);
     const jobIds = jobs.map(job => job._id);
@@ -1599,8 +1607,8 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
         }
 
         try {
-            await _handleVoidPayment(params.type, invoiceIds, payment, customer);
-            await _handleVoidJobPayment(params.type, jobIds);
+            if(invoiceIds.length) await _handleVoidPayment(params.type, invoiceIds, payment, customer);
+            if(jobIds.length) await _handleVoidJobPayment(params.type, jobIds);
             await _handleVoidPaymentContractor(params.type, paymentVendor, company._id);
         } catch (err) {
             Sentry.captureException(err);
