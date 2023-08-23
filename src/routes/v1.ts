@@ -2281,14 +2281,6 @@ export default function (sio: any) {
     )
 
     router.get(
-        '/exportVendorPayments',
-        passport.authenticate('jwt', { session: false }),
-        isLogin(),
-        getCompanyId(),
-        paymentController.exportVendorPayments
-    )
-
-    router.get(
         '/getPayrollReport',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
