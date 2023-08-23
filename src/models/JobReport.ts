@@ -17,6 +17,7 @@ export interface IJobReport extends Document {
     createdAt: Date;
     lastEmailSent: Date;
     invoiceCreated?: boolean;
+    invoiceVoid?: boolean;
     invoice?: Schema.Types.ObjectId | IInvoice;
 }
 
@@ -71,6 +72,9 @@ const JobReportSchema = new Schema({
         default: Date.now
     },
     invoiceCreated: {
+        type: Boolean
+    },
+    invoiceVoid: {
         type: Boolean
     },
     invoice: {
