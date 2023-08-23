@@ -8,7 +8,7 @@ import { Status, Messages, InvoiceStatus, payrollPaymentTypes } from '../common/
 import { Company, ICompany } from '../models/Company'
 import { IUser, User } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
-import { Payment, IPayment, PaymentVendor, PaymentEmployee, PaymentCustomer, IPaymentVendor, IPaymentEmployee } from '../models/Payment'
+import { Payment, IPayment, PaymentVendor, PaymentEmployee, PaymentCustomer, IPaymentVendor, IPaymentEmployee, IJobExportQuery } from '../models/Payment'
 import { Customer, ICustomer } from '../models/Customer'
 import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer'
 import { _createQBPayment, _deleteQBPayment, _updateQBPayment, _voidPayment } from './quickbook.payment'
@@ -51,6 +51,15 @@ interface ITechnicianCommissionJob {
         workType: ObjectId,
         companyLocation: ObjectId
     }
+}
+
+interface IJobExcelRow {
+    jobNumber?: string;
+    date?: string;
+    subdivision?: string;
+    jobAdress?: string;
+    amount?: string;
+    techName?: string;
 }
 
 /**
@@ -1288,7 +1297,6 @@ export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
 }
 
 export const getPayrollBalance = async (req: Request, res: Response) => {
-
     const params = req.query;
     const company = <ICompany>req.company;
     const vendors: any = [];
@@ -1529,6 +1537,165 @@ export const getPayrollReport = async (req: Request, res: Response) => {
     return res.json({ status: Status.Success, vendors, employees });
 }
 
+export const exportVendorJobs =  async (req: Request, res: Response) => {
+    const params = req.query;
+    const company = <ICompany>req.company;
+    const workType = params.workType as string;
+    const companyLocation = params.companyLocation as string;
+    const startDate = params.startDate as string;
+    const endDate = params.endDate as string;
+
+    
+    const query: IJobExportQuery = {
+        company: company._id,
+        status: 2,
+        endTime: { $gte: moment.utc(startDate).toDate(), $lte: moment.utc(endDate).toDate() },
+        commission: { $ne: null }
+    }
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) { };
+
+        query['workType'] = { $in: workTypeIds };
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) { }
+        query['companyLocation'] = { $in: companyLocationIds };
+    }
+
+
+    const contractor = await Company.findById(params.id).select('info');
+
+    if (!contractor) {
+        return res.status(Status.NotFound).json({
+            status: Status.NotFound,
+            message: 'Contractor not found',
+        });
+    }
+    
+    const jobs = await Job.aggregate([
+        {$match: query},
+        { 
+            $lookup : {
+                from : 'jobcommissions',
+                localField : 'commission',
+                foreignField : '_id',
+                pipeline: [
+                    {$match: {'technicians.paid': false, 'technicians.contractor': new ObjectId(params.id)}},
+                    {
+                        $unwind: "$technicians"
+                    },
+                    {$lookup: {
+                        from: 'users',
+                        // localField: 'technicians.technician',
+                        // foreignField : '_id',
+                        let: {
+                            technician: {
+                                $toObjectId: "$technicians.technician"
+                            },
+                            technicians: "$technicians"
+                        },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                    $eq: [
+                                        "$_id",
+                                        "$$technician"
+                                    ]
+                                    }
+                                }
+                            },
+                            {
+                                $replaceRoot: {
+                                    newRoot: {
+                                    $mergeObjects: [
+                                        "$$technicians",
+                                        "$$ROOT.profile"
+                                    ]
+                                    }
+                                }
+                            }
+                        ],
+                        as: 'technicians',
+
+                    }},
+                    {
+                        $group: {
+                            _id: "$_id",
+                            
+                            technicians: {
+                                $push: {
+                                $first: "$technicians"
+                                }
+                            }
+                        }
+                    }
+                ],
+                as : 'commission',
+                
+            },
+            
+        },
+        { $lookup : {
+            from : 'joblocations',
+            localField : 'jobLocation',
+            foreignField : '_id',
+            pipeline: [{ "$project": { name: 1 }}],
+            as : 'jobLocation',
+        }},
+        { $lookup : {
+            from : 'jobsites',
+            localField : 'jobSite',
+            foreignField : '_id',
+            pipeline: [{ "$project": { name: 1 }}],
+            as : 'jobSite',
+        }},
+        {$unwind: '$commission'},
+        {
+            $project: {
+                _id: 1, jobId: 1, endTime: 1, jobLocation: {$first: '$jobLocation'}, jobSite: {$first: '$jobSite'}, commission: "$commission"
+            }
+        },
+        {
+            $sort: {endTime: -1}
+        }
+       
+    ]);
+
+
+    let excelRows: IJobExcelRow[] = [];
+    jobs.map((job: IJob) => {
+        const rows = _convertJobToRowExcel(job, params.id);
+        excelRows = [...excelRows, ...rows];
+    });
+
+    const XLSX = require("xlsx");
+    const worksheet = XLSX.utils.json_to_sheet(excelRows);
+    const headers = ["Job Number", "Date", "Subdivision", "Job Address", "Amount", "Technician Name"]
+    XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: "A1" });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Dates");
+    const buf = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+    const contractorName = contractor.info.displayName || contractor.info.companyName;
+    const filename = `${contractorName} ${params.startDate}-${params.endDate}.xlsx`;
+    res.attachment(filename);
+    res.header('Access-Control-Expose-Headers', 'Content-Type, Location, Content-Disposition');
+    res.status(200).end(buf);
+}
+
 export const voidPaymentContractor = async (req: Request, res: Response) => {
 
     const params = req.body;
@@ -1767,6 +1934,29 @@ export const _handleVoidPayment = async (paymentType: string, invoiceIds: string
     }
 
     return;
+}
+
+const _convertJobToRowExcel = (job: any, contractor: string): IJobExcelRow[] => {
+    const rows: IJobExcelRow[] = [];
+    
+    if (!job) {
+        return rows;
+    }
+
+    job.commission?.technicians?.map((tech: any) => {
+        if (tech?.contractor.toString() !== contractor) return;
+        rows.push({
+            jobNumber: job.jobId,
+            date: moment.utc(job.endTime).format('ll'),
+            subdivision: job.jobLocation?.name,
+            jobAdress: job.jobSite?.name,
+            amount: `$${tech?.commissionAmount}`,
+            techName: tech?.displayName,
+        })
+    })
+
+           
+    return rows;
 }
 
 /**

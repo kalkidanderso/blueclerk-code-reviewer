@@ -12265,6 +12265,75 @@
         ]
       }
     },
+    "/exportVendorJobs": {
+      "get": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "Export vendor jobs to Excel",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "The contractor id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Filter of start job end time",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "Filter of end job end time",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "workType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "If data is created from a specific work type and company location."
+          },
+          {
+            "name": "companyLocation",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string"},
+            "description": "If data is created from a specific company location."
+          }
+          
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getPayrollReport": {
       "get": {
         "tags": [
