@@ -57,6 +57,15 @@ export interface IPaymentVendor extends IPayment {
     creditUsed: number
 }
 
+export interface IJobExportQuery { 
+    company: any; 
+    status: number; 
+    endTime: { $gte: Date; $lte: Date; }; 
+    commission: { $ne: any; }; 
+    companyLocation?: any;
+    workType?: any
+}
+
 export interface IPaymentEmployee extends IPayment {
 
     employee: Schema.Types.ObjectId | ICustomer
