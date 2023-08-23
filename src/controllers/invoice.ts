@@ -4564,18 +4564,22 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
     delete invoice._id;
     delete invoice.createdAt;
     delete invoice.updatedAt;
+    console.log("company.currentInvoiceId",company.currentInvoiceId);
     const invoiceNumber=(company.currentInvoiceId + 1);
-    invoice.invoiceId = (company.currentInvoiceId + 1).toString();
-    invoice.invoiceId = `Invoice ${invoice.invoiceId}`;
+    console.log("invoiceNumber",invoiceNumber);
+    // invoice.invoiceId = (company.currentInvoiceId + 1).toString();
+    invoice.invoiceId = `Invoice ${invoiceNumber}`;
     invoice.isVoid = false;
     invoice = await new Invoice(invoice).save();
+    const companyUpdate = await company.updateOne({ currentInvoiceId: invoiceNumber })
+
     const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
     // add commission to invoice
 
     if (!invoice.isDraft) {
 
         if (invoice.job) {
-
+            console.log("Is a Job");
             const customer = await Customer.findById(invoice.customer);
             const job = await Job.findById(invoice.job);
             customer.balance += invoice.total;
@@ -4600,7 +4604,6 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
                             contractor.balance += Number(commission.toFixed(2));
                             contractor.save();
                         }
-
                         invoiceCommissionEntry.push(contractorEntry);
                     }
 
@@ -4629,7 +4632,6 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
             }).save();
 
             invoice.commission = invoiceCommission._id;
-
             await invoice.save();
             const jobReport = await JobReport.findOne({ job: invoice.job });
             if (jobReport) {
@@ -4676,16 +4678,21 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
                     });
                 }
 
-            } else {
+            }
+            
+            else 
+            
+            {
                 return res.json({ status: Status.Success, message: 'Duplicate Job invoice created successfully.', invoice });
             }
 
         }
+        // @ts-ignore
         else if (invoice.hasOwnProperty('purchaseOrder') && invoice.purchaseOrder != null && invoice.purchaseOrder != '""') {
 
             console.log("is a PO");
 
-            const companyUpdate = company.updateOne({ currentInvoiceId: invoiceNumber })
+            const companyUpdate = await company.updateOne({ currentInvoiceId: invoiceNumber })
             const poUpdate = PurchaseOrder.updateOne({ _id: invoice.purchaseOrder }, { invoiceCreated: true })
 
             const customer = await Customer.findById(invoice.customer);
@@ -4739,11 +4746,12 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
                 });
             }
         }
+        // @ts-ignore
         else if (invoice.hasOwnProperty('estimate') && invoice.estimate != null && invoice.estimate != '""') {
 
             console.log("is a estimate");
 
-            const companyUpdate = company.updateOne({ currentInvoiceId: invoiceNumber })
+            const companyUpdate = await company.updateOne({ currentInvoiceId: invoiceNumber })
             const estimateUpdate = Estimate.updateOne({ _id: invoice.estimate }, { invoiceCreated: true })
 
             if (!invoice.isDraft) {

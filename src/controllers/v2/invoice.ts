@@ -200,6 +200,9 @@ const _fillInitialQuery = (params: any, queryParams: any, query: any) => {
         case true:
             query['$and'].push({ isVoid: isVoid });
             break;
+        case false:
+            query['$and'].push({ isVoid: { $ne: true } });
+            break;
 
         default:
             /**
