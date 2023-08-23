@@ -1531,13 +1531,17 @@ const findAddedAndRemovedItems = (original: any, updated: any) => {
 
     for (const [index, item] of original.entries()) {
         if (!updatedIds.includes(item.item.toString())) {
-            removed.push(item);
+            removed.push({
+                "type":"removed",
+                "name": item?.name
+            });
         }
         
         if (updatedIds.includes(item.item.toString())) {
 
             if (original[index].quantity != updated[index].quantity ) {
                 updatedItems.push({
+                    "type":"updated",
                     "name": item?.name,
                     "new": updated[index].quantity,
                     "old": original[index].quantity,
@@ -1550,7 +1554,10 @@ const findAddedAndRemovedItems = (original: any, updated: any) => {
     for (const [index, item] of updated.entries()){
 
         if (!originalIds.includes(item.item.toString())) {
-            added.push(item);
+            added.push({
+                type:"added",
+                "name": item?.name
+            });
         }
         // if (originalIds.includes(item.item.toString())) {
 
@@ -1638,13 +1645,23 @@ const changesManage = (newObj: any, oldObj: any) => {
                 const { added, removed, updatedItems } = findAddedAndRemovedItems(oldObj[key], newObj[key]);
 
                 if (added.length) {
-                    logs.push(getInvoiceLogsPefix("ITEMS_ADDED") + " " + added.length);
+                    // logs.push(getInvoiceLogsPefix("ITEMS_ADDED") + " " + added.length);
 
 
+                    added.map((itemUpdates: any) => {
+
+                        logs.push("Item "+ itemUpdates.name +" added")
+
+                    });
                 }
                 if (removed.length) {
-                    logs.push(getInvoiceLogsPefix("ITEMS_REMOVED") + " " + removed.length);
+                    // logs.push(getInvoiceLogsPefix("ITEMS_REMOVED") + " " + removed.length);
 
+                    removed.map((itemUpdates: any) => {
+
+                        logs.push("Item "+ itemUpdates.name +" removed")
+
+                    });
                 }
                
                 if (updatedItems.length) {
