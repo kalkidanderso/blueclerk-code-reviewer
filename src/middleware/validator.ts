@@ -492,6 +492,8 @@ export const Validations = {
     check('invoiceId').isMongoId().withMessage(Messages.WrongId),
   ],
 
+  getJobReportEmailTemplate: [check('jobReportId').exists()],
+
   sendReport: [check('jobReportId').exists()],
 
   createPOInvoice: [check('purchaseOrderId').exists()],

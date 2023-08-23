@@ -112,6 +112,101 @@ export const Styles = {
     invoice: {
         headerTitle: {
             fontSize: 11,
+            color: '#5c5c5c'
+        },
+        headerTitleBold: {
+            fontSize: 11,
+            bold: true,
+            color: '#5c5c5c'
+        },
+        companyName: {
+            fontSize: 16,
+            bold: true,
+            color: '#262626'
+        },
+        invoiceId: {
+            fontSize: 20,
+            bold: true,
+            color: '#00AAFF'
+        },
+        invoiceHeader: {
+            fontSize: 11,
+            color: '#333333'
+        },
+        invoiceHeaderBold: {
+            fontSize: 11,
+            bold: true,
+            color: '#262626'
+        },
+        invoiceMetadataTitle: {
+            fontSize: 11,
+            bold: true,
+            color: '#333333',
+            alignment: 'right',
+        },
+        invoiceMetadata: {
+            fontSize: 11,
+            color: '#333333',
+            alignment: 'right',
+        },
+        itemTitle: {
+            fontSize: 12,
+            bold: true,
+            color: '#5c5c5c',
+            fillColor: '#F9FDFF',
+            margin: [0, 10, 0, 5]
+        },
+        itemListBold: {
+            fontSize: 12,
+            bold: true,
+            color: '#262626',
+            margin: [0, 0, 0, 5]
+        },
+        itemList: {
+            fontSize: 12,
+            color: '#262626'
+        },
+        itemListCenter: {
+            fontSize: 12,
+            color: '#262626',
+            alignment: 'center'
+        },
+        itemListRight: {
+            fontSize: 12,
+            color: '#262626',
+            alignment: 'right'
+        },
+        amountDueTitle: {
+            fontSize: 12,
+            bold: true,
+            color: '#333333',
+            alignment: 'right'
+        },
+        amountDue: {
+            fontSize: 16,
+            bold: true,
+            color: '#333333',
+            alignment: 'right'
+        },
+        smallFontGray: {
+            fontSize: 7,
+            color: '#262626'
+        },
+        icon: {
+            font: 'Fontello',
+            fontSize: 12,
+            color: '#262626',
+            alignment: 'center'
+        }
+    },
+    PORequest: {
+        ticketId: {
+            fontSize: 13,
+            bold: true,
+            color: '#00AAFF'
+        },
+        headerTitle: {
+            fontSize: 11,
             color: '#828282'
         },
         headerTitleBold: {
@@ -124,16 +219,11 @@ export const Styles = {
             bold: true,
             color: '#4F4F4F'
         },
-        invoiceId: {
-            fontSize: 20,
-            bold: true,
-            color: '#00AAFF'
-        },
-        invoiceHeader: {
+        ticketHeader: {
             fontSize: 11,
             color: '#333333'
         },
-        invoiceHeaderBold: {
+        ticketHeaderBold: {
             fontSize: 11,
             bold: true,
             color: '#4F4F4F'
@@ -197,6 +287,10 @@ export const Styles = {
             fontSize: 12,
             color: '#4F4F4F',
             alignment: 'center'
+        },
+        noteFont: {
+            fontSize: 12,
+            color: '#4F4F4F',
         }
     }
 }

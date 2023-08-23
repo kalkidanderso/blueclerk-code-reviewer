@@ -19,6 +19,7 @@ import { JobRequest } from '../models/JobRequest';
 import { ITask, Job } from '../models/Job';
 import { HomeOwner } from '../models/HomeOwner';
 import * as Sentry from '@sentry/node';
+import { PORequest } from '../models/PORequest';
 
 export const createServiceTicket = (req: Request, res: Response, sio: any) => {
 
@@ -40,6 +41,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
             let customerPo = params.customerPO ? params.customerPO : null;
             let customerId: any = null;
             let homeOwnerId: any = null;
+            let type = params.type == "Ticket"  || params.type == "PO Request" && customerPo ? "Ticket" : params.type;
 
             const isHomeOccupied = params.isHomeOccupied === undefined || params.isHomeOccupied === null
                 ? false
@@ -89,14 +91,22 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
             if(req.otherCompanyId != undefined) {
                 companyId = req.otherCompanyId
             }
-            let ticketId = `Ticket ${company.currentJobId + 1}`;
+
+            //If the type is 'PO Request,' then set the ticket ID as 'PO Request'
+            let ticketType = "Ticket"
+            if (type == "PO Request") {
+                ticketType = "PO Request"
+            }
+
+            let ticketId = `${ticketType} ${company.currentJobId + 1}`;
             if (company.prefix) {
-                ticketId = `Ticket ${company.prefix}-${company.currentJobId + 1}`;
+                ticketId = `${ticketType} ${company.prefix}-${company.currentJobId + 1}`;
             }
 
             // let dueDate = params.dueDate ? new Date(params.dueDate) : null
             let dueDate = params.dueDate ? moment.parseZone(params.dueDate).format("YYYY-MM-DD") : null;
-            let serviceTicket = new ServiceTicket({
+
+            const newData: any = {
                 isHomeOccupied,
                 createdAt: Date.now(),
                 dueDate: dueDate,
@@ -110,7 +120,16 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 tasks: jobTypes,
                 customerPO : customerPo,
                 images: [],
-            });
+                type: type
+            };
+            let serviceTicket: IServiceTicket;
+            //To Detect where the ticket is created from, was it created as a Ticket or a PO Request
+            if (type == "PO Request") {
+                newData.PORequestId = ticketId;
+                serviceTicket = new PORequest(newData);
+            }else{
+                serviceTicket = new ServiceTicket(newData);
+            }
 
             serviceTicket.customer = customerId;
             serviceTicket.homeOwner = homeOwnerId;
@@ -144,6 +163,11 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                             return res.json({'status': Status.Error, 'message': Messages.GenericError})
                         }
 
+                        let historyMessage = "Service Ticket"
+                        if (type == "PO Request") {
+                            historyMessage  = "Purchase Order Request"
+                        }
+                        
                         if (serviceTicket.source === ServiceTicketSource.WEB) {
                             const serviceTicketDetail = await ServiceTicket.findOne(
                                 { _id: serviceTicket._id , company: companyId})
@@ -171,13 +195,13 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                                     if(err) {
                                         return null;
                                     }
-
+                                                            
                                     // Construct notification entry to be saved
                                     let notificationEntry: INotificationServiceTicket = new NotificationServiceTicket({
                                         company: companyId,
                                         notificationType: NotificationTypes.SERVICE_TICKET_CREATED,
                                         message: {
-                                            title: 'Service Ticket created',
+                                            title: `${historyMessage} created`,
                                             body: `${serviceTicket.ticketId} created via web`
                                         },
                                         metadata: serviceTicket._id
@@ -196,7 +220,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                             )
 
                         }
-                        return res.json({'status': Status.Success, 'message': 'Service ticket created successfully.', invalidJobTypes})
+                        return res.json({'status': Status.Success, 'message': `${historyMessage} created successfully.`, invalidJobTypes , createdID : serviceTicket._id})
                     })
             })
 
@@ -812,6 +836,7 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
     const totalServiceTickets = await ServiceTicket.find({
         company: company._id,
         jobCreated: false,
+        type: { $ne: "PO Request" },
         status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] },
         ...filterByDivision
     }).countDocuments();
@@ -842,6 +867,7 @@ export const getOpenServiceTicketsStream = async (req: Request, res: Response, s
     const serviceTicketCursor = ServiceTicket.find({
         company: company._id,
         jobCreated: false,
+        type: { $ne: "PO Request" },
         status: { $in: [ServiceTicketStatus.ACTIVE, ServiceTicketStatus.REACTIVE] },
         ...filterByDivision
     }).sort({ _id: -1 })
@@ -1025,6 +1051,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     if (params.jobTypeId) {
                         jobTypeId = params.jobTypeId
                     }
+                    let type = params.type;
 
                     // Update isHomeOccupied and or homeOwner
                     let isHomeOccupied = params.isHomeOccupied
@@ -1071,7 +1098,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     // If job types changed, check if there any running jobs
                     if (isJobTypesUpdated) {
                         const jobs = await Job.find({ ticket: serviceTicket._id });
-                        if (jobs.find(job => job.status !== JobStatus.PENDING && job.status !== JobStatus.RESCHEDULED)) {
+                        if (jobs.find(job => job.status !== JobStatus.PENDING && job.status !== JobStatus.RESCHEDULED && job.status !== JobStatus.CANCELED)) {
                             return res.json({ status: Status.Error, message: 'Cannot update ticket when tied to a job in progress' });
                         }
                     }
@@ -1095,6 +1122,11 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                             date: new Date()
                         });
                     }
+
+                    if (type === 'Ticket' && serviceTicket.ticketId.includes('PO Request')) {
+                        serviceTicket.ticketId = serviceTicket.ticketId?.replace("PO Request","Ticket");
+                    } 
+
                     serviceTicket.updateOne(
                         {
                             note: params.note,
@@ -1111,6 +1143,8 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                             track: track,
                             isHomeOccupied: isHomeOccupied,
                             homeOwner: homeOwnerId,
+                            ticketId: serviceTicket.ticketId,
+                            type
                         },
                         async (err: any)=> {
 
@@ -1118,6 +1152,26 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                                 return res.json({'status': Status.Error, 'message': Messages.GenericError})
                             }
 
+                            if (!serviceTicket.customerPO && customerPO) {
+                                let track: any[] = serviceTicket?.track ? serviceTicket.track : [];
+                                track.push({
+                                    user: user._id,
+                                    action: `Override-missing Customer PO`,
+                                    date: new Date()
+                                });
+                                serviceTicket.type = "Ticket";
+                                serviceTicket.ticketId = serviceTicket.ticketId?.replace("PO Request","Ticket");
+                                serviceTicket.poOverriddenBy = user._id;
+                                await serviceTicket.save();
+                            }else if(serviceTicket.customerPO != customerPO){
+                                let track: any[] = serviceTicket?.track ? serviceTicket.track : [];
+                                track.push({
+                                    user: user._id,
+                                    action: `Updated Customer PO`,
+                                    date: new Date()
+                                });
+                                await serviceTicket.save();
+                            }
                             // Update jobs related to this service ticket is jobTypes updated
                             const jobs = await Job.find({ ticket: serviceTicket._id });
                             for (const job of jobs) {
@@ -1143,7 +1197,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                                 job.save();
                             }
 
-                            return res.json({'status': Status.Success, 'message': 'Ticket updated successfully.', invalidJobTypes})
+                            return res.json({'status': Status.Success, 'message': `${serviceTicket.type} updated successfully.`, invalidJobTypes})
                         }
                     )
                 }

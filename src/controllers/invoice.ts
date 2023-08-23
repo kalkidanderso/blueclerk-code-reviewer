@@ -376,20 +376,26 @@ export const createInvoice = (req: Request, res: Response) => {
                 const job = <IJob>result[0]
 
                 // Convert jobTypes to ObjectId in array
-                const jobTypeIds = [];
+                const jobTypes = [];
                 job.tasks.forEach(task => {
                     task.jobTypes.forEach(taskJobType => {
-                        jobTypeIds.push(taskJobType.jobType)
+                        jobTypes.push({
+                            id: taskJobType.jobType,
+                            quantity: taskJobType.quantity,
+                            price: taskJobType.price,
+                        })
                     })
                 })
                 // const jobTypeIds = job.tasks.map(task => task.jobType);
                 // Fallback for old job who still using one job type
-                if (!jobTypeIds.length) jobTypeIds.push(job.type);
+                if (!jobTypes.length) jobTypes.push({id: job.type, quantity: 1, price: 0});
                 // Search all jobTypes' items
                 // const items = Item.find({jobType: {$in: jobTypeIds}});
                 const items: any[] = []
-                jobTypeIds.forEach(async (jobTypeId) => {
-                    const item = await Item.findOne({ jobType: jobTypeId })
+                jobTypes.forEach(async (jobType) => {
+                    const item: any = await Item.findOne({jobType: jobType.id})
+                    item["quantity"] = jobType.quantity;
+                    item["price"] = jobType.price;
                     items.push(item);
                 });
 
@@ -1199,7 +1205,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
 
     let invoiceItems: any[] = []
     // Find Customer object to see the itemTier, customPrice, & payment term info
-    const customerObj = await Customer.findById(customer).populate({ path: 'paymentTerm' });
+    const customerObj = await Customer.findById(customer).populate({path: 'paymentTerm'}).populate({path: 'discountPrices.discountItem'});
     if (!customerObj) {
         return res.json({ status: Status.Error, message: 'Customer not found' });
     }
@@ -1285,9 +1291,9 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
 
             let obj: any = {}
             // Set price to 0 if customer uses customPrice
-            let price = customerObj.isCustomPrice ? 0 : itemTier?.charge || jobTypeitem.charges;
+            let price = (jobTypeitem as any).price ?? (customerObj.isCustomPrice ? 0 : itemTier?.charge || jobTypeitem.charges);
             // If item is hourly, take the task's timeSpent (minutes) for the quantity
-            let quantity = jobTypeitem.isFixed ? 1 : (jobTypes?.timeSpent / 60) || 1;
+            let quantity = jobTypeitem.isFixed ? ((jobTypeitem as any).quantity || 1) : (jobTypes?.timeSpent / 60) || 1;
             let itemTax = 0
             let itemTaxAmount: number = 0
             let subTotal = price * quantity
@@ -1338,15 +1344,21 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         let discountPrices = customerObj.discountPrices?.sort((a, b) => {
             return a.quantity - b.quantity
         });
-        discountPrices = discountPrices.filter(disc => disc.discountItem);
+        discountPrices = discountPrices.filter(disc => disc.discountItem && ((disc.discountItem as IItem)?.isActive ?? true));
+
+        //Count All Item Quantity
+        let allQty = 0;
+        for (const jobTypeitem of jobTypeitems) {
+            allQty += ((jobTypeitem as any).quantity || 1);
+        }
 
         // Get the max quantity that should be discounted
         const maxDiscountQty = discountPrices[discountPrices.length - 1]?.quantity;
-        const totalItemDiscounted = jobTypeitems.length > maxDiscountQty ? maxDiscountQty : jobTypeitems.length;
+        const totalItemDiscounted = allQty > maxDiscountQty ? maxDiscountQty : jobTypeitems.length;
 
         // Find the discount item based on how many item that gonna be discounted
-        const customerDiscount = customerObj.discountPrices?.find(disc => disc.quantity === totalItemDiscounted);
-        const discountItem = await Item.findById(customerDiscount?.discountItem);
+        const customerDiscount = customerObj.discountPrices?.find(disc => disc.quantity === totalItemDiscounted && ((disc.discountItem as IItem)?.isActive ?? true));
+        const discountItem = await Item.findById((customerDiscount?.discountItem as IItem)?._id);
 
         if (discountItem) {
             const discountAmount = discountItem.charges ?? 0;
@@ -2313,7 +2325,7 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
                 { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                 {
                     path: 'customer',
-                    select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail'
+                    select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail notes'
                 },
                 { path: 'tasks.technician', select: 'profile auth.email address contact permissions.role' },
                 {
@@ -2576,12 +2588,13 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     const customer = <ICustomer>invoice.customer;
     const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
     const customerContact = <IContact>invoice.customerContactId;
+    const companyLocation = <ICompanyLocation>invoice.companyLocation;
 
     // Retrieve company email default
     const filepath = req.file?.path ?? `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
-    const invoicePdfs = [{ invoice, filepath }];
-    const emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INVOICE });
-
+    const invoicePdfs = [{invoice, filepath}];
+    const emailDefault = await EmailDefault.findOne({company, emailType: EmailTypes.INVOICE});
+    const sender_email = companyLocation?.billingAddress?.emailSender || user.auth?.email
     // Generate Invoice PDF
     await _generateInvoicePdf(company, invoice);
 
@@ -2615,7 +2628,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
         // Add the user's email himself if he want to receive copy email
         if (copyToMyself) {
-            recipientEmails.push(user.auth?.email);
+            recipientEmails.push(sender_email);
         }
     } catch (error) {
         Sentry.captureException(error);
@@ -2623,12 +2636,11 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: Messages.GenericError });
     }
 
-    const companyLocation = <ICompanyLocation>invoice.companyLocation;
     // Call AWS SES method
     sendInvoiceEmailToCustomer({
         subject: params.subject ?? emailDefault?.subject,
         message: params.message ?? emailDefault?.message,
-        sender_email: companyLocation?.billingAddress?.emailSender || user.auth?.email,
+        sender_email: sender_email,
         company_name: company.info?.companyName,
         company_email: company.info?.companyEmail,
         company_logo: company.info?.logoUrl,
@@ -2640,7 +2652,8 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
         invoice_due_date: moment(invoice.dueDate).format('MMMM DD, YYYY'),
         invoice_pdfs: invoicePdfs,
         term_name: paymentTerm?.name,
-        term_due_days: paymentTerm?.dueDays
+        term_due_days: paymentTerm?.dueDays,
+        has_cc: copyToMyself
     });
 
     // Update email history and last email sent info

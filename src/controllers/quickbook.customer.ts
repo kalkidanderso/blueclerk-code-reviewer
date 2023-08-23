@@ -1283,29 +1283,31 @@ export const updateBCCustomer = async (req: Request, res: Response, company: ICo
                 customer = await Customer.findOne({ quickbookId: qbCustomer.Id, 'info.email': qbCustomer.PrimaryEmailAddr?.Address });
                 const currentIsActive = customer.isActive;
 
-                // Update Customer data based on QB Customer
-                customer.isActive = qbCustomer.Active;
-                customer.profile.displayName = qbCustomer.DisplayName;
-                customer.profile.firstName = qbCustomer.GivenName;
-                customer.profile.lastName = qbCustomer.FamilyName;
-                customer.profile.displayName = qbCustomer.CompanyName;
-                customer.contact = customer.contact ?? { phone: '' };
-                customer.contact.phone = qbCustomer.PrimaryPhone?.FreeFormNumber;
-                customer.address = customer.address ?? {};
-                customer.address.street = qbCustomer.BillAddr?.Line1;
-                customer.address.unit = qbCustomer.BillAddr?.Line2;
-                customer.address.city = qbCustomer.BillAddr?.City;
-                customer.address.state = qbCustomer.BillAddr?.CountrySubDivisionCode;
-                customer.address.zipCode = qbCustomer.BillAddr?.PostalCode;
+                if (customer) {
+                    // Update Customer data based on QB Customer
+                    customer.isActive = qbCustomer?.Active;
+                    customer.profile.displayName = qbCustomer.DisplayName;
+                    customer.profile.firstName = qbCustomer.GivenName;
+                    customer.profile.lastName = qbCustomer.FamilyName;
+                    customer.profile.displayName = qbCustomer.CompanyName;
+                    customer.contact = customer.contact ?? { phone: '' };
+                    customer.contact.phone = qbCustomer.PrimaryPhone?.FreeFormNumber;
+                    customer.address = customer.address ?? {};
+                    customer.address.street = qbCustomer.BillAddr?.Line1;
+                    customer.address.unit = qbCustomer.BillAddr?.Line2;
+                    customer.address.city = qbCustomer.BillAddr?.City;
+                    customer.address.state = qbCustomer.BillAddr?.CountrySubDivisionCode;
+                    customer.address.zipCode = qbCustomer.BillAddr?.PostalCode;
 
-                if (currentIsActive && !qbCustomer.Active) {
-                    customer.inactiveAt = new Date();
-                } else if (qbCustomer.Active) {
-                    customer.inactiveAt = null;
-                    customer.inactiveBy = null;
+                    if (currentIsActive && !qbCustomer.Active) {
+                        customer.inactiveAt = new Date();
+                    } else if (qbCustomer.Active) {
+                        customer.inactiveAt = null;
+                        customer.inactiveBy = null;
+                    }
+
+                    await customer.save();
                 }
-
-                await customer.save();
             } else {
                 // Get BC Job Location by QB Customer Job's quickbookId
                 jobLocation = await JobLocation.findOne({ companyId: company._id, quickbookId: qbCustomer.Id });

@@ -338,11 +338,14 @@ app.use((err: any, req: any, res: any, next: any) => {
 });
 
 //Starting the server
-httpServer.listen(
+const server = httpServer.listen(
   app.get('port'),
   (err: any) => {
     if (err) return console.log(`Server start error: ${err}`)
     console.log(`Server started at port: ${app.get('port')}`)
   }
 )
+
+server.keepAliveTimeout = (60 * 1000) + 1000;
+server.headersTimeout = (60 * 1000) + 2000;
 // Test comment for GitLab and ClickUp task #307pke
