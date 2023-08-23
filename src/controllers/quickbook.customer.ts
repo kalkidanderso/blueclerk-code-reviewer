@@ -332,6 +332,7 @@ export const _checkQBCustomerJobLocation = async (req: Request, res: Response, c
             // Create QB Customer
             qbo.createCustomer(qbCustomerEntry, async (err: any, qbCustomer: IQBCustomer) => {
                 if (err) {
+                    console.log("err",err);
                     console.log('== _createQBCustomerJobLocation > qbo.createCustomer > ERROR ==');
                     console.log('== err.Fault:', err.Fault);
                     console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
