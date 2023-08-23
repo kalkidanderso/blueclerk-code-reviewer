@@ -6,7 +6,8 @@
   "scripts": {
     "tsc": "tsc",
     "watch:tsc": "tsc --watch",
-    "dev": "concurrently \"tsc --watch\" \"nodemon ./dist/server.js\""
+    "dev": "concurrently \"tsc --watch\" \"nodemon ./dist/server.js\"",
+    "schema": "cd ./src/database/schemas && cat *.prisma > ../schema.prisma && npx prisma format && npx prisma migrate dev --name init"
   },
   "prisma": {
     "schema": "./src/database/schema.prisma"
