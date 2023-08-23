@@ -46,6 +46,7 @@ import * as quickBookPaymentController from '../controllers/quickbook.payment'
 import * as companyController from '../controllers/company'
 import * as emailDefaultController from '../controllers/emailDefault'
 import * as invoiceController from '../controllers/invoice'
+import * as invoiceLogsController from '../controllers/invoiceLogs'
 import * as paymentAdvanceController from '../controllers/advancePayment'
 import * as partController from '../controllers/part'
 import * as purchaseOrderController from '../controllers/purchaseOrder'
@@ -1757,6 +1758,15 @@ export default function (sio: any) {
         getCompanyId(),
         companyController.getSalesTaxes
     )
+    // Invoice Logs
+    router.post(
+        '/getInvoiceLogs',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        // checkUserPermissions(Permissions.Get_Invoice_Detail),
+        invoiceLogsController.get
+    )
 
     // Job Charges
     router.post(
@@ -1929,7 +1939,15 @@ export default function (sio: any) {
         validate(Validations.companyInvoice),
         invoiceController.getCompanyInvoiceDetails
     )
-
+    router.post(
+        '/unvoidInvoice',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        // checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.unVoidInvoice),    
+        invoiceController.unVoidInvoice
+    )
     router.delete(
         '/voidInvoice',
         passport.authenticate('jwt', { session: false }),
@@ -2288,6 +2306,14 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         paymentController.getPayrollBalance
+    )
+
+    router.get(
+        '/exportVendorJobs',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        paymentController.exportVendorJobs
     )
 
     router.get(

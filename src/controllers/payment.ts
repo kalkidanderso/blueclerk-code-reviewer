@@ -8,7 +8,7 @@ import { Status, Messages, InvoiceStatus, payrollPaymentTypes } from '../common/
 import { Company, ICompany } from '../models/Company'
 import { IUser, User } from '../models/User'
 import { Invoice, IInvoice } from '../models/Invoice'
-import { Payment, IPayment, PaymentVendor, PaymentEmployee, PaymentCustomer, IPaymentVendor, IPaymentEmployee } from '../models/Payment'
+import { Payment, IPayment, PaymentVendor, PaymentEmployee, PaymentCustomer, IPaymentVendor, IPaymentEmployee, IJobExportQuery } from '../models/Payment'
 import { Customer, ICustomer } from '../models/Customer'
 import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer'
 import { _createQBPayment, _deleteQBPayment, _updateQBPayment, _voidPayment } from './quickbook.payment'
@@ -17,6 +17,8 @@ import { AdvancePayment, AdvancePaymentEmployee, AdvancePaymentVendor } from '..
 import * as Sentry from '@sentry/node';
 import { IJob, Job } from '../models/Job';
 import { IJobCommission, JobCommission } from '../models/JobCommission';
+import { logType } from 'src/models/invoiceLogs';
+import * as InvoiceLogController from "../controllers/invoiceLogs";
 
 
 /**
@@ -51,6 +53,15 @@ interface ITechnicianCommissionJob {
         workType: ObjectId,
         companyLocation: ObjectId
     }
+}
+
+interface IJobExcelRow {
+    jobNumber?: string;
+    date?: string;
+    subdivision?: string;
+    jobAdress?: string;
+    amount?: string;
+    techName?: string;
 }
 
 /**
@@ -674,6 +685,10 @@ export const createPayment = async (req: Request, res: Response) => {
             payment.amountPaid = params.amount;
             // Handle invoice balance due, underpayment, and overpayment
             await _calculateInvoiceBalance(invoice, customer, parseFloat(params.amount));
+
+            const invoiceLogsObj:any={invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_RECORDED, info:"Payment of $"+payment.amountPaid +" recorded", amountPaid:payment.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id};
+            InvoiceLogController.create(invoiceLogsObj);
+
         }
 
         // Save the new payment
@@ -721,6 +736,7 @@ export const createPayment = async (req: Request, res: Response) => {
             });
 
         } else {
+
             return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
         }
 
@@ -1098,7 +1114,7 @@ export const updatePayment = async (req: Request, res: Response) => {
 
     try {
         if (payment?.line.length && paramsInvoices.length) {
-            const invoiceLine = await _handleUpdateMultipleInvoices(paramsInvoices, payment, customer, company);
+            const invoiceLine = await _handleUpdateMultipleInvoices(paramsInvoices, payment, customer, company,oldAmountPaid);
             invoices.push(...invoiceLine);
         }
 
@@ -1116,12 +1132,15 @@ export const updatePayment = async (req: Request, res: Response) => {
                 await _calculateInvoiceBalance(invoice, customer, diffAmountPaid)
             }
 
+               const invoiceLogsObj:any={invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_UPDATED, info:"Payment of $"+oldAmountPaid +" updated to $"+payment.amountPaid, amountPaid:payment.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: payment.updatedBy};
+             InvoiceLogController.create(invoiceLogsObj);
+
             invoices.push(invoice);
         }
 
         // Save the updated payment
         await payment.save();
-
+      
         if (company.qbAuthorized && payment.quickbookId) {
             // Sync the update to Payment in QuickBooks
             _updateQBPayment(req, res, company, payment, async (err, errMsg, qbPayment) => {
@@ -1288,7 +1307,6 @@ export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
 }
 
 export const getPayrollBalance = async (req: Request, res: Response) => {
-
     const params = req.query;
     const company = <ICompany>req.company;
     const vendors: any = [];
@@ -1529,10 +1547,171 @@ export const getPayrollReport = async (req: Request, res: Response) => {
     return res.json({ status: Status.Success, vendors, employees });
 }
 
+export const exportVendorJobs =  async (req: Request, res: Response) => {
+    const params = req.query;
+    const company = <ICompany>req.company;
+    const workType = params.workType as string;
+    const companyLocation = params.companyLocation as string;
+    const startDate = params.startDate as string;
+    const endDate = params.endDate as string;
+
+    
+    const query: IJobExportQuery = {
+        company: company._id,
+        status: 2,
+        endTime: { $gte: moment.utc(startDate).toDate(), $lte: moment.utc(endDate).toDate() },
+        commission: { $ne: null }
+    }
+
+    if (workType) {
+        let workTypeIds: any[] = [];
+        try {
+            let workTypeArr = JSON.parse(workType);
+            workTypeIds = workTypeArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) { };
+
+        query['workType'] = { $in: workTypeIds };
+    }
+    if (companyLocation) {
+        let companyLocationIds: any[] = [];
+        try {
+            let companyLocationArr = JSON.parse(companyLocation);
+            companyLocationIds = companyLocationArr.map((id: string) => {
+                if (ObjectId.isValid(id)) return new ObjectId(id)
+            })
+        } catch (error) { }
+        query['companyLocation'] = { $in: companyLocationIds };
+    }
+
+
+    const contractor = await Company.findById(params.id).select('info');
+
+    if (!contractor) {
+        return res.status(Status.NotFound).json({
+            status: Status.NotFound,
+            message: 'Contractor not found',
+        });
+    }
+    
+    const jobs = await Job.aggregate([
+        {$match: query},
+        { 
+            $lookup : {
+                from : 'jobcommissions',
+                localField : 'commission',
+                foreignField : '_id',
+                pipeline: [
+                    {$match: {'technicians.paid': false, 'technicians.contractor': new ObjectId(params.id)}},
+                    {
+                        $unwind: "$technicians"
+                    },
+                    {$lookup: {
+                        from: 'users',
+                        // localField: 'technicians.technician',
+                        // foreignField : '_id',
+                        let: {
+                            technician: {
+                                $toObjectId: "$technicians.technician"
+                            },
+                            technicians: "$technicians"
+                        },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                    $eq: [
+                                        "$_id",
+                                        "$$technician"
+                                    ]
+                                    }
+                                }
+                            },
+                            {
+                                $replaceRoot: {
+                                    newRoot: {
+                                    $mergeObjects: [
+                                        "$$technicians",
+                                        "$$ROOT.profile"
+                                    ]
+                                    }
+                                }
+                            }
+                        ],
+                        as: 'technicians',
+
+                    }},
+                    {
+                        $group: {
+                            _id: "$_id",
+                            
+                            technicians: {
+                                $push: {
+                                $first: "$technicians"
+                                }
+                            }
+                        }
+                    }
+                ],
+                as : 'commission',
+                
+            },
+            
+        },
+        { $lookup : {
+            from : 'joblocations',
+            localField : 'jobLocation',
+            foreignField : '_id',
+            pipeline: [{ "$project": { name: 1 }}],
+            as : 'jobLocation',
+        }},
+        { $lookup : {
+            from : 'jobsites',
+            localField : 'jobSite',
+            foreignField : '_id',
+            pipeline: [{ "$project": { name: 1 }}],
+            as : 'jobSite',
+        }},
+        {$unwind: '$commission'},
+        {
+            $project: {
+                _id: 1, jobId: 1, endTime: 1, jobLocation: {$first: '$jobLocation'}, jobSite: {$first: '$jobSite'}, commission: "$commission"
+            }
+        },
+        {
+            $sort: {endTime: -1}
+        }
+       
+    ]);
+
+
+    let excelRows: IJobExcelRow[] = [];
+    jobs.map((job: IJob) => {
+        const rows = _convertJobToRowExcel(job, params.id);
+        excelRows = [...excelRows, ...rows];
+    });
+
+    const XLSX = require("xlsx");
+    const worksheet = XLSX.utils.json_to_sheet(excelRows);
+    const headers = ["Job Number", "Date", "Subdivision", "Job Address", "Amount", "Technician Name"]
+    XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: "A1" });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Dates");
+    const buf = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+    const contractorName = contractor.info.displayName || contractor.info.companyName;
+    const filename = `${contractorName} ${params.startDate}-${params.endDate}.xlsx`;
+    res.attachment(filename);
+    res.header('Access-Control-Expose-Headers', 'Content-Type, Location, Content-Disposition');
+    res.status(200).end(buf);
+}
+
 export const voidPaymentContractor = async (req: Request, res: Response) => {
 
     const params = req.body;
     const company = <ICompany>req.company;
+    const user = <IUser>req.user;
+
     let payment: IPayment;
     let paymentVendor: IPaymentVendor;
     let paymentEmployee: IPaymentEmployee;
@@ -1592,7 +1771,7 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
         }
 
         try {
-            await _handleVoidPayment(params.type, invoiceIds, payment, customer);
+            await _handleVoidPayment(params.type, invoiceIds, payment, customer,user);
             await _handleVoidPaymentContractor(params.type, paymentVendor, company._id);
         } catch (err) {
             Sentry.captureException(err);
@@ -1605,7 +1784,8 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
         }
 
     }
-
+    
+  
     return res.json({ status: Status.Success, message: 'Payment void successfully', payment });
 
 }
@@ -1636,9 +1816,12 @@ export const _handleMultipleInvoices = async (
         invoice: invoice,
         amountPaid: roundTwoDecimal(paramInvoice.amountPaid)
     });
-
+ 
     payment.amountPaid = payment.amountPaid ?? 0;
     payment.amountPaid += paramInvoice.amountPaid;
+
+    const invoiceLogsObj:any={invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_RECORDED, info:"Payment of $"+paramInvoice.amountPaid+" recorded", amountPaid:paramInvoice.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy:payment.createdBy}
+    InvoiceLogController.create(invoiceLogsObj);
 
     await _calculateInvoiceBalance(invoice, customer, parseFloat(paramInvoice.amountPaid));
 
@@ -1646,7 +1829,7 @@ export const _handleMultipleInvoices = async (
 }
 
 // To handle update payment with multiple invoices
-export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payment: IPayment, customer: ICustomer, company: ICompany): Promise<IInvoice[]> => {
+export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payment: IPayment, customer: ICustomer, company: ICompany,oldAmountPaid:any): Promise<IInvoice[]> => {
     const invoices: IInvoice[] = [];
     let newAmountPaid, diffAmountPaid = 0;
     let paymentAmountPaid = 0;
@@ -1681,6 +1864,10 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
         }
 
         invoices.push(invoiceLine);
+
+        const invoiceLogsObj:any={invoiceId: invoiceLine.invoiceId, invoice: invoiceLine._id, type: logType.PAYMENT_UPDATED, info:"Payment of $"+oldAmountPaid+" updated to $"+payment.amountPaid, amountPaid:payment.amountPaid, customer: invoiceLine.customer, companyLocation: invoiceLine.companyLocation, workType: invoiceLine.workType, company: invoiceLine.company, createdBy: payment.updatedBy}
+        InvoiceLogController.create(invoiceLogsObj);
+
     }
 
     payment.line.forEach(paymentLine => {
@@ -1691,7 +1878,7 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
     return invoices;
 }
 
-export const _handleVoidPayment = async (paymentType: string, invoiceIds: string[], payment: IPayment, customer: ICustomer) => {
+export const _handleVoidPayment = async (paymentType: string, invoiceIds: string[], payment: IPayment, customer: ICustomer,user:IUser) => {
 
     const invoices = await Invoice.find({ _id: { $in: [...new Set(invoiceIds)] } })
 
@@ -1761,12 +1948,39 @@ export const _handleVoidPayment = async (paymentType: string, invoiceIds: string
 
                 await invoice.save();
             }
+
+            const invoiceLogsObj:any={invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_VOID, info:"Payment of $"+payment.amountPaid+" voided", amountPaid:payment.amountPaid*-1, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id}
+            InvoiceLogController.create(invoiceLogsObj);
+
         }
     } else {
         throw new Error('Invoice not found');
     }
 
     return;
+}
+
+const _convertJobToRowExcel = (job: any, contractor: string): IJobExcelRow[] => {
+    const rows: IJobExcelRow[] = [];
+    
+    if (!job) {
+        return rows;
+    }
+
+    job.commission?.technicians?.map((tech: any) => {
+        if (tech?.contractor.toString() !== contractor) return;
+        rows.push({
+            jobNumber: job.jobId,
+            date: moment.utc(job.endTime).format('ll'),
+            subdivision: job.jobLocation?.name,
+            jobAdress: job.jobSite?.name,
+            amount: `$${tech?.commissionAmount}`,
+            techName: tech?.displayName,
+        })
+    })
+
+           
+    return rows;
 }
 
 /**
