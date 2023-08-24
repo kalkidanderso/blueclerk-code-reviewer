@@ -1062,7 +1062,7 @@ export const updatePayment = async (req: Request, res: Response) => {
     }
 
     // Find and check if payment existed and belongs to the customer
-    const payment = await Payment.findOne({
+    const payment: any = await Payment.findOne({
         _id: params.paymentId,
         customer: customer._id,
         company: company._id
@@ -1079,6 +1079,15 @@ export const updatePayment = async (req: Request, res: Response) => {
     }
 
     const invoice = <IInvoice>payment.invoice;
+
+    const updatedInvoices = paramsInvoices.map((elem:any) => elem.invoiceId);
+
+    payment.line = payment.line.filter((line :any) => {
+        if (updatedInvoices.includes(line.invoice._id.toString())) {
+            return line
+        } 
+    });
+
     const oldAmountPaid = payment.amountPaid;
     let newAmountPaid, diffAmountPaid = 0;
 

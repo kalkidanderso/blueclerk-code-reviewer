@@ -97,7 +97,7 @@ export default function () {
         getCompanyId(),
         userPermissionController.updateUserPermission
     )
-
+    
     return router
 
 }
