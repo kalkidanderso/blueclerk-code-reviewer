@@ -20,7 +20,9 @@ export const INVOICE_FONT_PATH = 'assets/fonts';
 export const INVOICE_IMAGE_PATH = 'tmp/images';
 export const INVOICE_PDF_PATH = 'tmp/invoices';
 export const INCOME_REPORT_PDF_PATH = 'tmp/incomeReports';
+export const PO_REQUEST_PATH = 'tmp/poRequest';
 export const ACCOUNT_RECEIVABLE_REPORT_PDF_PATH = 'tmp/accountReceivableReports';
+
 
 export const FONT_SETS = {
     ROBOTO: {

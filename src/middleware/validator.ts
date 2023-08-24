@@ -492,6 +492,8 @@ export const Validations = {
     check('invoiceId').isMongoId().withMessage(Messages.WrongId),
   ],
 
+  getJobReportEmailTemplate: [check('jobReportId').exists()],
+
   sendReport: [check('jobReportId').exists()],
 
   createPOInvoice: [check('purchaseOrderId').exists()],
@@ -512,6 +514,7 @@ export const Validations = {
   companyInvoice: [check('companyInvoiceId').exists()],
 
   voidInvoice: [check('invoiceId').exists().withMessage(Messages.Required), check('invoiceId').isMongoId().withMessage(Messages.WrongId)],
+  unVoidInvoice: [check('invoiceId').exists().withMessage(Messages.Required), check('invoiceId').isMongoId().withMessage(Messages.WrongId)],
 
   updateCommission: [
     check('type').exists().withMessage(Messages.Required),

@@ -10283,6 +10283,83 @@
         ]
       }
     },
+    
+    "/getInvoiceLogs": {
+      "post": {
+        "tags": [
+          "InvoiceLogs"
+        ],
+        "summary": "To get invoice logs",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pageSize": {
+                    "type": "number",
+                    "description": "The numbers of jobs to return per page e.g. 10. When not provided, will return 30 jobs by default"
+                  },
+                  "nextCursor": {
+                    "type": "string",
+                    "description": "Cursor to go to next page. Use the nextCursor value from the previous response"
+                  },
+                  "previousCursor": {
+                    "type": "string",
+                    "description": "Cursor to go to previous page. Use the previousCursor value from the previous response"
+                  },
+                  "invoice": {
+                    "type": "string",
+                    "description": "mongo id of invoice "
+                  },
+                  "invoiceId": {
+                    "type": "string",
+                    "description": "InvoiceId printed on invoice "
+                  },
+                  "workType": {
+                    "type": "string",
+                    "description": "worktype Id"
+                  },
+                  "companyLocation": {
+                    "type": "string",
+                    "description": "company Location Id"
+                  }
+
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "GeneralAPIResponse": {
+                      "$ref": "#/components/schemas/GeneralAPIResponse"
+                    },
+                    "invoices": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Invoice"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/getInvoices": {
       "post": {
         "tags": [
@@ -10895,6 +10972,51 @@
                   "invoiceId": {
                     "type": "string",
                     "description": "Id of invoice to void"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/unvoidInvoice": {
+      "post": {
+        "tags": [
+          "Invoice"
+        ],
+        "summary": "To un-void invoice",
+        "description": "To un-void invoice",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "invoiceId"
+                ],
+                "properties": {
+                  "invoiceId": {
+                    "type": "string",
+                    "description": "Id of invoice to un-void"
                   }
                 }
               }
@@ -12254,6 +12376,75 @@
                 "schema": {
                   "$ref": "#/components/schemas/GeneralAPIResponse"
                 }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/exportVendorJobs": {
+      "get": {
+        "tags": [
+          "Payment"
+        ],
+        "summary": "Export vendor jobs to Excel",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "The contractor id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Filter of start job end time",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "Filter of end job end time",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "workType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "If data is created from a specific work type and company location."
+          },
+          {
+            "name": "companyLocation",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string"},
+            "description": "If data is created from a specific company location."
+          }
+          
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                
               }
             }
           }

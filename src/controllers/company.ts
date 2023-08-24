@@ -454,6 +454,8 @@ export const getCompanyContracts = async (req: Request, res: Response) => {
 export const getContractorDetail = async(req: Request, res: Response) => {
 
     const params = req.body;
+    const company = <ICompany>req.company
+    
     switch (params.type) {
         case 'vendor':
             if (!params.contractorId) {
@@ -485,7 +487,9 @@ export const getContractorDetail = async(req: Request, res: Response) => {
                     select: 'profile.displayName auth.email'
                 }).exec();
 
-            return res.json({ status: Status.Success, details: contractor, payments: paymentVendor });
+            const contracts = await Contract.find({company: company._id, contractor: contractor._id}).sort({ status: 1})
+
+            return res.json({ status: Status.Success, details: contractor, payments: paymentVendor, contracts});
 
          case 'employee':
             if (!params.employeeId) {
