@@ -9,16 +9,13 @@ import {
     splitArray, fillQueryCommon, getFilteredCustomerIds,
     getFilteredJobLocationsIds, getFilteredJobSitesIds, getFilteredTechniciansIds
 } from './common';
-import { DefaultCommission, DefaultPageSize, InvoiceStatus, JobStatus, Messages, ServiceTicketSource, SocketEvents, Status } from '../../common/constants';
+import { DefaultPageSize, JobStatus, Status } from '../../common/constants';
 import { IJobReport, JobReport } from '../../models/JobReport';
 import * as Sentry from '@sentry/node';
-import { IUser, User } from '../../models/User';
+import { IUser } from '../../models/User';
 import { Item } from '../../models/Item';
 import { JobCommission } from '../../models/JobCommission';
-import { IServiceTicket, ServiceTicket } from '../../models/ServiceTicket';
-import { PORequest } from '../../models/PORequest';
-import { INotificationServiceTicket, NotificationServiceTicket } from '../../models/NotificationDiscriminator';
-import { NotificationTypes } from '../../models/Notification';
+import { ServiceTicket } from '../../models/ServiceTicket';
 import { createJobReport, handleMutltipleTechniciansTasks } from '../job';
 import { Invoice } from '../../models/Invoice';
 import { HomeOwner } from '../../models/HomeOwner';
@@ -101,7 +98,8 @@ export const getJobs = async (req: Request, res: Response) => {
                             profile: 1,
                             info: 1,
                             contactName: 1,
-                            notes: 1
+                            notes: 1,
+                            isPORequired: 1
                         },
                     },
                 ],
@@ -404,7 +402,6 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
             path: "tasks.jobTypes.jobType"
         })
         .then(async (job: IJob) => {
-            let newTicket;
             let action = '';
             let ticketAction = '';
             
@@ -449,7 +446,7 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
             }
 
             if (!needUpdate) {
-                return res.json({ 'status': Status.Success, 'message': 'Job rescheduled successfully.', ticket: newTicket});
+                return res.json({ 'status': Status.Success, 'message': 'Job rescheduled successfully.'});
             }
 
             switch (params.action) {
@@ -465,7 +462,7 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                     break;
                 case "create-new-ticket":
                 case "create-new-po-request":
-                    newTicket = await _splitJobAndCreateTicket(req, res, sio, job);
+                    await _splitJobAndCreateTicket(req, res, sio, job);
 
                     action = `|Closed Job and Created New ${params.type}|`;
                     ticketAction = `|Closeed Job and Created New ${params.type} by ${user.profile.displayName}|`;
@@ -515,7 +512,7 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
                 }
 
                 await createJobReport(job._id, job.company, customerName, technicianName, date, company._id);
-                return res.json({ 'status': Status.Success, 'message': 'Job rescheduled successfully.', ticket: newTicket, job: job});
+                return res.json({ 'status': Status.Success, 'message': 'Job rescheduled successfully.', job: job});
             } catch (err) {
                 Sentry.captureException(err);
                 return res.json({ 'status': Status.Error, 'message': err.message });
@@ -845,21 +842,6 @@ const _calculateJobCommission = async (tasks: any, jobId: string) => {
  * }
  */
 const _splitJobAndCreateTicket = async (req: Request, res: Response, sio: any, job: IJob) => {
-    const params = req.body;
-    const user = <IUser>req.user;
-    const company  = <ICompany>req.company;
-
-    const ticketDetail = job.ticket;
-    let ticketType = "Ticket"
-    if (params.type == "PO Request") {
-        ticketType = "PO Request"
-    }
-
-    let ticketId = `${ticketType} ${company.currentJobId + 1}`;
-    if (company.prefix) {
-        ticketId = `${ticketType} ${company.prefix}-${company.currentJobId + 1}`;
-    }
-
     const ticketJobTypes: any = [];
 
     let isJobHaveItems: boolean = false;
@@ -904,111 +886,6 @@ const _splitJobAndCreateTicket = async (req: Request, res: Response, sio: any, j
 
     //Commission Calculation
     job.commission = await _calculateJobCommission(job.tasks, job._id);
-    // Create Job Report for Job
-    let scheduleDate = job.scheduleDate;
-    let technicianName = null;
-    let technicianNameLinkedJob = null;
-    let tasks: ITask[] = job.tasks ? job.tasks : [];
-    let customerName = job.customer ?
-        job.customer.profile?.displayName :
-        (job.ticket ? (job.ticket.customer ? job.ticket.customer?.profile?.displayName : null) : null);
-
-    if (tasks.length > 1) {
-        technicianName = 'Multiple Techs';
-        technicianNameLinkedJob = 'Multiple Techs';
-    } else {
-        technicianName = tasks[0].technician.profile.displayName;
-        technicianNameLinkedJob = tasks[0].technician.profile.displayName;
-    }
-    await createJobReport(job._id, job.company, customerName, technicianName, scheduleDate, company._id);
-    
-
-    const newData: any = {
-        isHomeOccupied: ticketDetail.isHomeOccupied,
-        createdAt: Date.now(),
-        createdBy: user._id,
-        company: ticketDetail.company,
-        note: ticketDetail.note,
-        ticketId: ticketId,
-        jobLocation: ticketDetail.jobLocation,
-        jobSite: ticketDetail.jobSite,
-        jobType: ticketDetail.jobType,
-        customer: ticketDetail.customer,
-        homeOwner: ticketDetail.homeOwner,
-        homeJobLocation: ticketDetail.homeJobLocation,
-        homeJobSite: ticketDetail.homeJobSite,
-        customerContactId: ticketDetail.customerContactId ?? job.customerContactId,
-        companyLocation: ticketDetail.companyLocation,
-        workType: ticketDetail.workType,
-        source: `${job.jobId} partially completed`,
-        images: ticketDetail.images,
-        tasks: ticketJobTypes,
-        type: params.type,
-        dueDate: null,
-        track: [{
-            user: user._id,
-            action: `Generated ${params.type} from  ${job.jobId}`,
-            date: new Date()
-        }]
-    };
-
-    if (params.type == "Ticket") {
-        newData.customerPO = ticketDetail.customerPO;
-    }
-    
-    let serviceTicket: IServiceTicket;
-    //To Detect where the ticket is created from, was it created as a Ticket or a PO Request
-    if (params.type == "PO Request") {
-        newData.PORequestId = ticketId;
-        serviceTicket = new PORequest(newData);
-    }else{
-        serviceTicket = new ServiceTicket(newData);
-    }
-    
-    await serviceTicket.save(async (err: any) => {
-        if (err) {
-            return res.json({'status': Status.Error, 'message': Messages.GenericError})
-        }
-
-
-        await company.updateOne({currentJobId: company.currentJobId+1 })
-        .exec(async (err: any)=>{
-            if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
-            }
-            
-            if (serviceTicket.source = ServiceTicketSource.WEB) {
-                let historyMessage = "Service Ticket"
-                if (params.type == "PO Request") {
-                    historyMessage  = "Purchase Order Request"
-                }
-
-                // Construct notification entry to be saved
-                let notificationEntry: INotificationServiceTicket = new NotificationServiceTicket({
-                    company: company._id,
-                    notificationType: NotificationTypes.SERVICE_TICKET_CREATED,
-                    message: {
-                        title: `${historyMessage} created`,
-                        body: `${serviceTicket.ticketId} created via web`
-                    },
-                    metadata: serviceTicket._id
-                })
-
-                // Save the notification with Service Ticket as the metadata
-                notificationEntry.save(async (err: any, notification: INotificationServiceTicket) => {
-                    if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                    }
-
-                    await notification.populate('metadata').execPopulate();
-                    await sio.to(company._id && company._id.toString()).emit(SocketEvents.NOTIFICATION_CENTER, notification);
-                })
-            }
-        })
-    })
-
-    let newTicket = await serviceTicket.populate("customer").populate("customerContactId").execPopulate();
-    return newTicket;
 }
 
 /**
