@@ -3011,6 +3011,11 @@ export const editJob = async (req: Request, res: Response) => {
             let date;
 
             if (params.scheduledStartTime) {
+                const isValidScheduledStartTime = moment(params.scheduledStartTime, 'YYYY-MM-DDTHH:mm:ss.SSSZ', true).isValid()
+                if (!isValidScheduledStartTime) {
+                    throw new Error('Invalid scheduledStartTime provided');
+                }
+
                 date = new Date(params.scheduleDate)
                 newStartTime = new Date(params.scheduledStartTime)
                 if (newStartTime != job.scheduledStartTime) {
@@ -3021,6 +3026,11 @@ export const editJob = async (req: Request, res: Response) => {
             }
 
             if (params.scheduledEndTime) {
+                const isValidScheduledEndTime = moment(params.scheduledEndTime, 'YYYY-MM-DDTHH:mm:ss.SSSZ', true).isValid()
+                if (!isValidScheduledEndTime) {
+                    throw new Error('Invalid scheduledEndTime provided');
+                }
+
                 date = new Date(params.scheduleDate)
                 newEndTime = new Date(params.scheduledEndTime)
                 if (newEndTime != job.scheduledEndTime) {
