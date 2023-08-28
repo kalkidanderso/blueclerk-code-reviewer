@@ -25,7 +25,6 @@ import { param } from 'express-validator';
 export const getItems = (req: Request, res: Response) => {
 
     const params = req.body;
-
     const query: any = {
         $or: [
             { company: null, isActive: true },
@@ -37,8 +36,13 @@ export const getItems = (req: Request, res: Response) => {
     if (!params.includeDiscountItems) {
         query.isDiscountItem = { $ne: true };
     }
+    if(params.includeInactiveItems){
+        delete query.isActive;
+    query["$or"]?.map((queryItem:any)=>{
+        delete queryItem.isActive;
+    })
+    }
     
-
     Item.find(query)
         .populate({ path: 'tiers.tier', select: '-companyId -__v' })
         .populate({ path: 'costing.tier', select: '-companyId -__v' })
@@ -123,7 +127,8 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
 export const disabledItemExists = (req: Request, res: Response) => {
     
     const params = req.body;
-    Item.findOne({ name: params.name,isActive:false },
+
+    Item.findOne({ name: params.name, company: req.companyId },
         (err: any, item: IItem) => {
 
             if (err) {
@@ -131,7 +136,7 @@ export const disabledItemExists = (req: Request, res: Response) => {
             }
 
             if (item == null || item == undefined) {
-                return res.json({ 'status': Status.Success, 'message': 'Item does not exist' })
+                return res.json({ 'status': Status.Error, 'message': 'Item does not exist' })
             }
             if(item){
                 return res.json({ 'status': Status.Success, 'message': 'Item Exist',item })
