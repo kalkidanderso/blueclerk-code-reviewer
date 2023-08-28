@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
 import { ObjectId } from 'mongodb';
-import { CronJob } from 'cron';
-import moment from 'moment';
+import { CronJob, job } from 'cron';
+import moment, { invalid } from 'moment';
 import momentTz from 'moment-timezone';
 import * as _ from 'lodash';
 import * as helper from '../services/helper';
@@ -32,7 +32,7 @@ import { _handleJobTypesJson } from '../controllers/item';
 import { _addOrRemoveJobRoutes } from '../controllers/jobRoute';
 import { _handleNotification } from '../controllers/notification';
 import { IJobRequest, JobRequest } from '../models/JobRequest';
-import { NotificationTypes } from '../models/Notification';
+import { FbNotificationType, NotificationTypes } from '../models/Notification';
 import { JobLocation } from '../models/JobLocation';
 import { JobSite } from '../models/JobSite';
 import { HomeOwner } from '../models/HomeOwner';
@@ -44,6 +44,7 @@ import { handleJobReportPdf } from '../services/pdf';
 import { JobCommission } from '../models/JobCommission';
 import { CommissionHistory } from '../models/CommissionHistory';
 import { Contact } from '../models/Contact';
+import { _handleNotification as firebaseNotification } from '../controllers/notification.firebase';
 
 const PdfPrinter = require('pdfmake')
 /**
@@ -2427,6 +2428,17 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     })
                 };
 
+                job.tasks.forEach(async (task: any) => {
+                    // Send simple notification to mobile through Firebase,
+                    // for mobile internal usage, not saving to DB
+                    await firebaseNotification({
+                        recipientId: task.technician?._id ?? task.technician,
+                        notificationType: NotificationTypes.JOB_UPDATED,
+                        fbNotificationType: FbNotificationType.JOB_UPDATED,
+                        saveToDb: false
+                    })
+                });
+
                 return res.json({ 'status': Status.Success, 'message': 'Job updated successfully.', job: updatedJob });
             } catch (err) {
                 Sentry.captureException(err);
@@ -3203,13 +3215,42 @@ export const editJob = async (req: Request, res: Response) => {
                         || removedTechnicians.length || addedTechnicians.length
                     ) {
                         removedTechnicians.forEach(async (oldTechnician) => {
+                            // Send simple notification to mobile through Firebase,
+                            // for mobile internal usage, not saving to DB
+                            await firebaseNotification({
+                                recipientId: oldTechnician,
+                                notificationType: NotificationTypes.JOB_UPDATED,
+                                fbNotificationType: FbNotificationType.JOB_REMOVED,
+                                saveToDb: false
+                            })
+
                             await _addOrRemoveJobRoutes(oldTechnician, new Date(oldScheduleDate), 'REMOVE', job._id);
                         });
-
                         addedTechnicians.forEach(async (newTechnician) => {
+                            // Send simple notification to mobile through Firebase,
+                            // for mobile internal usage, not saving to DB
+                            await firebaseNotification({
+                                recipientId: newTechnician,
+                                notificationType: NotificationTypes.JOB_UPDATED,
+                                fbNotificationType: FbNotificationType.JOB_ADDED,
+                                saveToDb: false
+                            })
+
                             await _addOrRemoveJobRoutes(newTechnician, new Date(job.scheduleDate), 'ADD', job._id);
                         });
                     }
+
+                    job.tasks.forEach(async (res) => {
+                        if (addedTechnicians.length && addedTechnicians.includes(res.technician)) return
+                        // Send simple notification to mobile through Firebase,
+                        // for mobile internal usage, not saving to DB
+                        await firebaseNotification({
+                            recipientId: res.technician,
+                            notificationType: NotificationTypes.JOB_UPDATED,
+                            fbNotificationType: FbNotificationType.JOB_UPDATED,
+                            saveToDb: false
+                        })
+                    });
 
                     if (!linkedJob) {
                         return res.json({ status: Status.Success, message: 'Job edited successfully.', invalidJobTypes, job });
@@ -4571,6 +4612,19 @@ export const createServiceTicketJob = async (
 
     const jobId = serviceTicket.ticketId.replace('Ticket', 'Job');
     const createJob = await _createJob(req, res, undefined, jobId, imagesUrl, serviceTicket);
+    
+    const newJob = createJob as {job: IJob; invalidJobTypes: any[]}
+    newJob.job?.tasks?.forEach(async (task) => {
+        // Send simple notification to mobile through Firebase,
+        // for mobile internal usage, not saving to DB
+        await firebaseNotification({
+            recipientId: task.technician,
+            notificationType: NotificationTypes.JOB_CREATED,
+            fbNotificationType: FbNotificationType.JOB_ADDED,
+            saveToDb: false
+        })
+    })
+
     return res.json({ status: Status.Success, message: 'Job created successfully.', createJob });
 }
 
