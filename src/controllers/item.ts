@@ -37,6 +37,7 @@ export const getItems = (req: Request, res: Response) => {
     if (!params.includeDiscountItems) {
         query.isDiscountItem = { $ne: true };
     }
+    
 
     Item.find(query)
         .populate({ path: 'tiers.tier', select: '-companyId -__v' })
@@ -122,7 +123,7 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
 export const disabledItemExists = (req: Request, res: Response) => {
     
     const params = req.body;
-    Item.findOne({ name: params.name,isDisabled:true },
+    Item.findOne({ name: params.name,isActive:false },
         (err: any, item: IItem) => {
 
             if (err) {
@@ -133,7 +134,7 @@ export const disabledItemExists = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Success, 'message': 'Item does not exist' })
             }
             if(item){
-                return res.json({ 'status': Status.Success, 'message': 'Item Exist successfully',item })
+                return res.json({ 'status': Status.Success, 'message': 'Item Exist',item })
 
             }
 
@@ -157,7 +158,7 @@ export const disableItem = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': 'Invalid item id' })
             }
 
-            item.updateOne({ isDisabled:true},
+            item.updateOne({ isActive:false},
                 (err: any, raw: any) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })

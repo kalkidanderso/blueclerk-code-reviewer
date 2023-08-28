@@ -689,15 +689,15 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        validate(Validations.updateItem),
-        itemController.updateItem
+        validate(Validations.disableItem),
+        itemController.disableItem
     )
     router.post(
         '/checkItemExist',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        validate(Validations.updateItem),
+        validate(Validations.itemExist),
         itemController.disabledItemExists
     )
 
