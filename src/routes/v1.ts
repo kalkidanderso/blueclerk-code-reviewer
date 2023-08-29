@@ -1525,6 +1525,14 @@ export default function (sio: any) {
         validate(Validations.getQBUri),
         quickBookController.getQBUri
     )
+    router.post(
+        '/getQBAccounts',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        // validate(Validations.getQBUri),
+        quickBookController.getQBAccounts
+    )
 
     router.get(
         '/QBCallback',

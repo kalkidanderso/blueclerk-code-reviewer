@@ -16,6 +16,7 @@ import { NotificationTypes } from '../models/Notification';
 import { createBCItem, updateBCItem } from './quickbook.item';
 import { deleteBCInvoice, updateBCInvoice, voidBCInvoice } from './quickbook.invoice';
 import * as Sentry from '@sentry/node';
+import { IQBAccount } from 'src/models/QuickBook';
 
 var QuickBooks = require('node-quickbooks')
 var OAuthClient = require("intuit-oauth");
@@ -95,7 +96,65 @@ export const get = function (obj: any, key: any) {
         return (typeof o == "undefined" || o === null) ? '' : o[x];
     }, obj);
 }
+export const getQBAccounts = (req: Request, res: Response) => {
 
+
+    const { QB_ENVIRONMENT, QB_CLIENT_ID, QB_CLIENT_SECRET, QB_REDIRECT_URI } = process.env;
+
+    Company.findById(req.companyId, (err: any, company: ICompany,next: (req: Request, res: Response, error: number, errorMessage: string, customers: any) => void) => {
+        if (err) {
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        }
+        if (company == undefined || company == null) {
+            return res.json({ 'status': Status.Error, 'message': "Invalid company id" })
+        }
+        _refreshToken(req, res, company, (error: number, newErrorMessage: string, newCompany: ICompany) => {
+
+            if (error == 0) {
+                next(req, res, error, newErrorMessage, [])
+                return
+            }
+
+            if (error == 400) {
+                next(req, res, error, newErrorMessage, [])
+                return
+            }
+
+
+            const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+            qbo.findAccounts({},(err:any,accounts:IQBAccount)=>{
+                
+                if(err){
+                        console.log('== _createQBCustomer > qbo.findCustomers > ERROR ==');
+                        console.log('== err.Fault:', err.Fault);
+                    
+                        const ErrorMessage=
+                        err.Fault?.Error[0]?.Message
+                        || err.fault?.error[0]?.detail
+                        || err.fault?.error[0]?.message
+                        || Messages.GenericError;
+                        null
+                    return res.json({ 'status': Status.Error, 'message': ErrorMessage?ErrorMessage:Messages.GenericError })
+
+                }
+                const accountsData=<IQBAccount[]>accounts?.QueryResponse?.Account;
+                return res.json({ 'status': Status.Success, 'message': "QB Accounts fetched",accounts:accountsData })
+
+            })
+
+        });
+      
+        // company.updateOne({
+        //     socketId: params.sessionID
+        // }, (err: any, raw: any) => {
+        //     if (err) {
+        //         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+        //     }
+
+        //     return res.json({ 'status': Status.Success, 'authUri': authUri })
+        // })
+    })
+}
 export const getQBUri = (req: Request, res: Response) => {
 
     const params = req.body;
