@@ -2238,6 +2238,10 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                                 const jobType = await Item.findOne({ jobType: j.jobType })
                                 const commissionTierId = contractor.commissionTier
                                 if (commissionTierId) {
+                                    if (task.contractorCommissionTier != commissionTierId) {
+                                        task.contractorCommissionTier = commissionTierId;
+                                    }
+                                    
                                     const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
                                     if (commissionTier?.charge){
                                         balance += commissionTier.charge * (j.quantity || 1);
@@ -2825,6 +2829,10 @@ export const updateJobTask = async (req: Request, res: Response) => {
                     const jobType = await Item.findOne({ jobType: j.jobType })
                     const commissionTierId = contractor.commissionTier
                     if (commissionTierId) {
+                        if (task.contractorCommissionTier != commissionTierId) {
+                            task.contractorCommissionTier = commissionTierId;
+                        }
+
                         const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
                         if (commissionTier?.charge){
                             balance += commissionTier.charge * (j.quantity || 1);
