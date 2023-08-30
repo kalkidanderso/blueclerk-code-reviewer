@@ -376,7 +376,7 @@ export const createInvoice = (req: Request, res: Response) => {
                 const job = <IJob>result[0]
 
                 // Convert jobTypes to ObjectId in array
-                const jobTypes = [];
+                const jobTypes: { id: any; quantity: number; price: number; }[] = [];
                 job.tasks.forEach(task => {
                     task.jobTypes.forEach(taskJobType => {
                         jobTypes.push({
@@ -386,13 +386,25 @@ export const createInvoice = (req: Request, res: Response) => {
                         })
                     })
                 })
+
+                // To merge job types when they have the same item
+                const jobTypesFiltered = jobTypes.reduce((accumulator, currentObj) => {
+                    const existingItem = accumulator.find(item => item.id.toString() === currentObj.id.toString());
+                    
+                    if (existingItem) {
+                        existingItem.quantity += currentObj.quantity;
+                    } else {
+                        accumulator.push(currentObj);
+                    }
+                    return accumulator;
+                }, []);
                 // const jobTypeIds = job.tasks.map(task => task.jobType);
                 // Fallback for old job who still using one job type
-                if (!jobTypes.length) jobTypes.push({id: job.type, quantity: 1, price: 0});
+                if (!jobTypesFiltered.length) jobTypesFiltered.push({id: job.type, quantity: 1, price: 0});
                 // Search all jobTypes' items
                 // const items = Item.find({jobType: {$in: jobTypeIds}});
                 const items: any[] = []
-                jobTypes.forEach(async (jobType) => {
+                jobTypesFiltered.forEach(async (jobType) => {
                     const item: any = await Item.findOne({jobType: jobType.id})
                     item["quantity"] = jobType.quantity;
                     item["price"] = jobType.price;
