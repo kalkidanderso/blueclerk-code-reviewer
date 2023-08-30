@@ -43,13 +43,19 @@ export const getServiceTickets = async (req: Request, res: Response) => {
     const companyId = req.otherCompanyId || req.companyId;
     const currentPage = bodyParams.currentPage || 0;
     const pageSize = bodyParams.pageSize || DefaultPageSize;
-
+    var initParams
     // Data query that used to search Tickets
+    if(bodyParams.filterIsHomeOccupied!=undefined && bodyParams.filterIsHomeOccupied!=null){
+        initParams= { company: companyId , isHomeOccupied : true }
+    }else{
+        initParams= { company: companyId }
+    }
     const initialQuery: any = {
         $and: [
-            { company: companyId }
+            initParams
         ]
     };
+    
     _fillInitialQueryTickets(bodyParams, queryParams, initialQuery, "Ticket");
 
     const filteredInitialJobs = await ServiceTicket.aggregate([
@@ -62,7 +68,7 @@ export const getServiceTickets = async (req: Request, res: Response) => {
                 jobLocation: 1,
                 jobSite: 1,
                 "tasks.technician": 1,
-                HomeOwner: 1,
+                HomeOwner: 1
             },
         },
     ]);
