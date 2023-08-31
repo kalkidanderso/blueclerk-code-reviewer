@@ -43,16 +43,11 @@ export const getServiceTickets = async (req: Request, res: Response) => {
     const companyId = req.otherCompanyId || req.companyId;
     const currentPage = bodyParams.currentPage || 0;
     const pageSize = bodyParams.pageSize || DefaultPageSize;
-    var initParams
+
     // Data query that used to search Tickets
-    if(bodyParams.filterIsHomeOccupied!=undefined && bodyParams.filterIsHomeOccupied!=null){
-        initParams= { company: companyId , isHomeOccupied : true }
-    }else{
-        initParams= { company: companyId }
-    }
     const initialQuery: any = {
         $and: [
-            initParams
+            { company: companyId }
         ]
     };
     
@@ -147,17 +142,9 @@ export const getPORequest = async (req: Request, res: Response) => {
     const currentPage = bodyParams.currentPage || 0;
     const pageSize = bodyParams.pageSize || DefaultPageSize;
 
-    var initParams;
-
-    if(bodyParams.isHomeOccupied!=undefined && bodyParams.isHomeOccupied!=null){
-        initParams= { company: companyId , isHomeOccupied : true }
-    }else{
-        initParams= { company: companyId }
-    }
-    // Data query that used to search Tickets
     const initialQuery: any = {
         $and: [
-            initParams
+            { company: companyId }
         ]
     };
    
@@ -437,8 +424,17 @@ export const sendPORequest = async (req: Request, res: Response) => {
  */
 const _fillInitialQueryTickets = (bodyParams: any, queryParams: any, query: any, type: "Ticket" | "PO Request" | "All PO Request") => {
     const { workType, companyLocation } = queryParams;
-    const { technicianIds, status, startDate, endDate, customerId } = bodyParams;
+    const { technicianIds, status, startDate, endDate, customerId, bouncedEmailFlag , isHomeOccupied} = bodyParams;
     let technicianIdsArr: any[];
+    
+    if (bouncedEmailFlag) {
+        query['$and'].push({ bouncedEmailFlag: true });
+    }
+
+    if (isHomeOccupied) {
+        query['$and'].push({ isHomeOccupied: true });
+    }
+
     if (technicianIds) {
         // Validate is technician ids is already array or object
         technicianIdsArr = Array.isArray(technicianIds)
