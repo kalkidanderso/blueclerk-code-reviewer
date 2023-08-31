@@ -16,6 +16,7 @@ import { IInvoice, Invoice } from '../models/Invoice';
 import { _createQBItem, _updateQBItem, _updateQBItemsStatus, _transferQBItems } from '../controllers/quickbook.item';
 import { _transferQBInvoiceItem } from '../controllers/quickbook.invoice';
 import * as Sentry from '@sentry/node';
+import { param } from 'express-validator';
 
 // ==========================================
 // ==============[ ITEM ]====================
@@ -63,7 +64,7 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
     for (const t of company.itemTier.list) {
         itemTiers.push({ tier: t.tier });
     }
-
+    const isProduct=params.itemType=="Product";
     const item = new Item(
         {
             name: params.title,
@@ -71,18 +72,23 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
             sku: params.sku,
             tiers: itemTiers,
             company: company._id,
-            isJobType: false
+            isJobType: false,
+            itemType:params?.itemType,
+            productCost:params.productCost,
+            salePrice:params.salePrice,
+            isFixed:isProduct?true:params.isFixed
         }
     )
 
     await item.save();
 
     // Return the HTTP request to user first
-    res.json({ status: Status.Success, message: 'Item created successfully.', item });
 
     if (company.qbAuthorized) {
+
         // Create the new Item in QuickBooks
         _createQBItem(req, res, company, item, async (err: any, errMsg: any, qbItem: IQBItem) => {
+            let qbSync=false;
             if (err) {
                 console.log('== createItem > _createQBItem');
                 console.log('== errMsg:', errMsg);
@@ -92,6 +98,7 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
             if (qbItem) {
                 item.quickbookId = qbItem.Id;
                 await item.save();
+                qbSync=true;
 
                 // If company's items already synced, update the synced date
                 if (company.qbSync?.itemsSynced) {
@@ -99,18 +106,24 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
                     await company.save();
                 }
             }
+            res.json({ status: Status.Success, message: 'Item created successfully.', item,qbSync });
 
             return next();
         })
+        
+
     } else {
+        res.json({ status: Status.Success, message: 'Item created successfully.', item });
+
         return next();
     }
 
 }
 
 export const updateItem = (req: Request, res: Response) => {
-
-    const params = req.body
+    
+    const params = req.body;
+    const isProduct=params.itemType=='Product';
     Item.findOne({ _id: params.itemId },
         (err: any, item: IItem) => {
 
@@ -122,14 +135,13 @@ export const updateItem = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': 'Invalid item id' })
             }
 
-            item.updateOne({ charges: params.charges, tax: params.tax, isFixed: params.isFixed },
+            item.updateOne({ charges: params.charges, tax: params.tax, isFixed: isProduct?true:params.isFixed ,itemType:params.itemType,  productCost:params.productCost,salePrice:params.salePrice},
                 (err: any, raw: any) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
 
                     return res.json({ 'status': Status.Success, 'message': 'Item updated successfully' })
-
                 })
 
         }
@@ -224,12 +236,15 @@ export const updateItems = async (req: Request, res: Response) => {
         itemObj.tax = i.tax ?? itemObj.tax
         itemObj.isActive = i.isActive ?? itemObj.isActive;
         itemObj.jobType = jobType?._id;
+        itemObj.productCost=i.productCost ?? itemObj.productCost;
+        itemObj.salePrice=i.salePrice ?? itemObj.salePrice;
+        itemObj.itemType=i.itemType ?? itemObj.itemType;
+      
 
         await itemObj.save(async (err) => {
             if (err) {
                 return res.json({ status: Status.Success, message: err.message, item: itemObj });
             }
-
             if (company.qbAuthorized && itemObj.quickbookId) {
                 await _updateQBItem(req, res, company, itemObj, async (err, errMsg) => { });
             }
@@ -536,39 +551,43 @@ export const updateDiscountItem = async (req: Request, res: Response, next: Next
     const company = <ICompany>req.company;
 
     let customer, custDiscountPrice;
-    const item = await DiscountItem.findOne({ _id: params.discountItemId, isActive: true, company: company._id });
+    let item = await DiscountItem.findOne({ _id: params.discountItemId, company: company._id });
 
-    if (!item) {
-        return res.json({ status: Status.Error, message: 'Discount Item not found' });
-    }
-
-    // Discount Item assigned to another specific customer
-    if (item.customer?.toString() !== params.customerId?.toString() || item.noOfItems !== params.noOfItems) {
-        if (item.customer) {
-            const oldCustomer = await Customer.findById(item.customer);
-            const oldCustDiscPrice = oldCustomer.discountPrices.find(dp => dp.quantity === item.noOfItems);
-            oldCustDiscPrice.discountItem = null;
-            await oldCustomer.save();
+    if (item) {
+        // Discount Item assigned to another specific customer
+        if (item.customer?.toString() !== params.customerId?.toString() || item.noOfItems !== params.noOfItems) {
+            if (item.customer) {
+                const oldCustomer = await Customer.findById(item.customer);
+                const oldCustDiscPrice = oldCustomer.discountPrices.find(dp => dp.quantity === item.noOfItems);
+                oldCustDiscPrice.discountItem = null;
+                await oldCustomer.save();
+            }
+    
+            try {
+                // Check if customer already have discount item for that quantity of items
+                ({ customer, custDiscountPrice } = await _checkCustomerDiscountItem(params, company, customer, custDiscountPrice));
+            } catch (err) {
+                Sentry.captureException(err);
+                return res.json({ status: Status.Error, message: err.message || Messages.GenericError });
+            }
+        } else {
+            customer = await Customer.findOne({ _id: params.customerId }).populate({ path: 'discountPrices.discountItem' });
+            custDiscountPrice = customer?.discountPrices?.find((discountPrice) => discountPrice.quantity === Number(params.noOfItems));
         }
-
-        try {
-            // Check if customer already have discount item for that quantity of items
-            ({ customer, custDiscountPrice } = await _checkCustomerDiscountItem(params, company, customer, custDiscountPrice));
-        } catch (err) {
-            Sentry.captureException(err);
-            return res.json({ status: Status.Error, message: err.message || Messages.GenericError });
-        }
+        item.customer = customer?._id;
+        item.noOfItems = params.noOfItems;
     } else {
-        customer = await Customer.findOne({ _id: params.customerId }).populate({ path: 'discountPrices.discountItem' });
-        custDiscountPrice = customer?.discountPrices?.find((discountPrice) => discountPrice.quantity === Number(params.noOfItems));
+        item = await Item.findOne({ _id: params.discountItemId, company: company._id });
+        if (!item) {
+            return res.json({ status: Status.Error, message: 'Discount Item not found' });
+        }
     }
 
     item.name = params.title || item.name;
     item.description = params.description;
     item.tax = params.tax ?? 0;
     item.charges = params.charges ?? 0;
-    item.customer = customer?._id;
-    item.noOfItems = params.noOfItems;
+    item.isActive = params.isActive ?? true; 
 
     await item.save();
 
@@ -615,7 +634,7 @@ export const updateDiscountItem = async (req: Request, res: Response, next: Next
 
     return new Promise(async (resolve, reject) => {
 
-        let parsedJobTypes: { jobTypeId: string }[];
+        let parsedJobTypes: { jobTypeId: string, quantity: number, price: number }[];
         let isFixed: boolean;
         const newJobTypes: IJobTypes[] = [];
         const invalidJobTypes: string[] = [];
@@ -665,7 +684,7 @@ export const updateDiscountItem = async (req: Request, res: Response, next: Next
                             // Check if jobType exist
                             const jobType = await JobType.findById(parsedJobType.jobTypeId);
                             if (jobType) {
-                                newJobTypes.push({ jobType: jobType._id });
+                                newJobTypes.push({ jobType: jobType._id, quantity: parsedJobType.quantity, price: parsedJobType.price});
                                 continue;
                             }
                         }

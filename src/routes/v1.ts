@@ -4,7 +4,6 @@ import passport from 'passport'
 import {
     checkPermissions,
     checkSpecificPermissions,
-    checkUserPermissions,
     checkUserScanPermissions
 } from '../middleware/permissions'
 import { uploadInvoices, uploadImageInS3 } from '../middleware/multer';
@@ -47,6 +46,7 @@ import * as quickBookPaymentController from '../controllers/quickbook.payment'
 import * as companyController from '../controllers/company'
 import * as emailDefaultController from '../controllers/emailDefault'
 import * as invoiceController from '../controllers/invoice'
+import * as invoiceLogsController from '../controllers/invoiceLogs'
 import * as paymentAdvanceController from '../controllers/advancePayment'
 import * as partController from '../controllers/part'
 import * as purchaseOrderController from '../controllers/purchaseOrder'
@@ -157,7 +157,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Permission_Get_All),
         permissionController.getAllPermissions
     )
 
@@ -166,7 +165,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Permission_Update_Default),
         validate(Validations.updateDefaultPermissions),
         permissionController.updateDefaultPermissions
     )
@@ -176,7 +174,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Permission_Get_Office_Admin),
         permissionController.getOfficeAdminPermissions
     )
 
@@ -185,7 +182,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Permission_Get_Tech),
         permissionController.getTechPermissions
     )
 
@@ -194,7 +190,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Permission_Get_Manager),
         permissionController.getManagerPermissions
     )
 
@@ -203,7 +198,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Permission_Update_Employee),
         validate(Validations.udpateUserPermissions),
         permissionController.updateUserPermissions
     )
@@ -241,7 +235,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Permission_Get_Employee),
         validate(Validations.employeePermissions),
         permissionController.getUserPermissions
     )
@@ -276,7 +269,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.User_Create_Manager),
         validate(Validations.createManager),
         getCompanyId(),
         userController.createManager
@@ -287,7 +279,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.User_Create_Technician),
         validate(Validations.createTechnician),
         getCompanyId(),
         userController.createTechnician
@@ -298,7 +289,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.User_Create_Office_Admin),
         validate(Validations.createOfficeAdmin),
         getCompanyId(),
         userController.createOfficeAdmin
@@ -309,7 +299,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.User_Create_Office_Admin),
         validate(Validations.createOfficeAdmin),
         getCompanyId(),
         userController.createAdminEmployee
@@ -320,7 +309,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.User_Get_All_Employees),
         validate(Validations.changeEmployeeRole),
         userController.updateEmployeeRole
     )
@@ -330,7 +318,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.User_Get_All_Employees),
         validate(Validations.changeEmployeeLocPermission),
         userController.updateEmployeeLocPermission
     )
@@ -340,7 +327,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.User_Get_Manager),
         getCompanyId(),
         userController.getManagersList
     )
@@ -350,7 +336,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.User_Get_Technician),
         getCompanyId(),
         userController.getTechniciansList
     )
@@ -360,7 +345,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.User_Get_Office_Admin),
         getCompanyId(),
         userController.getOfficeAdminsList)
 
@@ -369,7 +353,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.User_Update_Profile),
         //validate(Validations.updateProfile),
         userController.updateProfile)
 
@@ -378,7 +361,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.User_Change_Password),
         validate(Validations.changePassword),
         userController.changePassword)
 
@@ -393,7 +375,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.User_Delete_Employee),
         validate(Validations.deleteEmployee),
         userController.deleteEmployee)
 
@@ -402,7 +383,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.User_Activate_Employee),
         validate(Validations.deleteEmployee),
         userController.activateEmployee)
 
@@ -414,7 +394,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Equipment_Type_Create),
         validate(Validations.createEquipmentType),
         equipmentTypeController.createEquipmentType
     )
@@ -424,7 +403,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Equipment_Type_Get),
         equipmentTypeController.getEquipmentTypes)
 
     //Equipment brands
@@ -433,7 +411,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Equipment_Brand_Create),
         validate(Validations.createEquipmentBrand),
         equipmentBrandController.createEquipmentBrand
     )
@@ -443,7 +420,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Equipment_Brand_Get),
         equipmentBrandController.getEquipmentBrands
     )
 
@@ -453,7 +429,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Company_Profile),
         companyLocationController.getCompanyLocations
     )
 
@@ -462,7 +437,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Company_Profile),
         companyLocationController.getCompanyLocationById
     )
 
@@ -471,7 +445,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Company_Profile),
         validate(Validations.createCompanyLocation),
         companyLocationController.createCompanyLocation
     )
@@ -481,7 +454,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Company_Profile),
         validate(Validations.updateCompanyLocation),
         companyLocationController.updateCompanyLocation
     )
@@ -491,7 +463,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Company_Profile),
         companyLocationController.updateCompanyLocationAssignments
     )
 
@@ -500,7 +471,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Company_Profile),
         companyLocationController.updateCompanyLocationBillingAddress
     )
 
@@ -509,7 +479,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Company_Profile),
         companyLocationController.getUserDivision
     )
 
@@ -519,7 +488,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Customer_Create),
         validate(Validations.createCustomer),
         customerController.createCustomer
     )
@@ -529,7 +497,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Customer_Get_All),
         validate(Validations.getCustomers),
         customerController.getCustomers
     )
@@ -539,7 +506,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Customer_Detail),
         validate(Validations.getCustomerDetail),
         customerController.customerDetail
     )
@@ -549,7 +515,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Customer_Update),
         validate(Validations.updateCustomer),
         customerController.updateCustomer
     )
@@ -559,7 +524,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Customer_Update),
         validate(Validations.updateCustomPrices),
         customerController.updateCustomPrices
     )
@@ -569,7 +533,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Customer_Get_All),
         validate(Validations.searchDuplicatedCustomers),
         refreshQBToken(),
         customerController.searchDuplicatedCustomers
@@ -580,7 +543,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Customer_Update),
         validate(Validations.mergeCustomers),
         customerController.mergeCustomers
     )
@@ -590,7 +552,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        // checkUserPermissions(Permissions.Customer_Get_All),
         customerController.getSupplierBuilders
     )
 
@@ -600,7 +561,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Customer_Equipment_Create),
         validate(Validations.createCustomerEquipment),
         customerEquipmentController.createCustomerEquipment
     )
@@ -610,7 +570,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Customer_Equipment_Get_All),
         validate(Validations.getCustomerEquipments),
         customerEquipmentController.getCustomerEquipments
     )
@@ -620,7 +579,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Customer_Equipment_Get_Jobs),
         validate(Validations.getCustomerEquipmentJobs),
         customerEquipmentController.getCustomerEquipmentJobs
     )
@@ -630,7 +588,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Customer_Equipment_Get_All),
         validate(Validations.getCustomerEquipmentInfo),
         customerEquipmentController.getCustomerEquipmentInfo
     )
@@ -640,7 +597,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Customer_Equipment_Get_All),
         validate(Validations.getCustomerEquipmentInfo),
         customerEquipmentController.getEquipmentJobs
     )
@@ -650,7 +606,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Customer_Equipment_Assign_Job),
         validate(Validations.linkEquipmentJob),
         customerEquipmentController.linkJobToEquipment
     )
@@ -672,7 +627,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Type_Create),
         validate(Validations.createJobType),
         jobTypeController.createJobType
     )
@@ -682,7 +636,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Type_Create),
         validate(Validations.editJobType),
         jobTypeController.editJobType
     )
@@ -692,7 +645,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Type_Create),
         validate(Validations.changeJobTypeStatus),
         jobTypeController.changeJobTypeStatus
     )
@@ -702,7 +654,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Type_Get),
         jobTypeController.getJobTypes
     )
 
@@ -713,7 +664,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Items),
         validate(Validations.getItems),
         itemController.getItems
     )
@@ -723,7 +673,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Type_Create),
         validate(Validations.createItem),
         itemController.createItem
     )
@@ -733,7 +682,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Item),
         validate(Validations.updateItem),
         itemController.updateItem
     )
@@ -743,7 +691,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Item),
         itemController.updateItems
     )
 
@@ -752,7 +699,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Items),
         validate(Validations.searchDuplicatedItems),
         itemController.searchDuplicatedItems
     )
@@ -762,7 +708,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Item),
         validate(Validations.mergeItems),
         itemController.mergeItems
     )
@@ -774,7 +719,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Items),
         validate(Validations.getDiscountItems),
         itemController.getDiscountItems
     )
@@ -784,7 +728,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Type_Create),
         validate(Validations.createDiscountItem),
         itemController.createDiscountItem
     )
@@ -794,7 +737,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Type_Create),
         validate(Validations.updateDiscountItem),
         itemController.updateDiscountItem
     )
@@ -806,7 +748,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Create),
         // uploadImageInS3.array('images'),
         uploadImageInS3.fields([{ name: 'image' }, { name: 'images' }]),
         validate(Validations.createJob),
@@ -818,7 +759,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Create),
         validate(Validations.createSubJob),
         jobController.createSubJob
     )
@@ -828,7 +768,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Get_All),
         validate(Validations.getJobs),
         jobController.getJobs
     )
@@ -838,7 +777,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Get_All),
         (req, res) => {
             jobController.getJobsStream(req, res, sio)
         }
@@ -849,7 +787,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Get_All),
         validate(Validations.searchJob),
         jobController.getFilteredJobs
     )
@@ -859,7 +796,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Get_Technician),
         validate(Validations.technicianJobs),
         jobController.getJobsByTechnicianId
     )
@@ -869,7 +805,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Get_Technician),
         validate(Validations.technicianJobs),
         jobController.getTodaysJobsByTechnicianId
     )
@@ -879,7 +814,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Get_All),
         (req, res) => {
             jobController.getJobsStream(req, res, sio)
         }
@@ -890,7 +824,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Update),
         // uploadImageInS3.array('images'),
         uploadImageInS3.fields([{ name: 'image' }, { name: 'images' }]),
         validate(Validations.updateJob),
@@ -904,7 +837,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Start),
         validate(Validations.generalJob),
         jobController.startJob
     )
@@ -914,7 +846,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Start),
         validate(Validations.startJobTask),
         jobController.startJobTask
     )
@@ -924,7 +855,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Update),
         validate(Validations.updateJobTask),
         jobController.updateJobTask
     )
@@ -934,7 +864,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Detail),
         validate(Validations.generalJob),
         jobController.getJobDetails
     )
@@ -944,7 +873,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Job_Report),
         jobController.getJobReportPDF
     )
 
@@ -953,7 +881,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Edit),
         // uploadImageInS3.array('images'),
         uploadImageInS3.fields([{ name: 'image' }, { name: 'images' }]),
         validate(Validations.editJob),
@@ -965,7 +892,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Update),
         validate(Validations.updateJoBRequestStatus),
         jobController.updateJobRequestStatus
     )
@@ -975,7 +901,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Edit),
         uploadImageInS3.fields([{ name: 'images' }]),
         validate(Validations.updateJobTechnicianStatus),
         (req, res) => {
@@ -988,7 +913,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Edit),
         validate(Validations.updateJobTime),
         jobController.updateJobTime
     )
@@ -1000,7 +924,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Get_Technician),
         jobRouteController.getAllJobRoutes
     )
 
@@ -1009,7 +932,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Get_Technician),
         validate(Validations.jobRoute),
         getTechnicianContractor(),
         jobRouteController.getJobRoute
@@ -1020,7 +942,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Get_Technician),
         validate(Validations.allJobRoutesByTechnician),
         getTechnicianContractor(),
         jobRouteController.getAllJobRoutesByTechnician
@@ -1031,7 +952,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Get_Technician),
         validate(Validations.jobRoute),
         validate(Validations.createJobRoute),
         jobRouteController.createJobRoute
@@ -1042,7 +962,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Job_Get_Technician),
         validate(Validations.updateJobRoute),
         jobRouteController.updateJobRoute
     )
@@ -1054,7 +973,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Job_Report),
         validate(Validations.getJobReport),
         jobController.getJobReportDetails
     )
@@ -1064,7 +982,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Job_Report),
         validate(Validations.getAllJobReports),
         jobController.getAllJobReports
     )
@@ -1074,7 +991,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Job_Report),
         validate(Validations.deleteJobReport),
         jobController.deleteJobReportById
     )
@@ -1084,7 +1000,6 @@ export default function (sio: any) {
         '/uploadImage',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
-        checkUserPermissions(Permissions.Image_Upload),
         imageController.uploadImage
     )
 
@@ -1093,7 +1008,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Image_Upload),
         validate(Validations.deleteImage),
         imageController.deleteImage
     )
@@ -1104,7 +1018,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Group_Create),
         validate(Validations.createGroup),
         groupController.createGroup
     )
@@ -1114,7 +1027,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Group_Get_All),
         groupController.getGroups
     )
 
@@ -1123,7 +1035,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Group_Delete),
         validate(Validations.groupGeneric),
         groupController.deleteGroup
     )
@@ -1133,7 +1044,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Group_Add_Manager),
         validate(Validations.addManager),
         groupController.addManager
     )
@@ -1143,7 +1053,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Group_Add_Member),
         validate(Validations.memberGeneric),
         groupController.addMember
     )
@@ -1153,7 +1062,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Group_Remove_Member),
         validate(Validations.memberGeneric),
         groupController.removeMember
     )
@@ -1165,7 +1073,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Company_Equipment_Create),
         validate(Validations.createCompanyEquipment),
         companyEquipmentController.createCompanyEquipment
     )
@@ -1175,7 +1082,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Company_Equipment_Get),
         companyEquipmentController.getCompanyEquipments
     )
 
@@ -1185,7 +1091,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Company_Equipment_Check_In_Out),
         validate(Validations.createCompanyEquipmentHistory),
         companyEquipmentHistoryController.createCompanyEquipmentHistory
     )
@@ -1196,7 +1101,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Inventory_Take),
         validate(Validations.createEquipmentInventory),
         companyEquipmentInventoryController.createCompanyEquipmentInventory
     )
@@ -1206,7 +1110,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Inventory_Report),
         companyEquipmentInventoryController.getIventoryHistory
     )
 
@@ -1217,7 +1120,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Company_Card_Add),
         validate(Validations.addCompanyCard),
         companyCardController.createCompanyCard
     )
@@ -1227,7 +1129,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Company_Card_Remove),
         validate(Validations.removeCompanyCard),
         companyCardController.removeCompanyCard
     )
@@ -1237,7 +1138,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Company_Card_Get),
         companyCardController.getCompanyCards
     )
 
@@ -1247,7 +1147,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Tags_Place_Order),
         validate(Validations.placeOrder),
         orderController.placeOrder
     )
@@ -1257,7 +1156,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Tags_Get_Orders),
         orderController.getOrders
     )
 
@@ -1267,7 +1165,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Subscription_Buy),
         validate(Validations.buySubscriptions),
         subscriptionController.addCompanySubscriptions
     )
@@ -1285,7 +1182,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Subscription_Cancel),
         validate(Validations.removeSubscription),
         subscriptionController.removeCompanySubscriptions
     )
@@ -1326,7 +1222,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Invite_Contractor),
         validate(Validations.startContract),
         (req, res) => {
             vendorController.startContract(req, res, sio)
@@ -1338,7 +1233,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Invite_Contractor),
         validate(Validations.searchContractor),
         vendorController.inviteContractor
     )
@@ -1348,7 +1242,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Invite_Contractor),
         validate(Validations.remindContractor),
         vendorController.remindContractor
     )
@@ -1359,7 +1252,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_All_Contracts),
         vendorController.getAllContracts
     )
 
@@ -1368,7 +1260,6 @@ export default function (sio: any) {
     //     '/acceptOrRejectContract',
     //     passport.authenticate('jwt', { session: false }),
     //     getCompanyId(),
-    //     checkUserPermissions(Permissions.Accept_Reject_Contract),
     //     validate(Validations.updateContract),
     //     (req, res) => {
     //         vendorController.acceptRejectContract(req, res, sio)
@@ -1380,7 +1271,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Cancel_Finish_Contract),
         validate(Validations.updateContract),
         (req, res) => {
             vendorController.cancelOrFinishContract(req, res, sio)
@@ -1392,7 +1282,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Cancel_Finish_Contract),
         validate(Validations.finishContract),
         (req, res) => {
             vendorController.finishContract(req, res, sio)
@@ -1404,7 +1293,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Add_Contractor_Permission),
         validate(Validations.contractorPermissions),
         permissionController.addContractorPermissions
     )
@@ -1413,7 +1301,6 @@ export default function (sio: any) {
         '/upgradeToCompany',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
-        checkUserPermissions(Permissions.Upgrade_To_Company),
         validate(Validations.upgradeToCompany),
         vendorController.upgradeToCompany
     )
@@ -1423,7 +1310,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_All_Contracts),
         vendorController.getContractors
     )
 
@@ -1456,7 +1342,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Customer_Import),
         // validate(Validations.customerImport),
         customerImportController.uploadfile
     )
@@ -1467,7 +1352,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Service_Tickets),
         serviceTicketController.getServiceTickets
     )
 
@@ -1476,7 +1360,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Service_Tickets),
         validate(Validations.getOpenServiceTickets),
         serviceTicketController.getOpenServiceTickets
     )
@@ -1486,7 +1369,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Service_Tickets),
         validate(Validations.getOpenServiceTicketsStream),
         (req, res) => {
             serviceTicketController.getOpenServiceTicketsStream(req, res, sio)
@@ -1498,7 +1380,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Create_Service_Ticket),
         (req, res) => {
             serviceTicketController.createServiceTicket(req, res, sio)
         }
@@ -1509,7 +1390,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Edit_Service_Ticket),
         validate(Validations.editTicket),
         serviceTicketController.editServiceTicket
     )
@@ -1519,7 +1399,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Service_Ticket),
         //validate(Validations.updateTicket),
         serviceTicketController.updateServiceTicket
     )
@@ -1528,7 +1407,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Ticket_Detail),
         validate(Validations.getTicketDetail),
         serviceTicketController.getServiceTicketDetail
     )
@@ -1543,7 +1421,6 @@ export default function (sio: any) {
     //     '/getQBCustomers',
     //     passport.authenticate('jwt', { session: false }),
     //     getCompanyId(),
-    //     checkUserPermissions(Permissions.Get_QB_Customers),
     //     // validate(Validations.getQBCustomers),
     //     quickbookCustomerController.getQBCustomers
     // )
@@ -1553,7 +1430,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_QB_Customers),
         quickBookCustomerController.syncQBCustomers
     )
 
@@ -1562,7 +1438,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Create_QB_customer),
         validate(Validations.createQBCustomer),
         refreshQBToken(),
         quickBookCustomerController.createQBCustomer
@@ -1574,6 +1449,13 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         quickBookItemController.syncQBItems
+    )
+    router.post(
+        '/syncQBItem',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        quickBookItemController.syncQBItem
     )
 
     router.post(
@@ -1640,7 +1522,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_QB_Uri),
         validate(Validations.getQBUri),
         quickBookController.getQBUri
     )
@@ -1657,7 +1538,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_QB_Uri),
         quickBookController.disconnectQB
     )
 
@@ -1673,7 +1553,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Contractors_For_Job),
         companyController.getContractorForJob
     )
 
@@ -1682,7 +1561,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Company_Contracts),
         companyController.getCompanyContracts
     )
 
@@ -1691,7 +1569,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Contractor_Detail),
         validate(Validations.getContractorDetail),
         companyController.getContractorDetail
     )
@@ -1712,7 +1589,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Company_Profile),
         validate(Validations.updateCompanyProfile),
         companyController.updateCompanyProfile
     )
@@ -1730,7 +1606,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Company_Profile),
         validate(Validations.updateCompanyCustomer),
         companyController.updateCompanyCustomer
     )
@@ -1784,7 +1659,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Custom_work_Order_Number),
         companyController.setCustomWorkNumber
     )
 
@@ -1793,7 +1667,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Custom_Work_No),
         companyController.getCustomWorkNumber
     )
 
@@ -1802,7 +1675,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Custom_Work_No),
         companyController.getSyncInfo
     )
 
@@ -1811,7 +1683,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.User_Get_All_Employees),
         companyController.getAllEmployees
     )
     router.get(
@@ -1820,7 +1691,6 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getEmployeeDetails),
-        checkUserPermissions(Permissions.User_Get_All_Employees),
         companyController.getEmployeeDetail
     )
     router.post(
@@ -1828,7 +1698,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.User_Get_All_Employees),
         companyController.getEmployeesForJob
     )
 
@@ -1842,7 +1711,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Set_Invoice_Number),
         validate(Validations.setCustomInvoiceNumber),
         invoiceController.setCustomInvoiceNumber
     )
@@ -1852,7 +1720,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Current_Invoice_Number),
         invoiceController.getInvoiceNumber
     )
 
@@ -1862,7 +1729,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Create_Sales_Tax),
         validate(Validations.createSaleTax),
         companyController.createSalesTax
     )
@@ -1872,7 +1738,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Sales_Tax),
         validate(Validations.updateSaleTax),
         companyController.updateSalesTax
     )
@@ -1882,7 +1747,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Delete_Sales_Tax),
         validate(Validations.deleteSaleTax),
         companyController.deleteSalesTax
     )
@@ -1892,8 +1756,16 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Sales_Taxes),
         companyController.getSalesTaxes
+    )
+    // Invoice Logs
+    router.post(
+        '/getInvoiceLogs',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        // checkUserPermissions(Permissions.Get_Invoice_Detail),
+        invoiceLogsController.get
     )
 
     // Job Charges
@@ -1902,7 +1774,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Create_Job_Charges),
         validate(Validations.createJobCharges),
         companyController.createJobCharges
     )
@@ -1912,7 +1783,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Job_Charges),
         validate(Validations.updateJobCharges),
         companyController.updateJobCharges
     )
@@ -1922,7 +1792,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Delete_Job_Charges),
         validate(Validations.deleteJobCharges),
         companyController.deleteJobCharges
     )
@@ -1932,7 +1801,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Job_Charges),
         companyController.getJobCharges
     )
 
@@ -1942,7 +1810,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Create_Invoice),
         validate(Validations.createInvoice),
         refreshQBToken(),
         invoiceController.createInvoice
@@ -1953,7 +1820,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoice_Detail),
         validate(Validations.getInvoiceEmailTemplate),
         invoiceController.getInvoiceEmailTemplate
     )
@@ -1964,7 +1830,6 @@ export default function (sio: any) {
         uploadInvoices.single('invoicePdf'),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoice_Detail),
         validate(Validations.sendInvoice),
         invoiceController.sendInvoiceEmail
     )
@@ -1974,7 +1839,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoice_Detail),
         validate(Validations.sendInvoices),
         invoiceController.sendInvoicesEmail
     )
@@ -1984,7 +1848,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoice_Detail),
         validate(Validations.sendInvoice),
         invoiceController.generateInvoicePdf
     )
@@ -1994,9 +1857,18 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoice_Detail),
         validate(Validations.sendReport),
         jobController.sendJobReport
+    )
+
+    router.get(
+        '/getJobReportEmailTemplate',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        validate(Validations.getJobReportEmailTemplate),
+        jobController.getJobReportEmailTemplate
+        
     )
 
     router.post(
@@ -2004,7 +1876,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Create_Invoice),
         validate(Validations.createPOInvoice),
         invoiceController.createPOInvoice
     )
@@ -2014,7 +1885,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Invoice),
         validate(Validations.updateInvoice),
         refreshQBToken(),
         invoiceController.updateInvoice
@@ -2025,7 +1895,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Invoice),
         validate(Validations.updateInvoice),
         refreshQBToken(),
         invoiceController.updateInvoiceMessages
@@ -2036,7 +1905,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoice_Detail),
         invoiceController.getInvoiceDetail
     )
 
@@ -2045,7 +1913,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.getInvoices),
         invoiceController.getInvoices
     )
@@ -2054,7 +1921,6 @@ export default function (sio: any) {
         '/getUnsyncedInvoices',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         invoiceController.getUnsyncedInvoices
     )
 
@@ -2063,7 +1929,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         invoiceController.getCompanyInvoices
     )
     router.get(
@@ -2071,7 +1936,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.companyInvoice),
         invoiceController.getCompanyInvoiceDetails
     )
@@ -2080,8 +1944,8 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
-        validate(Validations.unVoidInvoice),
+        // checkUserPermissions(Permissions.Get_Invoices),
+        validate(Validations.unVoidInvoice),    
         invoiceController.unVoidInvoice
     )
     router.delete(
@@ -2089,7 +1953,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.voidInvoice),
         invoiceController.voidInvoice
     )
@@ -2104,7 +1967,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Invoice),
         validate(Validations.updateCommission),
         invoiceController.updateCommission
     )
@@ -2120,7 +1982,6 @@ export default function (sio: any) {
         '/getCommissionHistory/:beneficiaryId',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
-        checkUserPermissions(Permissions.Update_Invoice), //if has permission to update then can also view
         invoiceController.getCommissionHistory
     )
 
@@ -2128,7 +1989,6 @@ export default function (sio: any) {
         '/getCommissionHistoryByJob/:jobId',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
-        checkUserPermissions(Permissions.Update_Invoice), //if has permission to update then can also view
         invoiceController.getCommissionHistoryByJob
     )
 
@@ -2137,7 +1997,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         invoiceController.getInvoicesByContractor
     )
 
@@ -2148,7 +2007,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Parts),
         partController.getPartInventory
     )
 
@@ -2157,7 +2015,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Create_Part),
         validate(Validations.createPartInventory),
         partController.createPartInventory
     )
@@ -2167,7 +2024,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Part),
         validate(Validations.udpatePartInventory),
         partController.updatePartInventory
     )
@@ -2177,7 +2033,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Remove_Part),
         validate(Validations.removePartInventory),
         partController.removePartInventory
     )
@@ -2188,7 +2043,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Create_Purchase_Order),
         validate(Validations.createPurchaseOrder),
         purchaseOrderController.createPO
     )
@@ -2198,7 +2052,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Purchase_Order),
         purchaseOrderController.getAllPO
     )
 
@@ -2208,7 +2061,6 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getEquipmentPO),
-        checkUserPermissions(Permissions.Get_Equipment_Purchase_Order),
         purchaseOrderController.getAllEquipmentPurchaseOrder
     )
 
@@ -2217,7 +2069,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Status_Purchase_Order),
         validate(Validations.udpatePurchaseOrderStatus),
         purchaseOrderController.updatePOStatus
     )
@@ -2227,7 +2078,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Create_Purchase_Order_From_Estimate),
         validate(Validations.createPurchaseOrderEstimate),
         purchaseOrderController.createPOEstimate
     )
@@ -2237,7 +2087,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Purchase_Order),
         validate(Validations.udpatePurchaseOrder),
         purchaseOrderController.updatePO
     )
@@ -2247,7 +2096,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Estimate),
         validate(Validations.udpateEstimate),
         estimateController.updateEstimate
     )
@@ -2257,7 +2105,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Status_Estimate),
         validate(Validations.udpateEstimateStatus),
         estimateController.updateEstimateStatus
     )
@@ -2267,7 +2114,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Create_Estimate),
         estimateController.createEstimate
     )
 
@@ -2276,7 +2122,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Estimate),
         estimateController.getEstimates
     )
 
@@ -2286,7 +2131,6 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.cancelEstimate),
-        checkUserPermissions(Permissions.Cancel_Estimate),
         estimateController.cancelEstimate
     )
 
@@ -2295,7 +2139,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Company_Contractor_Activity),
         companyController.getCompanyContractorActivity
     )
 
@@ -2325,7 +2168,6 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         // TODO: Add and use new proper permission
-        checkUserPermissions(Permissions.Get_Sales_Taxes),
         paymentTermController.getPaymentTerms
     )
 
@@ -2335,7 +2177,6 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         // TODO: Add and use new proper permission
-        checkUserPermissions(Permissions.Create_Sales_Tax),
         validate(Validations.createPaymentTerm),
         paymentTermController.createPaymentTerm
     )
@@ -2346,7 +2187,6 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         // TODO: Add and use new proper permission
-        checkUserPermissions(Permissions.Update_Sales_Tax),
         validate(Validations.updatePaymentTerm),
         paymentTermController.updatePaymentTerm
     )
@@ -2357,7 +2197,6 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         // TODO: Add and use new proper permission
-        checkUserPermissions(Permissions.Delete_Sales_Tax),
         validate(Validations.deletePaymentTerm),
         paymentTermController.deletePaymentTerm
     )
@@ -2370,7 +2209,6 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getInvoicesByCustomerId),
-        checkUserPermissions(Permissions.Get_Customer_Invoices),
         invoiceController.getInvoicesByCustomerId
     )
 
@@ -2379,7 +2217,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Payments),
         paymentController.getPayments
     )
 
@@ -2388,7 +2225,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Payments),
         paymentController.getUnsyncedPayments
     )
 
@@ -2398,7 +2234,6 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getPaymentsByCustomer),
-        checkUserPermissions(Permissions.Get_Customer_Payments),
         paymentController.getPaymentsByCustomerId
     )
 
@@ -2407,7 +2242,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Customer_Payments),
         paymentController.getPaymentsByContractor
     )
 
@@ -2417,7 +2251,6 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.recordPayment),
-        checkUserPermissions(Permissions.Create_Payment),
         refreshQBToken(),
         paymentController.createPayment
     )
@@ -2428,7 +2261,6 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.recordPaymentContractor),
-        checkUserPermissions(Permissions.Get_Customer_Payments),
         paymentController.createPaymentContractor
     )
 
@@ -2438,7 +2270,6 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updatePayment),
-        checkUserPermissions(Permissions.Update_Payment),
         paymentController.updatePayment
     )
 
@@ -2448,7 +2279,6 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updatePaymentContractor),
-        checkUserPermissions(Permissions.Update_Payment),
         paymentController.updatePaymentContractor
     )
 
@@ -2458,7 +2288,6 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.voidPaymentContractor),
-        checkUserPermissions(Permissions.Update_Payment),
         paymentController.voidPaymentContractor
     )
 
@@ -2468,7 +2297,6 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.voidPaymentContractor),
-        checkUserPermissions(Permissions.Update_Payment),
         paymentController.voidPaymentContractor
     )
 
@@ -2477,8 +2305,15 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Payments),
         paymentController.getPayrollBalance
+    )
+
+    router.get(
+        '/exportVendorJobs',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        paymentController.exportVendorJobs
     )
 
     router.get(
@@ -2486,7 +2321,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Payments),
         paymentController.getPayrollReport
     )
 
@@ -2496,7 +2330,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.recordAdvancePayment),
         paymentAdvanceController.createAdvancePaymentContractor
     )
@@ -2506,7 +2339,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.getAdvancePayments),
         paymentAdvanceController.getAdvancePaymentsByContractor
     )
@@ -2516,7 +2348,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Payment),
         validate(Validations.updateAdvancePaymentContractor),
         paymentAdvanceController.updateAdvancePaymentContractor
     )
@@ -2526,7 +2357,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Update_Payment),
         validate(Validations.voidAdvancePaymentContractor),
         paymentAdvanceController.voidAdvancePaymentContractor
     )
@@ -2538,7 +2368,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.generateIncomeReport),
         reportController.generateIncomeReport
     )
@@ -2547,7 +2376,6 @@ export default function (sio: any) {
         '/generateIncomeReportPdf',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.generateIncomeReport),
         reportController.generateIncomeReportPdf
     )
@@ -2556,7 +2384,6 @@ export default function (sio: any) {
         '/getIncomeReportEmailTemplate',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         reportController.getIncomeReportEmailTemplate
     )
 
@@ -2565,7 +2392,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         uploadInvoices.single('incomeReportPdf'),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.generateIncomeReport),
         reportController.sendIncomeReportEmail
     )
@@ -2575,7 +2401,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         reportController.getReportEmailTemplate
     )
 
@@ -2584,7 +2409,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.sendReportEmail),
         reportController.sendReportEmail
     )
@@ -2594,7 +2418,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.generateAccountReceivableReport),
         reportController.generateAccountReceivableReport
     )
@@ -2604,7 +2427,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.generateAccountReceivableDetail),
         reportController.generateAccountReceivableDetail
     )
@@ -2614,7 +2436,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.generateAccountReceivableInvoices),
         reportController.generateAccountReceivableInvoices
     )
@@ -2624,7 +2445,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.generateReportPdf),
         reportController.generateReportPdf
     )
@@ -2633,7 +2453,6 @@ export default function (sio: any) {
         '/getMemorizedReports',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         reportController.getMemorizedReports
     )
 
@@ -2641,7 +2460,6 @@ export default function (sio: any) {
         '/getMemorizedReport',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         reportController.getMemorizedReport
     )
 
@@ -2649,7 +2467,6 @@ export default function (sio: any) {
         '/createMemorizedReport',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.createMemorizedReport),
         reportController.createMemorizedReport
     )
@@ -2658,7 +2475,6 @@ export default function (sio: any) {
         '/updateMemorizedReport',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.updateMemorizedReport),
         reportController.updateMemorizedReport
     )
@@ -2667,7 +2483,6 @@ export default function (sio: any) {
         '/deleteMemorizedReport',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.updateMemorizedReport),
         reportController.deleteMemorizedReport
     )
@@ -2680,7 +2495,6 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.codeLocationTag),
-        checkUserPermissions(Permissions.Code_Location_Tag),
         tagController.codeLocationTag
     )
 
@@ -2689,7 +2503,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Location_Tags),
         validate(Validations.getLocationTagInfo),
         tagController.getLocationTagInfo
     )
@@ -2700,7 +2513,6 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateLocationTag),
-        checkUserPermissions(Permissions.Update_Location_Tag),
         tagController.updateLocationTag
     )
 
@@ -2709,7 +2521,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Get_Location_Tags),
         tagController.getLocationTags
     )
     router.post(
@@ -2728,7 +2539,6 @@ export default function (sio: any) {
         '/addContact',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
-        checkUserPermissions(Permissions.Customer_Create),
         validate(Validations.addContact),
         ContactController.addContact
     )
@@ -2738,7 +2548,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Customer_Create),
         validate(Validations.updateContact),
         ContactController.updateContact
     )
@@ -2747,7 +2556,6 @@ export default function (sio: any) {
         '/getContacts',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
-        checkUserPermissions(Permissions.Customer_Create),
         ContactController.getContacts
     )
 
@@ -2757,7 +2565,6 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getCustomerAllContacts),
-        checkUserPermissions(Permissions.Customer_Create),
         ContactController.getCustomerAllContacts
     )
 
@@ -2766,7 +2573,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         validate(Validations.removeContact),
-        checkUserPermissions(Permissions.Customer_Create),
         ContactController.removeContact
     )
 
@@ -2796,7 +2602,6 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createIntegrationServiceTicket),
-        checkUserPermissions(Permissions.Create_Service_Ticket),
         (req, res) => {
             integrationController.createServiceTicket(req, res, sio)
         }
@@ -3052,7 +2857,6 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        checkUserPermissions(Permissions.Customer_Get_All),
         customerController.exportCustomersToExcel
     )
     router.get(

@@ -47,6 +47,9 @@ export const Validations = {
     check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })
   ],
 
+  //bounce email
+  bounceEmail: [check('email').exists(),check('email').isLength({min:1})],
+
   login: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
 
   socialLogin: [check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric()],
@@ -208,7 +211,18 @@ export const Validations = {
   // Item
   getItems: [check('includeDiscountItems').optional().isBoolean().toBoolean()],
 
-  createItem: [check('title').exists().withMessage(Messages.Required)],
+  createItem: [check('title').exists().withMessage(Messages.Required),
+  check("itemType").optional().isIn(['Product', 'Service']).withMessage('Item type must be either "Product" or "Service"'),
+  check("isFixed").optional({ checkFalsy: true }).custom((value: boolean, { req }: any) => {
+    // Check if itemType is "Product" and isFixed is not true
+      if (req.body.itemType === 'Product' && value !== true) {
+        throw new Error('isFixed must be true when itemType is "Product"');
+      }
+      return true;
+    }),
+    // check('productCost').if(check('itemType').equals('Product')).not().isEmpty().withMessage(Messages.Required),
+  // check('salePrice').if(check('itemType').equals('Product')).not().isEmpty().withMessage(Messages.Required)
+],
 
   // Discount Item
   getDiscountItems: [
@@ -478,6 +492,8 @@ export const Validations = {
     check('invoiceId').isMongoId().withMessage(Messages.WrongId),
   ],
 
+  getJobReportEmailTemplate: [check('jobReportId').exists()],
+
   sendReport: [check('jobReportId').exists()],
 
   createPOInvoice: [check('purchaseOrderId').exists()],
@@ -490,6 +506,7 @@ export const Validations = {
     check('jobLocationId').optional({ nullable: true }).isMongoId().withMessage(Messages.WrongId),
     check('jobSiteId').optional({ nullable: true }).isMongoId().withMessage(Messages.WrongId),
     check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
+    check('showJobId').optional().isBoolean().toBoolean().withMessage('showJobId has to be boolean'),
   ],
 
   setCustomInvoiceNumber: [check('invoiceNumber').optional().isInt().toInt()],

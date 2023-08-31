@@ -59,7 +59,8 @@ export const login = (req: Request, res: Response, sio: any) => {
                 user.permissions.role != Role.SUPPLIER_ADMIN &&
                 user.permissions.role != Role.ADMIN_EMPLOYEE &&
                 user.permissions.role != Role.GLOBAL_ADMIN &&
-                user.permissions.role != Role.CUSTOMER_CONTACT
+                user.permissions.role != Role.CUSTOMER_CONTACT &&
+                user.permissions.role != Role.CONTRACTOR
             ) {
                 const employee = <IEmployee>user
 
@@ -98,7 +99,8 @@ export const login = (req: Request, res: Response, sio: any) => {
             } else if (
                 user.permissions.role == Role.GLOBAL_ADMIN ||
                 user.permissions.role == Role.COMPANY_ADMIN ||
-                user.permissions.role == Role.ADMIN_EMPLOYEE
+                user.permissions.role == Role.ADMIN_EMPLOYEE || 
+                user.permissions.role == Role.CONTRACTOR
             ) {
 
                 user.comparePassword(params.password, (isMatching: Boolean) => {
@@ -1047,7 +1049,7 @@ const createEmployee = (req: Request, res: Response, role: Role) => {
                 }
             )
 
-            employee.save((err: any) => {
+            employee.save((err: any, newEmployee) => {
 
                 if (err) {
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
@@ -1069,7 +1071,7 @@ const createEmployee = (req: Request, res: Response, role: Role) => {
                                 return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                             }
                             sendEmployeeEmail({ to: params.email, company: company.info.companyName, replyTo: company.info.companyEmail, role: roles[employee.permissions.role], password: password })
-                            return res.json({ 'status': Status.Success, 'message': 'Employee created successfully.' })
+                            return res.json({ 'status': Status.Success, 'message': 'Employee created successfully.', 'employee': newEmployee })
                         }
                     )
                 })

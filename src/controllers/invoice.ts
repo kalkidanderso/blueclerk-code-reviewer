@@ -40,6 +40,7 @@ import { sendInvoiceEmailToCustomer, uploadFileInS3 } from '../services/aws';
 import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer';
 import { _createQBInvoice, _deleteQBInvoice, _updateQBInvoice, _voidQBInvoice } from '../controllers/quickbook.invoice';
 import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail } from '../controllers/emailDefault';
+import * as InvoiceLogController from "../controllers/invoiceLogs";
 import { IJobSite, JobSite } from '../models/JobSite';
 import { IJobLocation, JobLocation } from '../models/JobLocation';
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission';
@@ -51,6 +52,8 @@ import * as Sentry from '@sentry/node';
 import axios from 'axios';
 import { JobCommission } from '../models/JobCommission';
 import { IJobCosting } from '../models/JobCosting';
+import { logType } from 'src/models/invoiceLogs';
+import { userInfo } from 'os';
 
 const pdfmake = require('pdfmake');
 
@@ -350,7 +353,7 @@ export const getInvoiceNumber = (req: Request, res: Response) => {
 export const createInvoice = (req: Request, res: Response) => {
 
     const params = req.body
-
+    const user = <IUser>req.user
     const company = <ICompany>req.company
 
     if (params.jobId) {
@@ -373,20 +376,38 @@ export const createInvoice = (req: Request, res: Response) => {
                 const job = <IJob>result[0]
 
                 // Convert jobTypes to ObjectId in array
-                const jobTypeIds = [];
+                const jobTypes: { id: any; quantity: number; price: number; }[] = [];
                 job.tasks.forEach(task => {
                     task.jobTypes.forEach(taskJobType => {
-                        jobTypeIds.push(taskJobType.jobType)
+                        jobTypes.push({
+                            id: taskJobType.jobType,
+                            quantity: taskJobType.quantity,
+                            price: taskJobType.price,
+                        })
                     })
                 })
+
+                // To merge job types when they have the same item
+                const jobTypesFiltered = jobTypes.reduce((accumulator, currentObj) => {
+                    const existingItem = accumulator.find(item => item.id.toString() === currentObj.id.toString());
+                    
+                    if (existingItem) {
+                        existingItem.quantity += currentObj.quantity;
+                    } else {
+                        accumulator.push(currentObj);
+                    }
+                    return accumulator;
+                }, []);
                 // const jobTypeIds = job.tasks.map(task => task.jobType);
                 // Fallback for old job who still using one job type
-                if (!jobTypeIds.length) jobTypeIds.push(job.type);
+                if (!jobTypesFiltered.length) jobTypesFiltered.push({id: job.type, quantity: 1, price: 0});
                 // Search all jobTypes' items
                 // const items = Item.find({jobType: {$in: jobTypeIds}});
                 const items: any[] = []
-                jobTypeIds.forEach(async (jobTypeId) => {
-                    const item = await Item.findOne({ jobType: jobTypeId })
+                jobTypesFiltered.forEach(async (jobType) => {
+                    const item: any = await Item.findOne({jobType: jobType.id})
+                    item["quantity"] = jobType.quantity;
+                    item["price"] = jobType.price;
                     items.push(item);
                 });
 
@@ -509,8 +530,8 @@ export const createInvoice = (req: Request, res: Response) => {
 
                     const jobReport = await JobReport.findOne({ job: invoice.job });
                     if (jobReport) {
-                        jobReport.invoiceCreated=true;
-            jobReport.invoiceVoid= false;
+                        jobReport.invoiceCreated = true;
+                        jobReport.invoiceVoid = false;
                         jobReport.invoice = invoice._id;
                         await jobReport.save();
                     }
@@ -520,6 +541,11 @@ export const createInvoice = (req: Request, res: Response) => {
 
             })
             .then((invoice: IInvoice) => {
+                const inoiceLogsObj:any={
+                    invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.CREATED,info:"Invoice created", customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
+                    , createdBy: user._id
+                }
+                InvoiceLogController.create(inoiceLogsObj);
                 if (company.qbAuthorized && !invoice.isDraft) {
                     /**
                      * Check Customer & Job Locations data on QBooks,
@@ -1191,7 +1217,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
 
     let invoiceItems: any[] = []
     // Find Customer object to see the itemTier, customPrice, & payment term info
-    const customerObj = await Customer.findById(customer).populate({ path: 'paymentTerm' });
+    const customerObj = await Customer.findById(customer).populate({path: 'paymentTerm'}).populate({path: 'discountPrices.discountItem'});
     if (!customerObj) {
         return res.json({ status: Status.Error, message: 'Customer not found' });
     }
@@ -1277,9 +1303,9 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
 
             let obj: any = {}
             // Set price to 0 if customer uses customPrice
-            let price = customerObj.isCustomPrice ? 0 : itemTier?.charge || jobTypeitem.charges;
+            let price = (jobTypeitem as any).price ?? (customerObj.isCustomPrice ? 0 : itemTier?.charge || jobTypeitem.charges);
             // If item is hourly, take the task's timeSpent (minutes) for the quantity
-            let quantity = jobTypeitem.isFixed ? 1 : (jobTypes?.timeSpent / 60) || 1;
+            let quantity = jobTypeitem.isFixed ? ((jobTypeitem as any).quantity || 1) : (jobTypes?.timeSpent / 60) || 1;
             let itemTax = 0
             let itemTaxAmount: number = 0
             let subTotal = price * quantity
@@ -1330,15 +1356,21 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         let discountPrices = customerObj.discountPrices?.sort((a, b) => {
             return a.quantity - b.quantity
         });
-        discountPrices = discountPrices.filter(disc => disc.discountItem);
+        discountPrices = discountPrices.filter(disc => disc.discountItem && ((disc.discountItem as IItem)?.isActive ?? true));
+
+        //Count All Item Quantity
+        let allQty = 0;
+        for (const jobTypeitem of jobTypeitems) {
+            allQty += ((jobTypeitem as any).quantity || 1);
+        }
 
         // Get the max quantity that should be discounted
         const maxDiscountQty = discountPrices[discountPrices.length - 1]?.quantity;
-        const totalItemDiscounted = jobTypeitems.length > maxDiscountQty ? maxDiscountQty : jobTypeitems.length;
+        const totalItemDiscounted = allQty > maxDiscountQty ? maxDiscountQty : jobTypeitems.length;
 
         // Find the discount item based on how many item that gonna be discounted
-        const customerDiscount = customerObj.discountPrices?.find(disc => disc.quantity === totalItemDiscounted);
-        const discountItem = await Item.findById(customerDiscount?.discountItem);
+        const customerDiscount = customerObj.discountPrices?.find(disc => disc.quantity === totalItemDiscounted && ((disc.discountItem as IItem)?.isActive ?? true));
+        const discountItem = await Item.findById((customerDiscount?.discountItem as IItem)?._id);
 
         if (discountItem) {
             const discountAmount = discountItem.charges ?? 0;
@@ -1487,9 +1519,16 @@ export const createPOInvoice = (req: Request, res: Response) => {
                 })
 
                 invoice.save((invoiceError: any) => {
+
                     if (invoiceError) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                     }
+
+                    const invoiceLogsObj:any={
+                        invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.CREATED, info:"Invoice created",customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
+                        , createdBy: user._id
+                    }
+                    InvoiceLogController.create(invoiceLogsObj);
 
                     company.updateOne({ currentInvoiceId: currentInvoiceId + 1 })
                         .exec((companyError: any) => {
@@ -1506,11 +1545,179 @@ export const createPOInvoice = (req: Request, res: Response) => {
             })
         });
 }
+const findAddedAndRemovedItems = (original: any, updated: any) => {
+    const added = [];
+    const removed = [];
+    const updatedItems = [];
 
+    const originalIds = original.map((item: any) => item.item.toString());
+    const updatedIds = updated.map((item: any) => item.item.toString());
+
+    for (const [index, item] of original.entries()) {
+        if (!updatedIds.includes(item.item.toString())) {
+            removed.push({
+                "type":"removed",
+                "name": item?.name
+            });
+        }
+        
+        if (updatedIds.includes(item.item.toString())) {
+
+            if (original[index].quantity != updated[index].quantity ) {
+                updatedItems.push({
+                    "type":"updated",
+                    "name": item?.name,
+                    "new": updated[index].quantity,
+                    "old": original[index].quantity,
+                });
+
+            }
+        }
+    }
+
+    for (const [index, item] of updated.entries()){
+
+        if (!originalIds.includes(item.item.toString())) {
+            added.push({
+                type:"added",
+                "name": item?.name
+            });
+        }
+        // if (originalIds.includes(item.item.toString())) {
+
+        //     if (original[index].quantity != updated[index].quantity ) {
+        //         updatedItems.push({
+        //             "name": item?.name,
+        //             "new": updated[index].quantity,
+        //             "old": original[index].quantity,
+        //         });
+
+        //     }
+        // }
+
+    }
+
+    return { added, removed, updatedItems };
+}
+const getInvoiceLogsPefix = (key: string) => {
+
+    switch (key) {
+        case "status":
+            // code block
+            return "Payment status changed";
+        case "ITEMS_ADDED":
+            // code block
+            return "Items added";
+        case "taxAmount":
+            // code block
+            return "Tax amount changed";
+        case "ITEMS_REMOVED":
+            // code block
+            return "Items removed";
+        case "dueDate":
+            // code block
+            return "Due date changed";
+        case "issuedDate":
+            // code block
+            return "Issued date changed";
+        case "subTotal":
+            // code block
+            return "Sub Total changed";
+        case "total":
+            // code block
+            return "Invoice Total changed";
+        case "note":
+            // code block
+            return "Customer notes changed";
+        case "balanceDue":
+            // code block
+            return "Balance due changed";
+        case "customerPO":
+            // code block
+            return "PO number changed";
+        case "paid":
+            // code block
+            return "Payment status changed";
+
+        default:
+            // code block
+            return key
+    }
+}
+const changesManage = (newObj: any, oldObj: any) => {
+    let logs: any[] = [];
+
+    Object.keys(newObj).map(key => {
+
+        // if (key == "dueDate") {
+
+        //     if (new Date(newObj[key]).getTime() != new Date(oldObj[key]).getTime()) { logs.push(getInvoiceLogsPefix(key)); }
+
+        // }
+        // else if (key == "issuedDate") {
+
+        //     if (new Date(newObj[key]).getTime() != new Date(oldObj[key]).getTime()) { logs.push(getInvoiceLogsPefix(key)); }
+
+
+        // }
+        // else 
+        
+        if (key == "items") {
+            // if(newObj[key].length==oldObj[key].length)
+            {
+
+                const { added, removed, updatedItems } = findAddedAndRemovedItems(oldObj[key], newObj[key]);
+
+                if (added.length) {
+                    // logs.push(getInvoiceLogsPefix("ITEMS_ADDED") + " " + added.length);
+
+
+                    added.map((itemUpdates: any) => {
+
+                        logs.push("Item "+ itemUpdates.name +" added")
+
+                    });
+                }
+                if (removed.length) {
+                    // logs.push(getInvoiceLogsPefix("ITEMS_REMOVED") + " " + removed.length);
+
+                    removed.map((itemUpdates: any) => {
+
+                        logs.push("Item "+ itemUpdates.name +" removed")
+
+                    });
+                }
+               
+                if (updatedItems.length) {
+
+                    updatedItems.map((itemUpdates: any) => {
+
+                        logs.push(itemUpdates.name + " quantity changed from "+itemUpdates.old +" to " + itemUpdates.new)
+
+                    });
+
+                }
+
+            }
+
+
+        }
+
+        else if (key == "customerPO" ) {
+            if (newObj[key] != oldObj[key]) {
+                logs.push(getInvoiceLogsPefix(key));
+            }
+        }
+    })
+
+
+    return logs;
+}
 export const updateInvoice = (req: Request, res: Response) => {
 
     const params = req.body
     const company = <ICompany>req.company;
+    const user = <IUser>req.user
 
     Invoice.findOne({ '_id': params.invoiceId, 'company': req.companyId },
         async (err: any, invoice: IInvoice) => {
@@ -1544,6 +1751,7 @@ export const updateInvoice = (req: Request, res: Response) => {
                 if (!paymentTerm) {
                     return res.json({ status: Status.Error, message: 'Payment Term not found' });
                 }
+
             }
 
             // Retrieve customer contact for this invoice
@@ -1801,6 +2009,26 @@ export const updateInvoice = (req: Request, res: Response) => {
                             total += shippingCost;
                         }
 
+                        const changes = changesManage({
+                            jobPurchaseOrders: purchaseOrderIds,
+                            items: invoiceItems,
+                            shippingCost: helper.roundTwoDecimal(shippingCost),
+                            taxAmount: helper.roundTwoDecimal(taxAmount),
+                            subTotal: helper.roundTwoDecimal(subTotalBeforeTax),
+                            total: helper.roundTwoDecimal(total),
+                            balanceDue: helper.roundTwoDecimal(balanceDue),
+                            paymentApplied: helper.roundTwoDecimal(paymentApplied),
+                            status, paid,
+                            charges, issuedDate, dueDate, note: params.note,
+                            isDraft: params.isDraft,
+                            customerPO: params.customerPO,
+                            customerContactId: customerContact,
+                            jobLocation: params.jobLocationId === null ? null : jobLocation?._id,
+                            jobSite: params.jobSiteId === null ? null : jobSite?._id,
+                            vendorId: params.vendorId,
+                            invoiceId
+                        }, invoice);
+                        const oldInovice=invoice;
                         invoice.updateOne({
                             jobPurchaseOrders: purchaseOrderIds,
                             items: invoiceItems,
@@ -1834,7 +2062,14 @@ export const updateInvoice = (req: Request, res: Response) => {
                                  */
                                 invoice.paymentTerm = params.paymentTermId ? paymentTerm?._id : null;
                                 await invoice.save();
+                                if(!oldInovice.isDraft){
+                                    
+                                const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.UPDATED, info: changes.join(","), customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
+                                , createdBy: user._id
+                            }
+                                InvoiceLogController.create(invoiceLogsObj);
 
+                            }
                                 // To handle the switch of Invoice isDraft
                                 _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
                                     if (errMsg) {
@@ -1985,6 +2220,25 @@ export const updateInvoice = (req: Request, res: Response) => {
                     shippingCost = parseFloat(params.shippingCost);
                     total += shippingCost;
                 }
+                const changes = changesManage({
+                    items: invoiceItems,
+                    charges: helper.roundTwoDecimal(charges),
+                    shippingCost: helper.roundTwoDecimal(shippingCost),
+                    taxAmount: helper.roundTwoDecimal(taxAmount),
+                    subTotal: helper.roundTwoDecimal(subTotalBeforeTax),
+                    total: helper.roundTwoDecimal(total),
+                    balanceDue: helper.roundTwoDecimal(balanceDue),
+                    paymentApplied: helper.roundTwoDecimal(paymentApplied),
+                    status, paid,
+                    issuedDate, dueDate, note: params.note,
+                    isDraft: params.isDraft,
+                    customerPO: params.customerPO,
+                    customerContactId: customerContact,
+                    jobLocation: params.jobLocationId === null ? null : jobLocation?._id,
+                    jobSite: params.jobSiteId === null ? null : jobSite?._id,
+                    vendorId: params.vendorId,
+                    invoiceId
+                }, invoice);
 
                 invoice.updateOne({
                     items: invoiceItems,
@@ -2018,7 +2272,12 @@ export const updateInvoice = (req: Request, res: Response) => {
                          */
                         invoice.paymentTerm = params.paymentTermId ? paymentTerm?._id : null;
                         await invoice.save();
-
+                      
+                        const invoiceLogsObj:any={
+                            invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.UPDATED, info: changes.join(","), customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
+                            , createdBy: user._id
+                        }
+                        InvoiceLogController.create(invoiceLogsObj);
                         // To handle the switch of Invoice isDraft
                         _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
                             if (errMsg) {
@@ -2056,6 +2315,10 @@ export const updateInvoiceMessages = async (req: Request, res: Response) => {
             images: params.technicianMessages.images || invoice.technicianMessages.images,
         };
 
+        if ([true, false].includes(params.showJobId)) {
+            invoice.showJobId = params.showJobId;
+        }
+
         const updatedInvoice = await invoice.save();
         return res.json({ status: Status.Success, message: 'Invoice updated successfully.', data: updatedInvoice });
     } catch (err) {
@@ -2073,12 +2336,12 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
                 { path: 'tasks.jobTypes.jobType', select: 'title description sku' },
                 {
                     path: 'customer',
-                    select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail'
+                    select: 'info.email auth.email profile.firstName profile.lastName profile.displayName address.street address.city address.state address.unit address.zipCode contact.phone contact.fax vendorId contactName contactEmail notes'
                 },
                 { path: 'tasks.technician', select: 'profile auth.email address contact permissions.role' },
                 {
                     path: 'tasks.contractor',
-                    select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax',
+                    select: 'info.companyName info.logoUrl info.companyEmail address contact.phone contact.fax commissionTier',
                     populate: { path: 'admin', select: 'profile.displayName auth.email contact.phone permissions.role' }
                 },
                 { path: 'technicianImages.uploadedBy', select: 'profile auth.email address contact permissions.role' },
@@ -2124,11 +2387,15 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
         })
         .populate({
             path: 'createdBy',
-            select: 'info.companyName auth.email profile.displayName permissions.role address contact.phone'
+            select: 'info.companyName auth.email profile.displayName permissions.role address contact.phone profile.displayName'
         })
         .populate({
             path: 'companyLocation',
-            select: 'isAddressAsBillingAddress address billingAddress'
+            select: 'isAddressAsBillingAddress address billingAddress name'
+        })
+        .populate({
+            path: 'workType',
+            select: 'title'
         })
         .exec((err: any, invoice: IInvoice) => {
 
@@ -2332,12 +2599,13 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     const customer = <ICustomer>invoice.customer;
     const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
     const customerContact = <IContact>invoice.customerContactId;
+    const companyLocation = <ICompanyLocation>invoice.companyLocation;
 
     // Retrieve company email default
     const filepath = req.file?.path ?? `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
-    const invoicePdfs = [{ invoice, filepath }];
-    const emailDefault = await EmailDefault.findOne({ company, emailType: EmailTypes.INVOICE });
-
+    const invoicePdfs = [{invoice, filepath}];
+    const emailDefault = await EmailDefault.findOne({company, emailType: EmailTypes.INVOICE});
+    const sender_email = companyLocation?.billingAddress?.emailSender || user.auth?.email
     // Generate Invoice PDF
     await _generateInvoicePdf(company, invoice);
 
@@ -2371,7 +2639,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
         // Add the user's email himself if he want to receive copy email
         if (copyToMyself) {
-            recipientEmails.push(user.auth?.email);
+            recipientEmails.push(sender_email);
         }
     } catch (error) {
         Sentry.captureException(error);
@@ -2379,12 +2647,11 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: Messages.GenericError });
     }
 
-    const companyLocation = <ICompanyLocation>invoice.companyLocation;
     // Call AWS SES method
     sendInvoiceEmailToCustomer({
         subject: params.subject ?? emailDefault?.subject,
         message: params.message ?? emailDefault?.message,
-        sender_email: companyLocation?.billingAddress?.emailSender || user.auth?.email,
+        sender_email: sender_email,
         company_name: company.info?.companyName,
         company_email: company.info?.companyEmail,
         company_logo: company.info?.logoUrl,
@@ -2396,7 +2663,8 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
         invoice_due_date: moment(invoice.dueDate).format('MMMM DD, YYYY'),
         invoice_pdfs: invoicePdfs,
         term_name: paymentTerm?.name,
-        term_due_days: paymentTerm?.dueDays
+        term_due_days: paymentTerm?.dueDays,
+        has_cc: copyToMyself
     });
 
     // Update email history and last email sent info
@@ -2404,10 +2672,26 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     invoice.emailHistory.push({
         sentTo: customer.info?.email,
         sentAt: sendingDate,
-        sentBy: user._id || null
+        sentBy: user._id || null,
+        deliveryStatus: true
     });
+
+
+    recipientEmails.forEach((item) => {
+        invoice.emailHistory.push({
+            sentTo: item,
+            sentAt: sendingDate,
+            sentBy: user._id || null,
+            deliveryStatus: true
+        });
+    });
+
     invoice.lastEmailSent = sendingDate;
     await invoice.save();
+
+    const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.EMAIL_SENT, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id }
+    InvoiceLogController.create(invoiceLogsObj);
+
 
     return res.json({ status: Status.Success, message: 'Invoice has been sent successfully.' });
 
@@ -2521,7 +2805,8 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
             invoice.emailHistory.push({
                 sentTo: customer.info?.email,
                 sentAt: sendingDate,
-                sentBy: user._id || null
+                sentBy: user._id || null,
+                deliveryStatus: true
             });
             invoice.lastEmailSent = sendingDate;
 
@@ -2529,6 +2814,9 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
             invoiceSender = companyLocation?.billingAddress?.emailSender;
 
             await invoice.save();
+            const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.EMAIL_SENT, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id }
+            InvoiceLogController.create(invoiceLogsObj);
+        
         }
     } catch (error) {
         Sentry.captureException(error);
@@ -2588,6 +2876,7 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
         invoice_pdfs: invoicePdfs,
     });
 
+  
     return res.json({ status: Status.Success, message: 'Invoice has been sent successfully.' });
 
 }
@@ -3322,8 +3611,8 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
 
         const jobReport = await JobReport.findOne({ job: invoice.job });
         if (jobReport) {
-            jobReport.invoiceCreated=true;
-            jobReport.invoiceVoid= false;
+            jobReport.invoiceCreated = true;
+            jobReport.invoiceVoid = false;
             jobReport.invoice = invoice._id;
             jobReport.save();
         }
@@ -3783,14 +4072,14 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                                 border: [false, false, false, true]
                             },
 
-                            {
+                            invoice?.showJobId ? {
                                 stack: [
                                     { text: 'Job Number', style: 'headerTitleBold' },
                                     { text: job?.jobId ?? '', style: 'invoiceHeader' },
                                 ],
                                 margin: [0, -2, 0, 10],
                                 border: [false, false, false, true]
-                            },
+                            } : {},
                             { text: '', margin: [0, 0, 0, 10], border: [false, false, false, true] },
                         ]
                     ],
@@ -4535,10 +4824,11 @@ export const getInvoicesByContractor = async (req: Request, res: Response) => {
 }
 
 export const unVoidInvoice = async (req: Request, res: Response) => {
-         
+
     const params = req.body;
     let invoice = await Invoice.findById(params.invoiceId);
     const company = <ICompany>req.company;
+    const user = <IUser>req.user
 
     if (!invoice) {
 
@@ -4559,17 +4849,22 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
             message: 'Invoice already paid or partially paid, cannot void this invoice.'
         });
     }
-
+    const oldInoviceId = invoice._id;
     invoice = invoice.toObject();
     delete invoice._id;
     delete invoice.createdAt;
     delete invoice.updatedAt;
-    const invoiceNumber=(company.currentInvoiceId + 1);
-    // invoice.invoiceId = (company.currentInvoiceId + 1).toString();
-    invoice.invoiceId = `Invoice ${invoiceNumber}`;
+    const invoiceNumber = (company.currentInvoiceId + 1);
+    invoice.invoiceId = (company.currentInvoiceId + 1).toString();
+    invoice.invoiceId = `Invoice ${invoice.invoiceId}`;
     invoice.isVoid = false;
     invoice = await new Invoice(invoice).save();
-    const companyUpdate = await company.updateOne({ currentInvoiceId: invoiceNumber })
+    if (invoice) {
+
+        const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.DUPLICATE, oldInvoiceId: params.invoiceId, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id }
+        InvoiceLogController.create(invoiceLogsObj);
+
+    }
 
     const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
     // add commission to invoice
@@ -4577,7 +4872,6 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
     if (!invoice.isDraft) {
 
         if (invoice.job) {
-            console.log("Is a Job");
             const customer = await Customer.findById(invoice.customer);
             const job = await Job.findById(invoice.job);
             customer.balance += invoice.total;
@@ -4630,11 +4924,13 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
             }).save();
 
             invoice.commission = invoiceCommission._id;
+
             await invoice.save();
+
             const jobReport = await JobReport.findOne({ job: invoice.job });
             if (jobReport) {
-                jobReport.invoiceCreated=true;
-            jobReport.invoiceVoid= false;
+                jobReport.invoiceCreated = true;
+                jobReport.invoiceVoid = false;
                 jobReport.invoice = invoice._id;
                 await jobReport.save();
             }
@@ -4676,11 +4972,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
                     });
                 }
 
-            }
-            
-            else 
-            
-            {
+            } else {
                 return res.json({ status: Status.Success, message: 'Duplicate Job invoice created successfully.', invoice });
             }
 
@@ -4868,11 +5160,11 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
                     }
                 })
         }
-        
-   
+
+
     }
 
-    
+
 
 }
 
@@ -4881,6 +5173,7 @@ export const voidInvoice = async (req: Request, res: Response) => {
     const params = req.body;
     const invoice = await Invoice.findById(params.invoiceId);
     const company = <ICompany>req.company;
+    const user = <IUser>req.user
 
     if (!invoice) {
         return res.json({ status: Status.Error, message: 'Invoice not found.' });
@@ -4919,14 +5212,16 @@ export const voidInvoice = async (req: Request, res: Response) => {
     const jobReport = await JobReport.findOne({ invoice: invoice._id });
     // remove invoice and invoiceCreated in job report if exsists
     if (jobReport) {
-        await jobReport.updateOne({ $set: { invoiceVoid:true } });
+        await jobReport.updateOne({ $set: { invoiceVoid: true } });
     }
 
     if (company.qbAuthorized && invoice.quickbookId) {
         // Delete Invoice in QuickBooks when invoice have quickbook id
         await _voidQBInvoice(req, res, company, invoice);
     }
-
+    
+    const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.VOID, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id }
+    InvoiceLogController.create(invoiceLogsObj);
     return res.json({ status: Status.Success, message: 'Invoice voided successfully', invoice });
 
 }
