@@ -1059,6 +1059,7 @@ export const _createTaxAgency = async (company: ICompany, taxAgencies: any[]): P
 
                     reject(err)
                 }
+                console.log("err",err);
 
                 resolve(qbTaxAgency);
             });

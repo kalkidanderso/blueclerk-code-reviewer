@@ -1747,7 +1747,6 @@ export const updateInvoice = (req: Request, res: Response) => {
             // Retrieve payment term for this invoice
             let paymentTerm: IPaymentTerm;
             if (params.paymentTermId) {
-
                 paymentTerm = await PaymentTerm.findOne({ _id: params.paymentTermId, isActive: true });
                 if (!paymentTerm) {
                     return res.json({ status: Status.Error, message: 'Payment Term not found' });
@@ -4873,7 +4872,6 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
     if (!invoice.isDraft) {
 
         if (invoice.job) {
-
             const customer = await Customer.findById(invoice.customer);
             const job = await Job.findById(invoice.job);
             customer.balance += invoice.total;
@@ -4898,7 +4896,6 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
                             contractor.balance += Number(commission.toFixed(2));
                             contractor.save();
                         }
-
                         invoiceCommissionEntry.push(contractorEntry);
                     }
 
@@ -4985,7 +4982,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
 
             console.log("is a PO");
 
-            const companyUpdate = company.updateOne({ currentInvoiceId: invoiceNumber })
+            const companyUpdate = await company.updateOne({ currentInvoiceId: invoiceNumber })
             const poUpdate = PurchaseOrder.updateOne({ _id: invoice.purchaseOrder }, { invoiceCreated: true })
 
             const customer = await Customer.findById(invoice.customer);
@@ -5044,7 +5041,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
 
             console.log("is a estimate");
 
-            const companyUpdate = company.updateOne({ currentInvoiceId: invoiceNumber })
+            const companyUpdate = await company.updateOne({ currentInvoiceId: invoiceNumber })
             const estimateUpdate = Estimate.updateOne({ _id: invoice.estimate }, { invoiceCreated: true })
 
             if (!invoice.isDraft) {
