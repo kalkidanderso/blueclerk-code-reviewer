@@ -147,12 +147,20 @@ export const getPORequest = async (req: Request, res: Response) => {
     const currentPage = bodyParams.currentPage || 0;
     const pageSize = bodyParams.pageSize || DefaultPageSize;
 
+    var initParams;
+
+    if(bodyParams.isHomeOccupied!=undefined && bodyParams.isHomeOccupied!=null){
+        initParams= { company: companyId , isHomeOccupied : true }
+    }else{
+        initParams= { company: companyId }
+    }
     // Data query that used to search Tickets
     const initialQuery: any = {
         $and: [
-            { company: companyId }
+            initParams
         ]
     };
+   
     
     if (showAll) {
         _fillInitialQueryTickets(bodyParams, queryParams, initialQuery, "All PO Request");
