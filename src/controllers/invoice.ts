@@ -381,7 +381,7 @@ export const createInvoice = (req: Request, res: Response) => {
                     task.jobTypes.forEach(taskJobType => {
                         jobTypes.push({
                             id: taskJobType.jobType,
-                            quantity: taskJobType.quantity,
+                            quantity: taskJobType.completedCount || taskJobType.quantity,
                             price: taskJobType.price,
                         })
                     })
@@ -1964,8 +1964,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                                 const totalTechnician = invoiceCommission.technicians.length;
                                 for (const invoiceCommissionTechnician of invoiceCommission.technicians) {
                                     if (invoiceCommissionTechnician.contractor) {
-                                        const contractor = await Company.findOne({ _id: invoiceCommissionTechnician.contractor }).exec();
-                                        if (contractor) {
+                                        const contractor = await Company.findOne({_id: invoiceCommissionTechnician.contractor}).exec();
+                                        if (contractor && contractor.commissionType != "fixed") {
                                             if (Number(total) !== Number(oldTotalInvoice)) {
                                                 const getCommission = (t: any) => (t / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
                                                 const oldCommission = getCommission(oldTotal)

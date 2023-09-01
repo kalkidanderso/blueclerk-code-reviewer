@@ -151,6 +151,12 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 serviceTicket.workType = params.workType;
             }
 
+            //Retrieve image data from a job when a ticket is created for a partially completed job.
+            if (params.jobId) {
+                let job = await Job.findOne({_id: params.jobId});
+                serviceTicket.images = job.images;
+            }
+
             data.imagesUrl?.forEach((imageUrl: string) => serviceTicket.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() }));
             serviceTicket.source = params.source ? params.source : 'blueclerk';
             await serviceTicket.save(async (err: any) => {
@@ -168,7 +174,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                             historyMessage  = "Purchase Order Request"
                         }
                         
-                        if (serviceTicket.source === ServiceTicketSource.WEB) {
+                        if (serviceTicket.source === ServiceTicketSource.WEB || serviceTicket.source.includes("partially completed")) {
                             const serviceTicketDetail = await ServiceTicket.findOne(
                                 { _id: serviceTicket._id , company: companyId})
                                 .populate({
