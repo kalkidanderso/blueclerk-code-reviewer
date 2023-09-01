@@ -660,6 +660,25 @@ export const createPayment = async (req: Request, res: Response) => {
         }
     }
 
+    if (paramInvoices.length) {
+        const [ line ] = paramInvoices;
+
+        const firstInvoice = await Invoice.findOne({
+            _id: line.invoiceId,
+            customer: customer._id,
+            company: company._id,
+            isVoid: { $ne: true }
+        });
+
+        if (firstInvoice.companyLocation) {
+            divisionData["companyLocation"] = firstInvoice.companyLocation;
+        }
+
+        if (firstInvoice.workType) {
+            divisionData["workType"] = firstInvoice.workType;
+        }
+    }
+
     // Construct payment entry
     const payment = new PaymentCustomer({
         customer,
