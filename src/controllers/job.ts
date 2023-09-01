@@ -3023,7 +3023,13 @@ export const editJob = async (req: Request, res: Response) => {
                 }
                 job.scheduledStartTime = newStartTime
                 if (linkedJob) { linkedJob.scheduledStartTime = newStartTime; }
-            }
+            }else if(!params.scheduledStartTime && job.scheduledStartTime!=null){
+                action += '|Updated ScheduledStartTime|';
+                job.scheduledStartTime = null;
+                if (linkedJob) {
+                    linkedJob.scheduledStartTime = null;
+                }
+            } 
 
             if (params.scheduledEndTime) {
                 const isValidScheduledEndTime = moment(params.scheduledEndTime, 'YYYY-MM-DDTHH:mm:ss.SSSZ', true).isValid()
@@ -3038,7 +3044,13 @@ export const editJob = async (req: Request, res: Response) => {
                 }
                 job.scheduledEndTime = newEndTime
                 if (linkedJob) { linkedJob.scheduledEndTime = newEndTime; }
-            }
+            }else if(!params.scheduledEndTime && job.scheduledEndTime!=null){
+                action += '|Updated ScheduledEndTime|';
+                job.scheduledEndTime = null;
+                if (linkedJob) {
+                    linkedJob.scheduledEndTime = null;
+                }
+            } 
 
             if (params.equipmentId != undefined && params.equipmentId !== '""') {
                 if (params.equipmentId != job.equipmentId) {
