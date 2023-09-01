@@ -301,7 +301,7 @@ export const Validations = {
     check('jobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
     check('taskJobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
     check('status').exists().withMessage(Messages.Required),
-    check('status').isIn([JobStatus.PAUSED, JobStatus.FINISHED]).withMessage('Only paused and finished are allowed')
+    check('status').isIn([JobStatus.PAUSED, JobStatus.FINISHED, JobStatus.PARTIALLY_COMPLETED]).withMessage('Only paused and finished are allowed')
   ],
 
   updateJob: [
