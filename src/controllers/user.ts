@@ -22,6 +22,7 @@ import { IndependentContractor } from '../models/IndependentContractor';
 import { ISession, Session } from '../models/Session';
 import { CompanyLocation } from '../models/CompanyLocation';
 import * as Sentry from '@sentry/node';
+import { Contact } from '../models/Contact';
 
 const generator = require('generate-password');
 const passwordValidator = require('password-validator');
@@ -371,34 +372,42 @@ export const signup = async (req: Request, res: Response, sio: any) => {
                 company.employees.push(companyEmployee._id);
                 company.save();
 
-                sendEmployeeEmail({
-                    to: params.email,
-                    company: company.info.companyName,
-                    replyTo: company.info.companyEmail,
-                    role: roles[companyEmployee.permissions.role],
-                    password: params.password
-                });
+                    sendEmployeeEmail({
+                        to: params.email,
+                        company: company.info.companyName,
+                        replyTo: company.info.companyEmail,
+                        role: roles[companyEmployee.permissions.role],
+                        password: params.password
+                    });
 
-                login(req, res, sio);
-            });
-            break;
+                    login(req, res, sio);
+                });
+                break;
 
         case AccountTypes.BUILDER:
             if (!params.customerId) {
-                return res.json({ status: Status.Error, message: 'customerId is required for Builder accountType' });
+                return res.json({ status: Status.Error, message: 'customerId is required for Builder accountType' })
             }
 
             const customer = await Customer.findById(params.customerId);
             if (!customer) {
-                return res.json({ status: Status.Error, message: 'Customer not found' });
+                return res.json({ status: Status.Error, message: 'Customer not found' })
             }
 
             userEntry.customer = customer;
             userEntry.accountType = AccountTypes.BUILDER;
             userEntry.permissions.role = Role.CUSTOMER_CONTACT;
-
             const customerContact = await new CustomerContact(userEntry).save();
-            customer.contacts.push(customerContact._id);
+
+            // Create New Contact to associated customer
+            const builderContact = await new Contact({
+                name: `${params.firstName} ${params.lastName}`,
+                phone: params.phone,
+                email: params.email,
+                isActive: true,
+                userId: customerContact._id,
+            }).save();
+            customer.contacts.push(builderContact._id);
             await customer.save();
 
             sendEmail({ to: params?.email });
