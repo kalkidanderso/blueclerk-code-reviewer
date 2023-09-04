@@ -1,0 +1,35 @@
+model Jobrequest {
+    id                Int         @id @default(autoincrement())
+    alternativeId     String      @default(cuid())
+    requestId         String
+    status            Int         @default(0)
+    dueDate           DateTime?
+    jobLocation       Joblocation @relation(fields: [jobLocationId], references: [id])
+    jobLocationId     Int
+    jobSite           Jobsite     @relation(fields: [jobSiteId], references: [id])
+    jobSiteId         Int
+    requests          Json
+    customerId        Int?
+    // TODO: CUSTOMER RELATIONSHIP
+    customerContactId Int?
+    // TODO: CUSTOMER RELATIONSHIP
+    companyId         Int
+    // TODO: COMPANY RELATIONSHIP
+    jobCreated        Boolean     @default(false)
+    jobId             Int
+    // TODO: JOB RELATIONSHIP
+    track             Json
+    createdById       Int
+    // TODO: USER RELATIONSHIP
+    editedById        Int
+    // TODO: USER RELATIONSHIP
+    editedAt          DateTime    @updatedAt
+    workTypeId        Int
+    // TODO: WORKTYPE RELATIONSHIP
+    companyLocationId Int
+    // TODO: COMPANYLOCATION RELATIONSHIP
+    createdAt         DateTime    @default(now())
+    updatedAt         DateTime    @updatedAt
+
+    @@index([status])
+}
