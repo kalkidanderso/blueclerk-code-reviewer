@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
 import { ObjectId } from 'mongodb';
-import { CronJob } from 'cron';
-import moment from 'moment';
+import { CronJob, job } from 'cron';
+import moment, { invalid } from 'moment';
 import momentTz from 'moment-timezone';
 import * as _ from 'lodash';
 import * as helper from '../services/helper';
@@ -32,7 +32,7 @@ import { _handleJobTypesJson } from '../controllers/item';
 import { _addOrRemoveJobRoutes } from '../controllers/jobRoute';
 import { _handleNotification } from '../controllers/notification';
 import { IJobRequest, JobRequest } from '../models/JobRequest';
-import { NotificationTypes } from '../models/Notification';
+import { FbNotificationType, NotificationTypes } from '../models/Notification';
 import { JobLocation } from '../models/JobLocation';
 import { JobSite } from '../models/JobSite';
 import { HomeOwner } from '../models/HomeOwner';
@@ -44,6 +44,7 @@ import { handleJobReportPdf } from '../services/pdf';
 import { JobCommission } from '../models/JobCommission';
 import { CommissionHistory } from '../models/CommissionHistory';
 import { Contact } from '../models/Contact';
+import { _handleNotification as firebaseNotification } from '../controllers/notification.firebase';
 
 const PdfPrinter = require('pdfmake')
 /**
@@ -272,7 +273,7 @@ const _createJob = async (
 
     let tasks;
     try {
-        tasks = await _handleMutltipleTechniciansTasks({ req, res, parentJob, paramTasks, serviceTicket });
+        tasks = await handleMutltipleTechniciansTasks({ req, res, parentJob, paramTasks, serviceTicket });
     } catch (error) {
         Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message });
@@ -1611,8 +1612,9 @@ export const getJobsStream = async (req: Request, res: Response, sio: any) => {
 
 }
 
-const createJobReport = async (jobId: any, companyId: any, customerName: string | null, technicianName: string | null, date: any, contractor?: any) => {
+export const createJobReport = async (jobId: any, companyId: any, customerName: string | null, technicianName: string | null, date: any, contractor?: any) => {
     const job = await Job.findOne({ _id: jobId, $or: [{ contractor: companyId }, { 'tasks.contractor': companyId }, { company: companyId }], status: JobStatus.FINISHED }).select('_id').exec();
+    const oldJobReport = await JobReport.findOne({ job: job });
     if (job) {
         const scans = await Scan.find({ job: job }, 'comment timeOfScan').select('_id').exec();
         const purchaseOrders = await PurchaseOrder.find({ job: job }).select('_id').exec();
@@ -1630,6 +1632,12 @@ const createJobReport = async (jobId: any, companyId: any, customerName: string 
         if (contractor) {
             // jobReport.contractor = contractor;
             jobReport.contractor = null;
+        }
+        
+        if (oldJobReport) {
+            // Case when job is reopen from completed status
+            jobReport.invoice = oldJobReport.invoice;
+            jobReport.invoiceCreated = oldJobReport.invoiceCreated;   
         }
         return jobReport.save().then((jobReport: IJobReport) => jobReport);
     }
@@ -2427,6 +2435,17 @@ export const updateJob = (req: Request, res: Response, sio: any) => {
                     })
                 };
 
+                job.tasks.forEach(async (task: any) => {
+                    // Send simple notification to mobile through Firebase,
+                    // for mobile internal usage, not saving to DB
+                    await firebaseNotification({
+                        recipientId: task.technician?._id ?? task.technician,
+                        notificationType: NotificationTypes.JOB_UPDATED,
+                        fbNotificationType: FbNotificationType.JOB_UPDATED,
+                        saveToDb: false
+                    })
+                });
+
                 return res.json({ 'status': Status.Success, 'message': 'Job updated successfully.', job: updatedJob });
             } catch (err) {
                 Sentry.captureException(err);
@@ -2734,6 +2753,9 @@ export const updateJobTask = async (req: Request, res: Response) => {
         case JobStatus.PAUSED:
             statusAction = 'Paused';
             break;
+        case JobStatus.PARTIALLY_COMPLETED:
+            statusAction = 'Partially Completed';
+            break;
         case JobStatus.FINISHED:
             statusAction = 'Finished';
             break;
@@ -2802,6 +2824,35 @@ export const updateJobTask = async (req: Request, res: Response) => {
         } 
     }
 
+    let canSetPartiallyTask = techAllJobTypesStatus.includes(JobStatus.PARTIALLY_COMPLETED);
+    techAllJobTypesStatus.forEach((status: any) => {
+        if ([JobStatus.STARTED,JobStatus.PENDING,JobStatus.PAUSED].includes(status)) {
+            canSetPartiallyTask = false;
+        }
+    });
+
+    if (canSetPartiallyTask) {
+        // All new job type task are Prtially Completed, Job is Prtially Completed
+        taskStatus = JobStatus.PARTIALLY_COMPLETED;
+        action += `|Partially Completed the technician task|`;
+    }
+
+    let canSetPartiallyJob = allTaskJobTypeStatus.includes(JobStatus.PARTIALLY_COMPLETED);
+    allTaskJobTypeStatus.forEach((status: any) => {
+        if ([JobStatus.STARTED,JobStatus.PENDING,JobStatus.PAUSED].includes(status)) {
+            canSetPartiallyJob = false;
+        }
+    });
+    
+    if (canSetPartiallyJob) {
+        // All new job type task are Prtially Completed, Job is Prtially Completed
+        job.endTime = new Date();
+        job.timeSpent = moment().diff(moment(job.startTime), 'minutes');
+        job.completeOnTime = !job.scheduledEndTime ? true : job.scheduledEndTime >= job.endTime;
+        jobStatus = JobStatus.PARTIALLY_COMPLETED;
+        action += `|Partially Completed the job|`; 
+    }
+
     // Log a track history
     const history = {
         user: user._id,
@@ -2833,11 +2884,13 @@ export const updateJobTask = async (req: Request, res: Response) => {
                             task.contractorCommissionTier = commissionTierId;
                         }
 
-                        const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
+                        const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId));
                         if (commissionTier?.charge){
-                            balance += commissionTier.charge * (j.quantity || 1);
-                            contractorCommissionEntry.commission += commissionTier.charge * (j.quantity || 1);
-                            contractorCommissionEntry.commissionAmount += commissionTier.charge * (j.quantity || 1);
+                            let quantity = j.quantity;
+
+                            balance += commissionTier.charge * (quantity || 1);
+                            contractorCommissionEntry.commission += commissionTier.charge * (quantity || 1);
+                            contractorCommissionEntry.commissionAmount += commissionTier.charge * (quantity || 1);
                         }
                     }
                     await Company.findByIdAndUpdate(
@@ -2990,7 +3043,7 @@ export const editJob = async (req: Request, res: Response) => {
                 // Handle param technician
                 let tasks;
                 try {
-                    tasks = await _handleMutltipleTechniciansTasks({ req, res, parentJob: job, paramTasks, serviceTicket });
+                    tasks = await handleMutltipleTechniciansTasks({ req, res, parentJob: job, paramTasks, serviceTicket });
                 } catch (error) {
                     Sentry.captureException(error);
                     return res.json({ status: Status.Error, message: error.message });
@@ -3203,13 +3256,42 @@ export const editJob = async (req: Request, res: Response) => {
                         || removedTechnicians.length || addedTechnicians.length
                     ) {
                         removedTechnicians.forEach(async (oldTechnician) => {
+                            // Send simple notification to mobile through Firebase,
+                            // for mobile internal usage, not saving to DB
+                            await firebaseNotification({
+                                recipientId: oldTechnician,
+                                notificationType: NotificationTypes.JOB_UPDATED,
+                                fbNotificationType: FbNotificationType.JOB_REMOVED,
+                                saveToDb: false
+                            })
+
                             await _addOrRemoveJobRoutes(oldTechnician, new Date(oldScheduleDate), 'REMOVE', job._id);
                         });
-
                         addedTechnicians.forEach(async (newTechnician) => {
+                            // Send simple notification to mobile through Firebase,
+                            // for mobile internal usage, not saving to DB
+                            await firebaseNotification({
+                                recipientId: newTechnician,
+                                notificationType: NotificationTypes.JOB_UPDATED,
+                                fbNotificationType: FbNotificationType.JOB_ADDED,
+                                saveToDb: false
+                            })
+
                             await _addOrRemoveJobRoutes(newTechnician, new Date(job.scheduleDate), 'ADD', job._id);
                         });
                     }
+
+                    job.tasks.forEach(async (res) => {
+                        if (addedTechnicians.length && addedTechnicians.includes(res.technician)) return
+                        // Send simple notification to mobile through Firebase,
+                        // for mobile internal usage, not saving to DB
+                        await firebaseNotification({
+                            recipientId: res.technician,
+                            notificationType: NotificationTypes.JOB_UPDATED,
+                            fbNotificationType: FbNotificationType.JOB_UPDATED,
+                            saveToDb: false
+                        })
+                    });
 
                     if (!linkedJob) {
                         return res.json({ status: Status.Success, message: 'Job edited successfully.', invalidJobTypes, job });
@@ -4038,7 +4120,7 @@ export const getTodaysJobsByTechnicianId = (req: Request, res: Response) => {
                 .populate({ path: 'technician', select: 'profile' })
                 .populate({ path: 'createdBy', select: 'profile' })
                 .populate({ path: 'updatedBy', select: 'profile' });
-
+                
             return res.json({ status: Status.Success, jobs, jobRoutes });
 
         })
@@ -4387,6 +4469,16 @@ const _updateTask = async ({ job, taskJobType, user, params, status }: { job: IJ
         taskJobType.pausedCount = Number(status ?? params.status) === JobStatus.PAUSED ? taskJobType.pausedCount + 1 : taskJobType.pausedCount;
         taskJobType.timeUpdatedBy = user;
         taskJobType.timeUpdatedAt = new Date();
+
+        //Partial Completed Count
+        if (params.completedCount > 0  && params.status == JobStatus.PARTIALLY_COMPLETED) {
+            let completedCount = params.completedCount;
+            if (params.completedCount > taskJobType.quantity) {
+                completedCount = taskJobType.completedCount;
+            }
+            taskJobType.completedComment = params.completedComment;
+            taskJobType.completedCount = completedCount;
+        }
     }
 
     return;
@@ -4450,7 +4542,7 @@ const _handleTaskCharges = async ({ job, taskJobType, item, customer, params, is
     return;
 }
 
-const _handleMutltipleTechniciansTasks = async ({
+export const handleMutltipleTechniciansTasks = async ({
     req,
     res,
     parentJob,
@@ -4571,6 +4663,19 @@ export const createServiceTicketJob = async (
 
     const jobId = serviceTicket.ticketId.replace('Ticket', 'Job');
     const createJob = await _createJob(req, res, undefined, jobId, imagesUrl, serviceTicket);
+    
+    const newJob = createJob as {job: IJob; invalidJobTypes: any[]}
+    newJob.job?.tasks?.forEach(async (task) => {
+        // Send simple notification to mobile through Firebase,
+        // for mobile internal usage, not saving to DB
+        await firebaseNotification({
+            recipientId: task.technician,
+            notificationType: NotificationTypes.JOB_CREATED,
+            fbNotificationType: FbNotificationType.JOB_ADDED,
+            saveToDb: false
+        })
+    })
+
     return res.json({ status: Status.Success, message: 'Job created successfully.', createJob });
 }
 

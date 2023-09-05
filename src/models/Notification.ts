@@ -12,12 +12,17 @@ export enum NotificationTypes {
     JOB_REQUEST_CREATED = 'JobRequestCreated',
     JOB_REQUEST_STATUS_UPDATED = 'JobRequestStatusUpdated',
     NEW_CHAT = 'NewChat',
-    CHAT_READ = 'ChatRead'
+    CHAT_READ = 'ChatRead',
+    JOB_CREATED = 'JobCreated',
+    JOB_UPDATED = 'JobUpdated'
 }
 
 export enum FbNotificationType {
     NEW_CHAT = 'chat',
-    CHAT_READ = 'chatRead'
+    CHAT_READ = 'chatRead',
+    JOB_ADDED = 'JobAdded',
+    JOB_REMOVED = 'JobRemoved',
+    JOB_UPDATED = 'JobUpdated'
 }
 
 export interface INotification extends Document {

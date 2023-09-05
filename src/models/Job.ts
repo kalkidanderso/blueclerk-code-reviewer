@@ -117,6 +117,9 @@ export interface ITaskJobType extends Document {
     noOfEquipmentScanned?: number
     quantity?: number
     price?: number
+    completedCount?: number
+    completedComment?: string
+    jobCostingQuantity?: number
 }
 
 const JobSchema = new Schema({
@@ -355,6 +358,15 @@ const JobSchema = new Schema({
                 default: 1
             },
             price: {
+                type: Number
+            },
+            completedCount: {
+                type: Number
+            },
+            completedComment: {
+                type: String,
+            },
+            jobCostingQuantity: {
                 type: Number
             },
         }],

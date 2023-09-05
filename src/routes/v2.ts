@@ -16,12 +16,13 @@ import * as jobController from '../controllers/v2/job';
 import * as serviceTicketController from '../controllers/v2/serviceTicket';
 import * as userPermissionController from '../controllers/v2/userPermission';
 import * as bouncedEmails from '../controllers/bouncedEmails';
+import { uploadImageInS3 } from '../middleware/multer';
 
 
 
 
 
-export default function () {
+export default function (sio: any) {
 
     const router: express.Router = express.Router()
 
@@ -131,6 +132,27 @@ export default function () {
         isLogin(),
         getCompanyId(),
         userPermissionController.updateUserPermission
+    )
+
+    router.post(
+        '/updatePartialJob',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Update),
+        uploadImageInS3.fields([{ name: 'image' }, { name: 'images' }]),
+        (req, res) => {
+            jobController.updatePartialJob(req, res, sio)
+        }
+    )
+
+    router.get(
+        '/getJobInvoice/:jobId',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Detail),
+        jobController.getJobInvoice
     )
 
     return router

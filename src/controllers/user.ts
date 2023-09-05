@@ -84,6 +84,27 @@ export const login = (req: Request, res: Response, sio: any) => {
                                 return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
                             }
 
+                            //Set new Firebase Token 
+                            if (params.fbToken) {
+                                if (user.firebaseTokens) {
+                                    let newFBTokens = user.firebaseTokens.filter(res => res.token != params.fbToken);
+                                    newFBTokens.push({
+                                        token: params.fbToken,
+                                        createdAt: new Date(),
+                                        updatedAt: new Date(),
+                                    });
+
+                                    user.firebaseTokens = newFBTokens;
+                                } else {
+                                    user.firebaseTokens = [{
+                                        token: params.fbToken,
+                                        createdAt: new Date(),
+                                        updatedAt: new Date(),
+                                    }];
+                                }
+                                user.save();
+                            }
+
                             req.session.save();
 
                             return res.json({
@@ -108,6 +129,30 @@ export const login = (req: Request, res: Response, sio: any) => {
                     if (!isMatching) {
                         return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
                     }
+                    
+                    //Set new Firebase Token 
+                    if (params.fbToken) {
+                        if (user.firebaseTokens) {
+                            let newFBTokens = user.firebaseTokens.filter(res => res.token != params.fbToken);
+                            newFBTokens.push({
+                                token: params.fbToken,
+                                createdAt: new Date(),
+                                updatedAt: new Date(),
+                            });
+
+                            user.firebaseTokens = newFBTokens;
+                        } else {
+                            user.firebaseTokens = [{
+                                token: params.fbToken,
+                                createdAt: new Date(),
+                                updatedAt: new Date(),
+                            }];
+                        }
+                        console.log(user.firebaseTokens);
+                        
+                        user.save();
+                    }
+
                     const admin = <ICompanyAdmin>user
                     Company.findById(admin.company,
                         (err: any, company: ICompany) => {
@@ -148,6 +193,27 @@ export const login = (req: Request, res: Response, sio: any) => {
 
                     if (!isMatching) {
                         return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
+                    }
+
+                   //Set new Firebase Token 
+                   if (params.fbToken) {
+                        if (user.firebaseTokens) {
+                            let newFBTokens = user.firebaseTokens.filter(res => res.token != params.fbToken);
+                            newFBTokens.push({
+                                token: params.fbToken,
+                                createdAt: new Date(),
+                                updatedAt: new Date(),
+                            });
+
+                            user.firebaseTokens = newFBTokens;
+                        } else {
+                            user.firebaseTokens = [{
+                                token: params.fbToken,
+                                createdAt: new Date(),
+                                updatedAt: new Date(),
+                            }];
+                        }
+                        user.save();
                     }
 
                     req.session.save();
