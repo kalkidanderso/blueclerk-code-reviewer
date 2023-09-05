@@ -185,6 +185,7 @@ export const getJobs = async (req: Request, res: Response) => {
                 "_id": 1,
                 "jobId": 1,
                 "images": 1,
+                "technicianImages": 1,
                 "status": "$status",
                 "isHomeOccupied": "$isHomeOccupied",
                 "createdBy": "$createdBy",
