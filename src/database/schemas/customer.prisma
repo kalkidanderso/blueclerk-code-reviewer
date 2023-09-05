@@ -1,0 +1,65 @@
+model Customer {
+    id Int @id @default(autoincrement())
+    profile Json ?
+    address Json ?
+    location Json ?
+    contact Json ?
+    permissions Json ?
+    emailPreferences Json ?
+    contactId Int
+    //contacts Contact @relation(fields: [contactId], references: [id])
+    contacts Contact[]
+    balance Int @default(0)
+    commission Int @default(0)
+    isActive Boolean @default(true)
+    info String
+    contactName String
+    customerEquipmentId Int
+    //TODO
+    //equipments CustomerEquipment @relation(fields: [customerEquipmentId], references: [id])
+    jobLocationId Int
+    //TODO
+    //jobLocations JobLocation @relation(fields: [jobLocationId], references: [id])
+    quickbookId String 
+    credit Int
+    priceTierId Int
+    //TODO
+    //itemTier PriceTier @relation(fields: [priceTierId], references: [id])
+    jobCostingId Int
+    //TODO
+    //JobCosting JobCosting @relation(fields: [jobCostingId], references: [id])
+    isCustomPrice Boolean
+    customPrices Json ?
+    //Undone
+    // discountPrices: [{
+    //     _id: false,
+    //     quantity: {
+    //         type: Number,
+    //         required: true
+    //     },
+    //     discountItem: {
+    //         type: Schema.Types.ObjectId,
+    //         ref: 'Item'
+    //     }
+    // }],
+    paymentTermId Int
+    //TODO
+    //paymentTerm PaymentTerm @relation(fields: [paymentTermId], references: [id])
+    vendorId String 
+    inactiveAt DateTime @default(now())
+    userId Int
+    //TODO
+    //inactiveBy User @relation(fields: [userId], references: [id])
+    // inactiveBy: {
+    //     type: String,
+    //     ref: 'User'
+    // },
+    //TODO
+    //admin User @relation(fields: [userId], references: [id])
+    // admin:{
+    //     type: String,
+    //     ref: 'User'
+    // },
+    isPORequired Boolean @default(false)
+    notes String
+}

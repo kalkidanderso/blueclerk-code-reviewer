@@ -1,0 +1,181 @@
+model Contact {
+  id         Int       @id @default(autoincrement())
+  name       String
+  phone      String
+  email      String
+  isActive   Boolean   @default(true)
+  userId     Int
+  // user User @relation(fields: [userId], references: [id])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  Customer   Customer? @relation(fields: [customerId], references: [id])
+  customerId Int?
+}
+model Customer {
+  id                  Int            @id @default(autoincrement())
+  profile             Json?
+  address             Json?
+  location            Json?
+  contact             Json?
+  permissions         Json?
+  emailPreferences    Json?
+  contactId           Int
+  //contacts Contact @relation(fields: [contactId], references: [id])
+  contacts            Contact[]
+  balance             Int            @default(0)
+  commission          Int            @default(0)
+  isActive            Boolean        @default(true)
+  info                String
+  contactName         String
+  customerEquipmentId Int
+  //TODO
+  //equipments CustomerEquipment @relation(fields: [customerEquipmentId], references: [id])
+  jobLocationId       Int
+  //TODO
+  //jobLocations JobLocation @relation(fields: [jobLocationId], references: [id])
+  quickbookId         String
+  credit              Int
+  priceTierId         Int
+  //TODO
+  //itemTier PriceTier @relation(fields: [priceTierId], references: [id])
+  jobCostingId        Int
+  //TODO
+  //JobCosting JobCosting @relation(fields: [jobCostingId], references: [id])
+  isCustomPrice       Boolean
+  customPrices        Json?
+  //Undone
+  // discountPrices: [{
+  //     _id: false,
+  //     quantity: {
+  //         type: Number,
+  //         required: true
+  //     },
+  //     discountItem: {
+  //         type: Schema.Types.ObjectId,
+  //         ref: 'Item'
+  //     }
+  // }],
+  paymentTermId       Int
+  //TODO
+  //paymentTerm PaymentTerm @relation(fields: [paymentTermId], references: [id])
+  vendorId            String
+  inactiveAt          DateTime       @default(now())
+  userId              Int
+  //TODO
+  //inactiveBy User @relation(fields: [userId], references: [id])
+  // inactiveBy: {
+  //     type: String,
+  //     ref: 'User'
+  // },
+  //TODO
+  //admin User @relation(fields: [userId], references: [id])
+  // admin:{
+  //     type: String,
+  //     ref: 'User'
+  // },
+  isPORequired        Boolean        @default(false)
+  notes               String
+  Notification        Notification[]
+}
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model HomeOwners {
+  id            Int   @id @default(autoincrement())
+  profile       Json?
+  info          Json?
+  contact       Json?
+  jobLocationId Int
+  //TODO
+  //subdivision JobLocation @relation(fields: [jobLocationId], references: [id])
+  jobSiteId     Int
+  //TODO
+  //address JobSite @relation(fields: [jobSiteId], references: [id])
+}
+model Items {
+  id             Int     @id @default(autoincrement())
+  name           String
+  description    String
+  sku            String
+  isFixed        Boolean @default(true)
+  charges        Int     @default(0)
+  tax            Int     @default(0)
+  // tiers: [{
+  //     _id: false,
+  //     tier: {
+  //         type: Schema.Types.ObjectId,
+  //         ref: 'PriceTier'
+  //     },
+  //     charge: Number,
+  //     updatedBy: {
+  //         type: Schema.Types.ObjectId,
+  //         ref: 'User'
+  //     },
+  //     updatedAt: Date
+  // }],
+  // costing: [{
+  //     _id: false,
+  //     tier: {
+  //         type: Schema.Types.ObjectId,
+  //         ref: 'JobCosting'
+  //     },
+  //     charge: Number,
+  //     updatedBy: {
+  //         type: Schema.Types.ObjectId,
+  //         ref: 'User'
+  //     },
+  //     updatedAt: Date
+  // }],
+  isDiscountItem Boolean @default(false)
+  isJobType      Boolean @default(true)
+  jobTypeId      Int
+  //TODO
+  //jobType JobType @relation(fields: [jobTypeId], references: [id])
+  itemType       Item    @default(Service)
+  productCost    Int
+  salePrice      Int
+  companyId      Int
+  //TODO
+  //company Company @relation(fields: [companyId], references: [id])
+  isActive       Boolean @default(true)
+  quickbookId    String
+  createdAt      Boolean @default(true)
+  updatedAt      Boolean @default(true)
+}
+
+enum Item {
+  Service
+  Product
+}
+
+model Notification {
+  id              Int      @id @default(autoincrement())
+  companyId       Int
+  //TODO
+  //company Company @relation(fields: [companyId], references: [id])
+  customerId      Int
+  userId          Int
+  //TODO
+  customer        Customer @relation(fields: [customerId], references: [id])
+  //TODO
+  // customerContact User @relation(fields: [userIdn], references: [id])
+  // notificationType: {
+  //     type: String,
+  //     enum: Object.values(NotificationTypes),
+  //     required: true
+  // },
+  message         Json?
+  readStatus      Json?
+  dismissedStatus Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
