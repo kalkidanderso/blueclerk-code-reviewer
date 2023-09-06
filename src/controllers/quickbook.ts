@@ -122,7 +122,7 @@ export const getQBAccounts = (req: Request, res: Response) => {
 
 
             const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
-            qbo.findAccounts({},(err:any,accounts:IQBAccount)=>{
+            qbo.findAccounts({AccountType :"Income"},(err:any,accounts:IQBAccount)=>{
                 
                 if(err){
                         console.log('== _createQBCustomer > qbo.findCustomers > ERROR ==');
