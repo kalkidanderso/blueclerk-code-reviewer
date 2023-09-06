@@ -62,7 +62,6 @@ export const _createQBItemWithAccount = async (req: Request, res: Response, comp
     // Initiate node-quickbooks object with the refreshed company token
     const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
     // Construct QB Item Entry
-    console.log("account type",{ name: account?.Name, value: account?.Id })
     const qbItemEntry: IQBItem = {
       Name: item.name,
       Description: item.description,
@@ -78,7 +77,6 @@ export const _createQBItemWithAccount = async (req: Request, res: Response, comp
     // Create QB Item
     qbo.createItem(qbItemEntry, async (err: any, qbItem: IQBItem) => {
       if (err) {
-        console.log("81");
 
         return next(
           Status.Error,
@@ -157,7 +155,6 @@ export const syncQBItem = async (req: Request, res: Response) => {
 
   const user = <IUser>req.user;
   const { itemId ,account} = req.body;
-  console.log("sync items request receievd")
 
   let jobTypesToCreate: IJobType[] = [];
   let itemsToCreate: IItem[] = [];
@@ -199,7 +196,6 @@ export const syncQBItem = async (req: Request, res: Response) => {
   // Always refresh the token first because token valid only for 60 minutes
   const syncItems = async (err: number, errMsg: string, company: any) => {
     await handleErrors({ err, errMsg })
-    console.log("sync items called",company)
 
     // Initiate node-quickbooks object with the refreshed company token
     const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
@@ -207,7 +203,6 @@ export const syncQBItem = async (req: Request, res: Response) => {
     // Retrieve all items of this company from Database
     const blueClerkItems = await Item.find({ company: company._id, _id: itemId });
     const blueClerkItem = blueClerkItems[0];
-    console.log("blueClerkItem",blueClerkItem)
 
     // Retrieve all items of this company from QuickBooks
     const findQBItems = () => qbo.findItems({ Id: blueClerkItem.quickbookId }, async (err: any, data: any) => {
@@ -219,7 +214,6 @@ export const syncQBItem = async (req: Request, res: Response) => {
       }
 
       const qbItems: IQBItem[] = data?.QueryResponse?.Item;
-      console.log("qbItems",qbItems)
       // Item not exist on QB, create it
       if (!qbItems) {
 
@@ -230,16 +224,13 @@ if(account?.Id){
 
     if (errMsg) {
 
-      console.log("236",errMsg);
-      // Sentry.captureException('Syncing failed creating', errMsg);
+      Sentry.captureException('Syncing failed creating', errMsg);
       return res.json({ status: Status.Error, message: 'Item synced failed.' + errMsg });
-      console.log("237",errMsg);
 
 
     }
 
    if (qbItem) {
-    console.log("241");
 
       // QB Item created, update DB Item & JobType's quickbookId
       Item.findByIdAndUpdate(blueClerkItem, { quickbookId: qbItem.Id }).exec();
@@ -655,7 +646,6 @@ export const _transferQBItems = async (req: Request, res: Response, company: ICo
 
 export const _updateQBItem = async (req: Request, res: Response, company: ICompany, item: IItem, next: (error: number, errorMessage: string) => void) => {
   _refreshToken(req, res, company, async (err, errMsg, company) => {
-    console.log('item', item)
     if (err === 0) {
       return res.json({ status: Status.Error, message: errMsg });
     }
@@ -673,7 +663,6 @@ export const _updateQBItem = async (req: Request, res: Response, company: ICompa
 
     qbo.getItem(item.quickbookId, async (err: any, qbItem: IQBItem) => {
 
-      console.log('qbItem', qbItem)
       if (qbItem) {
 
         qbItem.Description = item.description;
