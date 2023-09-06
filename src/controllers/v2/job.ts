@@ -380,6 +380,16 @@ export const getAllJobReports = async (req: Request, res: Response) => {
     });
 }
 
+/**
+ * Receives the request to update partially job
+ * @param req request
+ * @param res response
+ * @returns {
+*  status,
+*  message,
+*  job,
+* }
+*/
 export const updatePartialJob = async (req: Request, res: Response, sio: any) => {
     const params = req.body;
     const user = <IUser>req.user;
@@ -459,17 +469,16 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
 
                     action = '|Finishing the job|';
                     ticketAction = `|Job finished by ${user.profile.displayName}|`;
-
                     break;
                 case "create-new-ticket":
                 case "create-new-po-request":
-                    await _splitJobAndCreateTicket(req, res, sio, job);
+                    await _splitJobAndCreateTicket(job);
 
                     action = `|Closed Job and Created New ${params.type}|`;
                     ticketAction = `|Closeed Job and Created New ${params.type} by ${user.profile.displayName}|`;
                     break;
                 case "reschedule":
-                    await _splitJobAndReschedule(req, res, sio, job);
+                    await _splitJobAndReschedule(req, res, job);
 
                     action = `|Reacheduled Job|`;
                     ticketAction = `|Rescheduled Job by ${user.profile.displayName}|`;
@@ -525,6 +534,15 @@ export const updatePartialJob = async (req: Request, res: Response, sio: any) =>
         });
 }
 
+/**
+ * Receives the request to get job invoice
+ * @param req request
+ * @param res response
+ * @returns {
+*  status,
+*  invoice,
+* }
+*/
 export const getJobInvoice = async (req: Request, res: Response, sio: any) => {
     const { jobId } = req.params;
     let invoice = await Invoice.findOne({job: jobId})
@@ -779,9 +797,9 @@ const _getFilteredJobReportsIds = async (filteredInitialJobReports: any[], param
 }
 
 /**
- * 
- * @param tasks 
- * @param jobId 
+ * Calculate technician job commission.
+ * @param tasks tasks from job details to retrieve all quantity and tier.
+ * @param jobId Job ID from job details to be used as an identifier when inserting into the job commission database.
  * @returns commissionId
  */
 const _calculateJobCommission = async (tasks: any, jobId: string) => {
@@ -833,16 +851,15 @@ const _calculateJobCommission = async (tasks: any, jobId: string) => {
 }
 
 /**
- * 
- * @param req 
- * @param res 
- * @param sio 
- * @param job 
+ * Split a partially completed job to create a new ticket from it
+ * @param req request
+ * @param res response
+ * @param job Job details used to retrieve task details.
  * @returns {
  *      newTicket
  * }
  */
-const _splitJobAndCreateTicket = async (req: Request, res: Response, sio: any, job: IJob) => {
+const _splitJobAndCreateTicket = async (job: IJob) => {
     const ticketJobTypes: any = [];
 
     let isJobHaveItems: boolean = false;
@@ -890,22 +907,14 @@ const _splitJobAndCreateTicket = async (req: Request, res: Response, sio: any, j
 }
 
 /**
- * 
- * @param req 
- * @param res 
- * @param sio 
- * @param job 
+ * Split a partially completed job and reschedule the job 
+ * @param req request
+ * @param res response
+ * @param job Job details used to retrieve task details.
  */
-
-const _splitJobAndReschedule = async (req: Request, res: Response, sio: any, job: IJob) => {
+const _splitJobAndReschedule = async (req: Request, res: Response, job: IJob) => {
     const params = req.body;
     const user = <IUser>req.user;
-    const company  = <ICompany>req.company;
-
-    let jobId = `Job ${company.currentJobId + 1}`;
-    if (company.prefix) {
-        jobId = `Job ${company.prefix}-${company.currentJobId + 1}`;
-    }
 
     const imagesUrl: string[] = [];
     if (req.files) {
@@ -1039,5 +1048,6 @@ const _splitJobAndReschedule = async (req: Request, res: Response, sio: any, job
         job.scheduleTimeAMPM = params.scheduleTimeAMPM; 
     }
 
+    job.rescheduled = true;
     job.status = JobStatus.PENDING;
 }
