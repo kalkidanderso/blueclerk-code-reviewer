@@ -1,0 +1,7 @@
+model Assignedvendor {
+    id            Int    @id @default(autoincrement())
+    alternativeId String @default(cuid())
+    vendorId      Int
+    // TODO: COMPANY RELATIONSHIP
+    workTypes     Json
+}

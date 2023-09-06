@@ -1,0 +1,13 @@
+model Companyadmin {
+    id            Int    @id @default(autoincrement())
+    alternativeId String @default(cuid())
+    company       Int
+    // TODO: COMPANY RELATIONSHIP
+}
+
+model Supplieradmin {
+    id            Int    @id @default(autoincrement())
+    alternativeId String @default(cuid())
+    supplier      Int
+    // TODO: SUPPLIER RELATIONSHIP
+}
