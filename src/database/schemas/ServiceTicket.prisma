@@ -1,0 +1,74 @@
+enum serviceType {
+    Ticket
+    POResquest
+}
+
+model ServiceTicketTasks {
+    // does not contain id in mongoose but prisma needs it to work
+    id        String         @id @default(cuid())
+    ticket    Servicetickets @relation(fields: [ticketId], references: [id])
+    ticketId  Int
+    jobTypeId String
+    // TODO: JOBTYPE RELATIONSHIP
+    quantity  Int            @default(1)
+    price     Int
+}
+
+model Servicetickets {
+    id                Int                  @id @default(autoincrement())
+    alternativeId     String               @default(cuid())
+    createdAt         DateTime
+    dueDate           DateTime?
+    customerId        Int?
+    // // TODO: CUSTOMER RELATIONSHIP
+    createdById       Int
+    // //   TODO: USER RELATIONSHIP
+    note              String
+    customerContactId Int?
+    // //   TODO: CONTACT RELATIONSHIP
+    customerPO        String
+    image             String
+    images            Json?
+    companyId         Int
+    // //   TODO: COMPANY RELATIONSHIP
+    technicianId      Int
+    // //TODO: USER RELATIONSHIP
+    status            Int                  @default(0)
+    track             Json
+    editedById        Int
+    // //TODO: USER RELATIONSHIP
+    editedAt          DateTime
+    ticketId          String
+    jobLocation       Joblocation          @relation("jobLocation", fields: [jobLocationId], references: [id])
+    jobLocationId     Int
+    jobSite           Jobsite              @relation("jobsite", fields: [jobSiteId], references: [id])
+    jobSiteId         Int
+    isHomeOccupied    Boolean              @default(false)
+    homeOwnerId       Int
+    // //TODO: homeOwner RELATIONSHIP
+    homeJobLocation   Joblocation          @relation("homeJobLocation", fields: [homeJobLocationId], references: [id])
+    homeJobLocationId Int
+    homeJobSite       Jobsite              @relation("homejobsite", fields: [homeJobSiteId], references: [id])
+    homeJobSiteId     Int
+    jobTypeId         Int
+    // //TODO: jobType RELATIONSHIP
+    tasks             ServiceTicketTasks[]
+    itemId            Int
+    // //TODO: item RELATIONSHIP
+    jobCreated        Boolean              @default(false)
+    source            String               @default("blueclerk")
+    workTypeId        Int
+    // //TODO: workType RELATIONSHIP
+    companyLocationId Int
+    // //TODO: companyLocation RELATIONSHIP
+    pooverriddenById  Int
+    // //TODO: pooverriddenBy RELATIONSHIP
+    type              serviceType          @default(Ticket)
+    emailHistory      Json
+    lastEmailSent     DateTime
+
+    @@index([itemId])
+    @@index([jobCreated, status])
+    @@index([jobCreated, status, type])
+    @@index([id])
+}

@@ -1,0 +1,38 @@
+model Joblocation {
+    id            Int       @id @default(autoincrement())
+    alternativeId String    @default(cuid())
+    name          String
+    contacts      Json
+    location      Json?
+    address       Json?
+    jobSites      Json?
+    isActive      Boolean?
+    customerId    Int
+    // TODO: CUSTOMER RELATIONSHIP
+    homeOwnerID   Int
+    // TODO: HOMEOWNER RELATIONSHIP
+    companyId     String
+    // //   TODO: COMPANY RELATIONSHIP
+    inactiveAt    DateTime?
+    inactiveById  Int
+    // TODO: USER RELATIONSHIP
+    quickbookId   String?
+    createdAt     DateTime  @default(now()) // Track creation timestamp
+    updatedAt     DateTime  @updatedAt
+
+    tickets     Servicetickets[] @relation("jobLocation")
+    homeTickets Servicetickets[] @relation("homeJobLocation")
+
+    invoice Invoice[]
+
+    jobRequest Jobrequest[]
+
+    jobSite Jobsite[]
+
+    @@index([contacts])
+    @@index([isActive])
+    @@index([address])
+    @@index([id, isActive])
+    @@index([quickbookId])
+    @@index([name, address, location])
+}

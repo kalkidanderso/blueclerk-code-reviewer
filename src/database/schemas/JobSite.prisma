@@ -1,0 +1,25 @@
+model Jobsite {
+    id            Int         @id @default(autoincrement())
+    alternativeId String      @default(cuid())
+    name          String?
+    location      Json?
+    isActive      Boolean?    @default(true)
+    address       Json?
+    jobLocation   Joblocation @relation(fields: [locationId], references: [id])
+    locationId    Int
+    customerId    Int?
+    // TODO: CUSTOMER RELATIONSHIP
+    homeOwnerID   Int?
+    // TODO: HOMEOWNER RELATIONSHIP
+
+    tickets     Servicetickets[] @relation("jobsite")
+    homeTickets Servicetickets[] @relation("homejobsite")
+
+    invoice Invoice[]
+
+    jobRequest Jobrequest[]
+
+    @@index([isActive])
+    @@index([id, isActive])
+    @@index([address])
+}

@@ -1,0 +1,11 @@
+model Companycustomer {
+    id            Int      @id @default(autoincrement())
+    alternativeId String   @default(cuid())
+    companyId     Int
+    // TODO: COMPANY RELATIONSHIP
+    customerId    Int
+    // TODO: CUSTOMER RELATIONSHIP
+    status        Int      @default(1)
+    isPreferred   Boolean  @default(false)
+    createdAt     DateTime
+}
