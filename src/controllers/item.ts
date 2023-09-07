@@ -76,7 +76,8 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
             itemType:params?.itemType,
             productCost:params.productCost,
             salePrice:params.salePrice,
-            isFixed:isProduct?true:params.isFixed
+            isFixed:isProduct?true:params.isFixed,
+            IncomeAccountRef:{ name: account?.Name, value: account?.Id }
         }
     )
 
@@ -111,7 +112,9 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
 
             return next();
         })
-    }else{
+    }else
+    
+    {
         _createQBItem(req, res, company, item, async (err: any, errMsg: any, qbItem: IQBItem) => {
             let qbSync=false;
             if (err) {

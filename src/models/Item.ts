@@ -7,6 +7,10 @@ export const enum ItemTypes{
     SERVICE='Service',
     PRODUCT='Product'
 }
+export interface IncomeAccountRef {
+    name:String,
+    value:String
+}
 export interface IItem extends Document {
 
     name: string
@@ -142,6 +146,17 @@ const ItemSchema = new Schema({
     productCost:{
         type:Number,
         optional:true
+    },
+    IncomeAccountRef:{
+        value:{
+            type:String,
+            optional:true
+        },
+        name:{
+            type:String,
+            optional:true
+
+        }
     },
     
     salePrice:{
