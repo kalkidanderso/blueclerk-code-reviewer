@@ -1,0 +1,19 @@
+model CompanyCard {
+    id              Int      @id @default(autoincrement())
+    alternativeId   String?  @unique
+    ending          String?
+    expirationMonth String?
+    expirationYear  String?
+    cardType        String?
+    name            String?
+    token           String?
+    cardStripeId    String?
+    address         String?
+    city            String?
+    state           String?
+    zipCode         String?
+    companyId       Int      @unique
+    company         Company  @relation(fields: [companyId], references: [id])
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
+}

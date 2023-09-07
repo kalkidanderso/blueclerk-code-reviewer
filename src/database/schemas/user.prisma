@@ -1,0 +1,50 @@
+model UserAuth {
+    id                   Int      @id @default(autoincrement())
+    email                String   @unique
+    password             String
+    resetPasswordToken   String
+    resetPasswordExpires DateTime
+    socialId             String
+    connectorType        Int      @default(0)
+    User                 User[]
+
+    @@index([email])
+    @@index([socialId, connectorType])
+}
+
+model User {
+    id                         Int                  @id @default(autoincrement())
+    alternativeId              String?              @unique
+    accountType                Int?
+    auth                       UserAuth             @relation(fields: [userAuthId], references: [id])
+    userAuthId                 Int
+    profile                    Json?
+    address                    Json?
+    location                   Json?
+    contact                    Json?
+    permissions                Json?
+    emailPreferences           Json?
+    // TODO: Contats need to be implemented
+    balance                    Int                  @default(0)
+    credit                     Int                  @default(0)
+    commission                 Int?
+    firebaseTokens             Json
+    createdAt                  DateTime             @default(now())
+    updatedAt                  DateTime             @updatedAt
+    verifiedCompanyBlockchains CompanyBlockchain[]  @relation("CompanyBlockchainVerifiedBy")
+    deniedCompanyBlockchains   CompanyBlockchain[]  @relation("CompanyBlockchainDeniedBy")
+    industries                 Industry[]
+    jobCostings                JobCosting[]
+    priceTiers                 PriceTier[]
+    jobTypes                   JobType[]
+    updatedJobs                Job[]                @relation("jobTimeUpdatedBy")
+    createdJobs                Job[]                @relation("jobCreatedBy")
+    jobTracks                  JobTrack[]
+    jobs                       Job[]
+    jobTechnicianImages        JobTechnicianImage[]
+    jobImages                  JobImage[]
+    jobTasks                   JobTask[]
+    jobTasksJobType            JobTaskJobType[]
+    commissionHistories        CommissionHistory[]  @relation("commissionHistoryTechnician")
+    editedCommissionHistories  CommissionHistory[]  @relation("commissionHistoryEditedBy")
+}
