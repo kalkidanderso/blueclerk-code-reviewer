@@ -1,0 +1,72 @@
+model Payment {
+    id              Int      @id @default(autoincrement())
+    alternativeId   String   @default(cuid())
+    amountPaid      Int      @default(0)
+    referenceNumber String
+    paymentType     String
+    line            Json
+    paidAt          DateTime
+    isVoid          Boolean  @default(false)
+    voidedAt        DateTime
+    note            String
+    companyId       Int
+    // TODO: COMPANY RELATIONSHIP
+    quickbookId     String
+    quickbookRefNum String
+    createdById     Int
+    // TODO: USER RELATIONSHIP
+    createdAt       DateTime
+    updatedById     Int
+    // TODO: USER RELATIONSHIP
+    workType        Json
+    companyLocation Json
+    updatedAt       DateTime
+
+    @@index([quickbookId])
+    @@index([quickbookId, isVoid])
+    @@index([paidAt, isVoid])
+    @@index([quickbookId, referenceNumber, paymentType, isVoid])
+    @@index([quickbookId, referenceNumber, paymentType, isVoid, line])
+}
+
+model Paymentcustomer {
+    id                Int    @id @default(autoincrement())
+    alternativeId     String @default(cuid())
+    customerId        Int
+    // TODO: CUSTOMER RELATIONSHIP
+    invoiceId         Int?
+    // INVOICE RELATIONSHIP
+    workTypeId        Int
+    // TODO: WORKTYPE RELATIONSHIP
+    companyLocationId Int
+    // TODO: WORKTYPE RELATIONSHIP
+}
+
+model Paymentvendor {
+    id            Int      @id @default(autoincrement())
+    alternativeId String   @default(cuid())
+    contractorId  Int
+    // TODO: COMPANY RELATIONSHIP
+    invoices      Json
+    jobs          Json
+    startDate     DateTime
+    endDate       DateTime
+    offset        Int
+    creditUsed    Int      @default(0)
+
+    @@index([invoices])
+}
+
+model Paymentemployee {
+    id            Int      @id @default(autoincrement())
+    alternativeId String   @default(cuid())
+    employeeId    Int
+    // TODO: USER RELATIONSHIP
+    invoices      Json
+    startDate     DateTime
+    endDate       DateTime
+    offset        Int
+    creditUsed    Int      @default(0)
+
+    @@index([invoices])
+}

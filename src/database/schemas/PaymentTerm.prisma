@@ -1,0 +1,15 @@
+model Paymentterm {
+    id            Int      @id @default(autoincrement())
+    alternativeId String   @default(cuid())
+    name          String
+    dueDays       Int
+    isActive      Boolean  @default(true)
+    companyId     Int
+    // TODO: COMPANY RELATIONSHIP
+    quickbookId   String
+    createdById   Int
+    // TODO: USER RELATIONSHIP
+    deleteAt      DateTime
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+}

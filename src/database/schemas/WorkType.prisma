@@ -1,0 +1,7 @@
+model Worktype {
+    id            Int      @id @default(autoincrement())
+    alternativeId String   @default(cuid())
+    title         String
+    // TODO: TRIM @map("title") @before(validateAndTrim)
+    createdAt     DateTime
+}

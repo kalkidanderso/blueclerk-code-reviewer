@@ -1,0 +1,9 @@
+model Invoicecommission {
+    id            Int      @id @default(autoincrement())
+    alternativeId String   @default(cuid())
+    invoiceId     Int
+    // TODO: INVOICE RELATIONSHIP
+    technicians   Json?
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+}
