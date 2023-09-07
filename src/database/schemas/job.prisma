@@ -115,40 +115,41 @@ model Job {
     technicianImages   JobTechnicianImage[]
 
     typeId              Int?
-    type                JobType?   @relation(fields: [typeId], references: [id])
+    type                JobType?         @relation(fields: [typeId], references: [id])
     tasksBackup         Json?
     tasks               JobTask[]
     companyId           Int?
-    company             Company?   @relation("jobCompany", fields: [companyId], references: [id])
+    company             Company?         @relation("jobCompany", fields: [companyId], references: [id])
     description         String?
-    status              Int?       @default(0)
+    status              Int?             @default(0)
     track               JobTrack[]
     comment             String?
-    createdAt           DateTime?  @default(now())
+    createdAt           DateTime?        @default(now())
     createdById         Int?
-    createdBy           User?      @relation("jobCreatedBy", fields: [createdById], references: [id])
-    updatedAt           DateTime?  @updatedAt
-    employeeType        Boolean?   @default(false)
-    charges             Int?       @default(0)
+    createdBy           User?            @relation("jobCreatedBy", fields: [createdById], references: [id])
+    updatedAt           DateTime?        @updatedAt
+    employeeType        Boolean?         @default(false)
+    charges             Int?             @default(0)
     salesTaxId          Int?
-    // TODO: Ref SaleTax
+    salesTax            SaleTax?         @relation(fields: [salesTaxId], references: [id])
     startTime           DateTime?
     endTime             DateTime?
-    timeSpent           Int?       @default(0)
+    timeSpent           Int?             @default(0)
     timeUpdatedById     Int?
-    timeUpdatedBy       User?      @relation("jobTimeUpdatedBy", fields: [timeUpdatedById], references: [id])
+    timeUpdatedBy       User?            @relation("jobTimeUpdatedBy", fields: [timeUpdatedById], references: [id])
     timeUpdatedAt       DateTime?
-    equipmentScanned    Boolean?   @default(false)
-    noOfEquimentScanned Int?       @default(0)
-    completeOnTime      Boolean?   @default(false)
+    equipmentScanned    Boolean?         @default(false)
+    noOfEquimentScanned Int?             @default(0)
+    completeOnTime      Boolean?         @default(false)
     commissionId        Int?
     // TODO: ref JobCommission
     workTypeId          Int?
     // TODO: ref WorkType
     companyLocationId   Int?
-    // TODO: ref CompanyLocation
+    companyLocation     CompanyLocation? @relation(fields: [companyLocationId], references: [id])
 
-    commissionHistory CommissionHistory[]
+    commissionHistories CommissionHistory[]
+    emailSchedules      EmailSchedule[]
 
     jobrequest Jobrequest[]
     invoice    Invoice[]

@@ -6,58 +6,63 @@ model UserAuth {
     resetPasswordExpires DateTime
     socialId             String
     connectorType        Int      @default(0)
-    User                 User[]
+    User                 User?
 
     @@index([email])
     @@index([socialId, connectorType])
 }
 
 model User {
-    id                         Int                      @id @default(autoincrement())
-    alternativeId              String?                  @unique
-    accountType                Int?
-    auth                       UserAuth                 @relation(fields: [userAuthId], references: [id])
-    userAuthId                 Int
-    profile                    Json?
-    address                    Json?
-    location                   Json?
-    contact                    Json?
-    permissions                Json?
-    emailPreferences           Json?
+    id               Int       @id @default(autoincrement())
+    alternativeId    String?   @unique
+    accountType      Int?
+    auth             UserAuth? @relation(fields: [userAuthId], references: [id])
+    userAuthId       Int?      @unique
+    profile          Json?
+    address          Json?
+    location         Json?
+    contact          Json?
+    permissions      Json?
+    emailPreferences Json?
     // TODO: Contats need to be implemented
-    balance                    Int                      @default(0)
-    credit                     Int                      @default(0)
-    commission                 Int?
-    firebaseTokens             Json
-    createdAt                  DateTime                 @default(now())
-    updatedAt                  DateTime                 @updatedAt
-    verifiedCompanyBlockchains CompanyBlockchain[]      @relation("CompanyBlockchainVerifiedBy")
-    deniedCompanyBlockchains   CompanyBlockchain[]      @relation("CompanyBlockchainDeniedBy")
-    industries                 Industry[]
-    jobCostings                JobCosting[]
-    priceTiers                 PriceTier[]
-    jobTypes                   JobType[]
-    updatedJobs                Job[]                    @relation("jobTimeUpdatedBy")
-    createdJobs                Job[]                    @relation("jobCreatedBy")
-    jobTracks                  JobTrack[]
-    jobs                       Job[]
-    jobTechnicianImages        JobTechnicianImage[]
-    jobImages                  JobImage[]
-    jobTasks                   JobTask[]
-    jobTasksJobType            JobTaskJobType[]
-    commissionHistories        CommissionHistory[]      @relation("commissionHistoryTechnician")
-    editedCommissionHistories  CommissionHistory[]      @relation("commissionHistoryEditedBy")
-    createdAdvancePayment      Advancepayment[]         @relation("advancePaymentUserCreatedBy")
-    updatedAdvancePayment      Advancepayment[]         @relation("advancePaymentUserUpdatedBy")
-    voidedAdvancePayment       Advancepayment[]         @relation("advancePaymentUserVoidedBy")
-    advancepaymentemployee     Advancepaymentemployee[]
-    chat                       Chat[]
-    createdServiceTicket       Servicetickets[]         @relation("serviceTicketUserCreatedBy")
-    technicianServiceTicket    Servicetickets[]         @relation("serviceTicketUsertechnician")
-    editedServiceTicket        Servicetickets[]         @relation("serviceTicketUsereditedBy")
-    joblocation                Joblocation[]
-    createdJobRequest          Jobrequest[]             @relation("jobRequestUserCreatedBy")
-    editedJobRequest           Jobrequest[]             @relation("jobRequestUsereditedBy")
-    invoice                    Invoice[]
-    paymentterm                Paymentterm[]
+    balance          Int       @default(0)
+    credit           Int       @default(0)
+    commission       Int?
+    firebaseTokens   Json
+    createdAt        DateTime  @default(now())
+    updatedAt        DateTime  @updatedAt
+
+    companyBlockchainsVerified    CompanyBlockchain[]      @relation("CompanyBlockchainVerifiedBy")
+    companyBlockchainsdenied      CompanyBlockchain[]      @relation("CompanyBlockchainDeniedBy")
+    industriesCreated             Industry[]
+    jobCostingsInactivated        JobCosting[]
+    priceTiersInactivated         PriceTier[]
+    jobTypesCreated               JobType[]
+    jobstimeUpdated               Job[]                    @relation("jobTimeUpdatedBy")
+    jobsCreated                   Job[]                    @relation("jobCreatedBy")
+    jobTracks                     JobTrack[]
+    jobs                          Job[]
+    jobTechnicianImages           JobTechnicianImage[]
+    jobImages                     JobImage[]
+    jobTasks                      JobTask[]
+    jobTasksJobTypesTimeUpdated   JobTaskJobType[]
+    technicianCommissionHistories CommissionHistory[]      @relation("commissionHistoryTechnician")
+    editedCommissionHistories     CommissionHistory[]      @relation("commissionHistoryEditedBy")
+    createdAdvancePayment         Advancepayment[]         @relation("advancePaymentUserCreatedBy")
+    updatedAdvancePayment         Advancepayment[]         @relation("advancePaymentUserUpdatedBy")
+    voidedAdvancePayment          Advancepayment[]         @relation("advancePaymentUserVoidedBy")
+    advancepaymentemployee        Advancepaymentemployee[]
+    chat                          Chat[]
+    createdServiceTicket          Servicetickets[]         @relation("serviceTicketUserCreatedBy")
+    technicianServiceTicket       Servicetickets[]         @relation("serviceTicketUsertechnician")
+    editedServiceTicket           Servicetickets[]         @relation("serviceTicketUsereditedBy")
+    joblocation                   Joblocation[]
+    createdJobRequest             Jobrequest[]             @relation("jobRequestUserCreatedBy")
+    editedJobRequest              Jobrequest[]             @relation("jobRequestUsereditedBy")
+    invoice                       Invoice[]
+    paymentterm                   Paymentterm[]
+    emaildefaultsUpdated          EmailDefault[]
+    jobChargesCreated             JobCharges[]
+    saleTaxesCreated              SaleTax[]
+    emailSchedules                EmailSchedule[]
 }

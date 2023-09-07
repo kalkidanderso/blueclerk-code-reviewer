@@ -4,4 +4,6 @@ model AssignedEmployee {
     employeeId    Int
     // TODO: implement employee
     // TODO: workTypes: [{ type: Schema.Types.ObjectId, ref: 'WorkType' }]
+
+    companyLocations CompanyLocation[]
 }

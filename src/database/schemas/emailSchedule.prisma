@@ -1,0 +1,11 @@
+model EmailSchedule {
+    id            Int     @id @default(autoincrement())
+    alternativeId String? @unique
+    userId        Int
+    user          User    @relation(fields: [userId], references: [id])
+    type          Int     @default(0)
+    jobs          Job[]
+    pulled        Boolean @default(false)
+
+    @@index([pulled])
+}
