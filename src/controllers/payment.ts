@@ -695,11 +695,29 @@ export const createPayment = async (req: Request, res: Response) => {
     });
 
     try {
+        let errorMessages = "";
         if (paramInvoices.length) {
+            const errPayments: {[p: string]: string[]} = {};
             // Handle multiple invoices
             for (const paramInvoice of paramInvoices) {
-                await _handleMultipleInvoices(paramInvoice, payment, customer, company);
+                const resInvoices = await _handleMultipleInvoices(paramInvoice, payment, customer, company);
+                
+                if (resInvoices.error) {
+                    if (errPayments[resInvoices.error]) {
+                        errPayments[resInvoices.error].push(resInvoices.invoiceId?.replace("Invoice",""));
+                    } else {
+                        errPayments[resInvoices.error] = [resInvoices.invoiceId?.replace("Invoice","")];
+                    }
+                }
             }
+
+            Object.keys(errPayments).forEach(err => {
+                if (err == "invoice_not_found") {
+                    errorMessages += `The payment was recorded & Invoice with id ${errPayments[err].toString()} either not found, already voided, or does not belong to the customer.`
+                } else {
+                    errorMessages += `The payment was recorded & Invoice with id ${errPayments[err].toString()} already paid off.`
+                }
+            })
         } else {
             payment.amountPaid = params.amount;
             // Handle invoice balance due, underpayment, and overpayment
@@ -714,6 +732,7 @@ export const createPayment = async (req: Request, res: Response) => {
         payment.amountPaid = roundTwoDecimal(payment.amountPaid);
         await payment.save();
 
+        const responseMessage = errorMessages ? errorMessages : 'Payment successfully created.';
         if (company.qbAuthorized) {
             /**
              * Check Customer & Job Locations data on QBooks,
@@ -721,14 +740,14 @@ export const createPayment = async (req: Request, res: Response) => {
              */
             _checkQBCustomerJobLocation(req, res, company, customer._id, (err, errMsg, qbCustomer) => {
                 if (err || errMsg) {
-                    return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
+                    return res.json({ status: Status.Success, message: responseMessage, payment, customer, invoice });
                 }
 
                 if (qbCustomer) {
                     // Create new Payment in QuickBooks
                     _createQBPayment(req, res, company, payment, async (err, errMsg, qbPayment) => {
                         if (err || errMsg) {
-                            return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, quickbookPayment: null, quickbookPaymentError: errMsg, customer, invoice });
+                            return res.json({ status: Status.Success, message: responseMessage, payment, quickbookPayment: null, quickbookPaymentError: errMsg, customer, invoice });
                         }
 
                         if (qbPayment) {
@@ -746,7 +765,7 @@ export const createPayment = async (req: Request, res: Response) => {
 
                         return res.json({
                             status: Status.Success,
-                            message: 'Payment successfully created.',
+                            message: responseMessage,
                             payment, quickbookPayment: qbPayment,
                             customer, invoice
                         });
@@ -756,7 +775,7 @@ export const createPayment = async (req: Request, res: Response) => {
 
         } else {
 
-            return res.json({ status: Status.Success, message: 'Payment successfully created.', payment, customer, invoice });
+            return res.json({ status: Status.Success, message: responseMessage, payment, customer, invoice });
         }
 
     } catch (error) {
@@ -1840,11 +1859,11 @@ export const _handleMultipleInvoices = async (
     });
 
     if (!invoice || invoice.isDraft) {
-        throw new Error(`Invoice with id ${paramInvoice.invoiceId} either not found, already voided, or does not belong to the customer.`);
+        return { error : `invoice_not_found`, invoiceId: invoice.invoiceId};
     }
 
     if (invoice.status === InvoiceStatus.PAID) {
-        throw new Error(`Invoice with id ${paramInvoice.invoiceId} already paid off.`);
+        return { error : `already_paid_off`, invoiceId: invoice.invoiceId};
     }
 
     payment.line.push({
@@ -1877,7 +1896,10 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
 
         // When invoice id not found in payment line, add the invoice id to payment line
         if (!line) {
-            line = await _handleMultipleInvoices(paramInvoice, payment, customer, company);
+            const resInvoices: any = await _handleMultipleInvoices(paramInvoice, payment, customer, company);
+            if (!resInvoices.error) {
+                line = resInvoices;
+            }
         }
 
         const invoiceLine = <IInvoice>line.invoice;
