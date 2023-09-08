@@ -1563,12 +1563,12 @@ const findAddedAndRemovedItems = (original: any, updated: any) => {
         
         if (updatedIds.includes(item.item.toString())) {
 
-            if (original[index].quantity != updated[index].quantity ) {
+            if (original[index]?.quantity != updated[index]?.quantity ) {
                 updatedItems.push({
                     "type":"updated",
                     "name": item?.name,
-                    "new": updated[index].quantity,
-                    "old": original[index].quantity,
+                    "new": updated[index]?.quantity,
+                    "old": original[index]?.quantity,
                 });
 
             }
