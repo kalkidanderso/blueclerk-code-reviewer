@@ -13,9 +13,11 @@ model JobType {
     createdAt     DateTime  @default(now())
     updatedAt     DateTime  @updatedAt
 
-    // job
     jobTaskJobTypes JobTaskJobType[]
     jobs            Job[]
+    jobCharges      JobCharges[]
+
+    servicetickets Servicetickets[]
 
     @@index([title], type: SpGist)
     @@index([createdBy, quickbookId])

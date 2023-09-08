@@ -6,7 +6,7 @@ model CompanyInfo {
     logoUrl      String?
     companyEmail String?
     displayName  String?
-    Company      Company?
+    company      Company?
 
     @@index([companyEmail])
 }
@@ -77,12 +77,26 @@ model Company {
     createdAt           DateTime          @default(now())
     updatedAt           DateTime          @updatedAt
 
-    // job
-    contractorJobs      Job[]               @relation("jobContractor")
-    companyJobs         Job[]               @relation("jobCompany")
-    jobTasks            JobTask[]
-    companyCards        CompanyCard[]
-    commissionHistories CommissionHistory[] @relation("commissionHistoryContractor")
+    contractorJobs                Job[]                  @relation("jobContractor")
+    companyJobs                   Job[]                  @relation("jobCompany")
+    jobTasks                      JobTask[]
+    companyCards                  CompanyCard[]
+    contractorCommissionHistories CommissionHistory[]    @relation("commissionHistoryContractor")
+    advancePayment                Advancepayment[]
+    advancepaymentvendor          Advancepaymentvendor[]
+    assignedvendor                Assignedvendor[]
+    chat                          Chat[]
+    companyadmin                  Companyadmin[]
+    companycustomer               Companycustomer[]
+    servicetickets                Servicetickets[]
+    joblocation                   Joblocation[]
+    jobrequest                    Jobrequest[]
+    invoice                       Invoice[]
+    paymentterm                   Paymentterm[]
+    emaildefaults                 EmailDefault[]
+    companyLocations              CompanyLocation[]
+    jobCharges                    JobCharges[]
+    saletaxes                     SaleTax[]
 
     @@index([plan, chargeDate])
 }
