@@ -1,0 +1,23 @@
+model CompanyLocation {
+    id                        Int                @id @default(autoincrement())
+    alternativeId             String?            @unique
+    name                      String?
+    isActive                  Boolean            @default(true)
+    isMainLocation            Boolean            @default(true)
+    contactName               String
+    info                      Json
+    address                   Json
+    isAddressAsBillingAddress Boolean            @default(false)
+    billingAddress            Json
+    contact                   Json
+    companyId                 Int
+    company                   Company            @relation(fields: [companyId], references: [id])
+    // TODO: workTypes: [{ type: Schema.Types.ObjectId, ref: 'WorkType' }],
+    // assignedVendors: [AssignedVendorSchema],
+    assignedEmployees         AssignedEmployee[]
+    poRequestEmailSender      String
+    jobs                      Job[]
+
+    @@index([companyId, isActive, isMainLocation])
+    @@index([companyId, isActive, isMainLocation, id])
+}

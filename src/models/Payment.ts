@@ -13,6 +13,7 @@ export interface IPayment extends Document {
     customer: Schema.Types.ObjectId | ICustomer
     invoice: Schema.Types.ObjectId | IInvoice
     invoices: [Schema.Types.ObjectId | IInvoice]
+    jobs: [Schema.Types.ObjectId | IJob]
     line: [{
         invoice: Schema.Types.ObjectId | IInvoice
         amountPaid: number
@@ -55,6 +56,15 @@ export interface IPaymentVendor extends IPayment {
     endDate: Date
     offset: number
     creditUsed: number
+}
+
+export interface IJobExportQuery { 
+    company: any; 
+    status: number; 
+    endTime: { $gte: Date; $lte: Date; }; 
+    commission: { $ne: any; }; 
+    companyLocation?: any;
+    workType?: any
 }
 
 export interface IPaymentEmployee extends IPayment {

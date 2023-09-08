@@ -151,6 +151,12 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 serviceTicket.workType = params.workType;
             }
 
+            //Retrieve image data from a job when a ticket is created for a partially completed job.
+            if (params.jobId) {
+                let job = await Job.findOne({_id: params.jobId});
+                serviceTicket.images = job.images;
+            }
+
             data.imagesUrl?.forEach((imageUrl: string) => serviceTicket.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() }));
             serviceTicket.source = params.source ? params.source : 'blueclerk';
             await serviceTicket.save(async (err: any) => {
@@ -168,7 +174,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                             historyMessage  = "Purchase Order Request"
                         }
                         
-                        if (serviceTicket.source === ServiceTicketSource.WEB) {
+                        if (serviceTicket.source === ServiceTicketSource.WEB || serviceTicket.source.includes("partially completed")) {
                             const serviceTicketDetail = await ServiceTicket.findOne(
                                 { _id: serviceTicket._id , company: companyId})
                                 .populate({
@@ -1051,6 +1057,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                     if (params.jobTypeId) {
                         jobTypeId = params.jobTypeId
                     }
+                    let type = params.type;
 
                     // Update isHomeOccupied and or homeOwner
                     let isHomeOccupied = params.isHomeOccupied
@@ -1121,6 +1128,11 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                             date: new Date()
                         });
                     }
+
+                    if (type === 'Ticket' && serviceTicket.ticketId.includes('PO Request')) {
+                        serviceTicket.ticketId = serviceTicket.ticketId?.replace("PO Request","Ticket");
+                    } 
+
                     serviceTicket.updateOne(
                         {
                             note: params.note,
@@ -1137,6 +1149,8 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                             track: track,
                             isHomeOccupied: isHomeOccupied,
                             homeOwner: homeOwnerId,
+                            ticketId: serviceTicket.ticketId,
+                            type
                         },
                         async (err: any)=> {
 
@@ -1189,7 +1203,7 @@ export const updateServiceTicket = (req: Request, res: Response) => {
                                 job.save();
                             }
 
-                            return res.json({'status': Status.Success, 'message': 'Ticket updated successfully.', invalidJobTypes})
+                            return res.json({'status': Status.Success, 'message': `${serviceTicket.type} updated successfully.`, invalidJobTypes})
                         }
                     )
                 }

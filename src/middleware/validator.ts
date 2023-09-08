@@ -301,7 +301,7 @@ export const Validations = {
     check('jobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
     check('taskJobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
     check('status').exists().withMessage(Messages.Required),
-    check('status').isIn([JobStatus.PAUSED, JobStatus.FINISHED]).withMessage('Only paused and finished are allowed')
+    check('status').isIn([JobStatus.PAUSED, JobStatus.FINISHED, JobStatus.PARTIALLY_COMPLETED]).withMessage('Only paused and finished are allowed')
   ],
 
   updateJob: [
@@ -492,6 +492,8 @@ export const Validations = {
     check('invoiceId').isMongoId().withMessage(Messages.WrongId),
   ],
 
+  getJobReportEmailTemplate: [check('jobReportId').exists()],
+
   sendReport: [check('jobReportId').exists()],
 
   createPOInvoice: [check('purchaseOrderId').exists()],
@@ -512,6 +514,7 @@ export const Validations = {
   companyInvoice: [check('companyInvoiceId').exists()],
 
   voidInvoice: [check('invoiceId').exists().withMessage(Messages.Required), check('invoiceId').isMongoId().withMessage(Messages.WrongId)],
+  unVoidInvoice: [check('invoiceId').exists().withMessage(Messages.Required), check('invoiceId').isMongoId().withMessage(Messages.WrongId)],
 
   updateCommission: [
     check('type').exists().withMessage(Messages.Required),

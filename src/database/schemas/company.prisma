@@ -1,0 +1,102 @@
+model CompanyInfo {
+    id           Int       @id @default(autoincrement())
+    companyName  String?
+    industryId   Int?      @unique
+    industry     Industry? @relation(fields: [industryId], references: [id])
+    logoUrl      String?
+    companyEmail String?
+    displayName  String?
+    company      Company?
+
+    @@index([companyEmail])
+}
+
+model CompanyBlockchain {
+    id           Int       @id @default(autoincrement())
+    verified     Boolean   @default(false)
+    verifiedAt   DateTime?
+    verifiedById Int?
+    verifiedBy   User?     @relation("CompanyBlockchainVerifiedBy", fields: [verifiedById], references: [id])
+    deniedAt     DateTime?
+    deniedById   Int?
+    deniedBy     User?     @relation("CompanyBlockchainDeniedBy", fields: [deniedById], references: [id])
+    company      Company?
+}
+
+model Company {
+    id                  Int               @id @default(autoincrement())
+    alternativeId       String?           @unique
+    info                CompanyInfo?      @relation(fields: [companyInfoId], references: [id])
+    companyInfoId       Int?              @unique
+    address             Json?
+    contact             Json?
+    other               Json?
+    // TODO: employees: [{ type: Schema.Types.ObjectId, ref: 'Employee' }],
+    // TODO: customers: [{ type: Schema.Types.ObjectId, ref: 'Customer' }],
+    stripeId            String?
+    paid                Boolean           @default(false)
+    type                Int               @default(0)
+    plan                Int               @default(0)
+    chargeDate          DateTime
+    trialEndDate        DateTime
+    maxTechnicians      Int               @default(0)
+    maxManagers         Int               @default(0)
+    maxOfficeAdmins     Int               @default(0)
+    maxAdmins           Int               @default(0)
+    userPermissions     Json
+    currentJobId        Int               @default(0)
+    prefix              String
+    // TODO: admin: { type: Schema.Types.ObjectId, ref: 'CompanyAdmin' },
+    qbAccessToken       String
+    qbRefreshToken      String
+    realmId             String
+    qbCompanyName       String
+    qbCompanyEmail      String
+    customersSynced     Boolean?
+    customersSyncedAt   DateTime
+    qbSync              Json
+    socketId            String
+    qbAuthorized        Boolean           @default(false)
+    qbRefeshTokenExpiry DateTime
+    currentInvoiceId    Int               @default(0)
+    emailPreferences    Json
+    invoicePrefix       String
+    currentPOId         Int               @default(0)
+    currentEstimateId   Int               @default(0)
+    itemTier            PriceTier[]
+    jobCostings         JobCosting[]
+    // TODO: paymentTerm: {type: Schema.Types.ObjectId, ref: 'PaymentTerm'},
+    balance             Int               @default(0)
+    credit              Int               @default(0)
+    commission          Int?
+    commissionType      String            @default("%")
+    // TODO: commissionTier: {type: Schema.Types.ObjectId, ref: 'JobCosting'},
+    // TODO: companyInvoices: [{ type: Schema.Types.ObjectId, ref: 'CompanyInvoice' }],
+    blockchain          CompanyBlockchain @relation(fields: [companyBlockchainId], references: [id])
+    companyBlockchainId Int               @unique
+    createdAt           DateTime          @default(now())
+    updatedAt           DateTime          @updatedAt
+
+    contractorJobs                Job[]                  @relation("jobContractor")
+    companyJobs                   Job[]                  @relation("jobCompany")
+    jobTasks                      JobTask[]
+    companyCards                  CompanyCard[]
+    contractorCommissionHistories CommissionHistory[]    @relation("commissionHistoryContractor")
+    advancePayment                Advancepayment[]
+    advancepaymentvendor          Advancepaymentvendor[]
+    assignedvendor                Assignedvendor[]
+    chat                          Chat[]
+    companyadmin                  Companyadmin[]
+    companycustomer               Companycustomer[]
+    servicetickets                Servicetickets[]
+    joblocation                   Joblocation[]
+    jobrequest                    Jobrequest[]
+    invoice                       Invoice[]
+    paymentterm                   Paymentterm[]
+    emaildefaults                 EmailDefault[]
+    companyLocations              CompanyLocation[]
+    jobCharges                    JobCharges[]
+    saletaxes                     SaleTax[]
+
+    @@index([plan, chargeDate])
+}

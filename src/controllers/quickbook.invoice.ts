@@ -31,7 +31,20 @@ import * as Sentry from '@sentry/node';
  * and this contoller when syncing invoices
  */
 export const _createQBInvoice = async (req: Request, res: Response, company: ICompany, invoice: IInvoice, next: (error: number, errorMessage: string, qbInvoice: IQBInvoice) => void) => {
+    _refreshToken(req, res, company, async (err, errMsg, company) => {
+        if (err === 0) {
+            return res.json({ status: Status.Error, message: errMsg });
+        }
 
+        if (err === 400) {
+            await Company.findByIdAndUpdate(req.company._id, {
+                qbAuthorized: false,
+                qbAccessToken: undefined,
+                qbRefreshToken: undefined
+            });
+
+            return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
+        }
     // Populate the invoice to have customer and item object
     await invoice
         .populate({ path: 'customer' })
@@ -254,6 +267,7 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
         // QBooks Invoice sync failed
         return next(Status.Error, errMsg, null);
     })
+});
 
 }
 
@@ -1045,6 +1059,7 @@ export const _createTaxAgency = async (company: ICompany, taxAgencies: any[]): P
 
                     reject(err)
                 }
+                console.log("err",err);
 
                 resolve(qbTaxAgency);
             });

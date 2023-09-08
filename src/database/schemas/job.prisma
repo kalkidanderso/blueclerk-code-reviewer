@@ -1,0 +1,159 @@
+model JobTaskJobType {
+    id                   Int       @id @default(autoincrement())
+    jobTypeId            Int?
+    jobType              JobType?  @relation(fields: [jobTypeId], references: [id])
+    isSelfFinished       Boolean?  @default(false)
+    status               Int?      @default(0)
+    charges              Float?    @default(0.0)
+    startTime            DateTime?
+    tempStartTime        DateTime?
+    endTime              DateTime?
+    timeSpent            Int?      @default(0)
+    pausedCount          Int?      @default(0)
+    timeUpdatedById      Int?
+    timeUpdatedBy        User?     @relation(fields: [timeUpdatedById], references: [id])
+    timeUpdatedAt        DateTime?
+    equipmentScanned     Boolean?  @default(false)
+    noOfEquipmentScanned Int?      @default(0)
+    quantity             Int?      @default(0)
+    price                Float?
+    completedCount       Int?
+    completedComment     String?
+    jobCostingQuantity   Int?
+    JobTask              JobTask?  @relation(fields: [jobTaskId], references: [id])
+    jobTaskId            Int?
+}
+
+model JobTask {
+    id                         Int              @id @default(autoincrement())
+    status                     Int?             @default(0)
+    employeeType               Boolean?         @default(false)
+    technicianId               Int?
+    technician                 User?            @relation(fields: [technicianId], references: [id])
+    contractorId               Int?
+    contractor                 Company?         @relation(fields: [contractorId], references: [id])
+    contractorCommissionTierId Int?
+    // TODO: ref JobCosting
+    comment                    String?
+    jobTypes                   JobTaskJobType[]
+    paid                       Boolean?         @default(false)
+    paidAt                     DateTime?
+    Job                        Job?             @relation(fields: [jobId], references: [id])
+    jobId                      Int?
+}
+
+model JobTrack {
+    id     Int      @id @default(autoincrement())
+    userId Int?
+    user   User?    @relation(fields: [userId], references: [id])
+    action String?
+    note   String?
+    date   DateTime @default(now())
+    Job    Job?     @relation(fields: [jobId], references: [id])
+    jobId  Int?
+}
+
+model JobImage {
+    id           Int      @id @default(autoincrement())
+    imageUrl     String
+    uploadedById Int
+    user         User     @relation(fields: [uploadedById], references: [id])
+    createAt     DateTime @default(now())
+    Job          Job?     @relation(fields: [jobId], references: [id])
+    jobId        Int?
+}
+
+model JobTechnicianImage {
+    id           Int      @id @default(autoincrement())
+    imageUrl     String?
+    uploadedById Int
+    user         User     @relation(fields: [uploadedById], references: [id])
+    createAt     DateTime @default(now())
+    Job          Job?     @relation(fields: [jobId], references: [id])
+    jobId        Int?
+}
+
+model Job {
+    id                 Int                  @id @default(autoincrement())
+    alternativeId      String?              @unique
+    scheduleTimeAMPM   Int?                 @default(0)
+    scheduleDate       DateTime?
+    scheduledStartTime DateTime?
+    scheduledEndTime   DateTime?
+    jobId              String?
+    parentJobId        Int?                 @unique
+    parentJob          Job?                 @relation("JobParent", fields: [parentJobId], references: [id])
+    childrenJob        Job[]                @relation("JobParent")
+    ticketId           Int?
+    // TODO: ref ServiceTicket
+    requestId          Int?
+    // TODO: ref JobRequest
+    equipmentId        Int?
+    // TODO: ref CustomerEquiment
+    technicianId       Int?
+    technician         User?                @relation(fields: [technicianId], references: [id])
+    contractorId       Int?
+    contractor         Company?             @relation("jobContractor", fields: [contractorId], references: [id])
+    customerId         Int?
+    // TODO: ref Customer
+    jobLocationId      Int?
+    // TODO: ref JobLocation
+    jobSiteId          Int?
+    // TODO: ref JobSite
+    isHomeOccupied     Boolean?             @default(false)
+    homeOwnerId        Int?
+    // TODO: ref HomeOwner
+    homeJobLocationId  Int?
+    // TODO: ref JobLocation
+    homeJobSiteId      Int?
+    // TODO: ref JobLocation
+    customerContactId  Int?
+    // TODO: ref Contact
+    customerPO         String?
+    image              String?
+    images             JobImage[]
+    technicianImages   JobTechnicianImage[]
+
+    typeId              Int?
+    type                JobType?         @relation(fields: [typeId], references: [id])
+    tasksBackup         Json?
+    tasks               JobTask[]
+    companyId           Int?
+    company             Company?         @relation("jobCompany", fields: [companyId], references: [id])
+    description         String?
+    status              Int?             @default(0)
+    track               JobTrack[]
+    comment             String?
+    createdAt           DateTime?        @default(now())
+    createdById         Int?
+    createdBy           User?            @relation("jobCreatedBy", fields: [createdById], references: [id])
+    updatedAt           DateTime?        @updatedAt
+    employeeType        Boolean?         @default(false)
+    charges             Int?             @default(0)
+    salesTaxId          Int?
+    salesTax            SaleTax?         @relation(fields: [salesTaxId], references: [id])
+    startTime           DateTime?
+    endTime             DateTime?
+    timeSpent           Int?             @default(0)
+    timeUpdatedById     Int?
+    timeUpdatedBy       User?            @relation("jobTimeUpdatedBy", fields: [timeUpdatedById], references: [id])
+    timeUpdatedAt       DateTime?
+    equipmentScanned    Boolean?         @default(false)
+    noOfEquimentScanned Int?             @default(0)
+    completeOnTime      Boolean?         @default(false)
+    commissionId        Int?
+    // TODO: ref JobCommission
+    workTypeId          Int?
+    // TODO: ref WorkType
+    companyLocationId   Int?
+    companyLocation     CompanyLocation? @relation(fields: [companyLocationId], references: [id])
+
+    commissionHistories CommissionHistory[]
+    emailSchedules      EmailSchedule[]
+
+    jobrequest Jobrequest[]
+    invoice    Invoice[]
+
+    @@index([employeeType])
+    @@index([image])
+}

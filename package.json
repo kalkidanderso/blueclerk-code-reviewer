@@ -6,12 +6,17 @@
   "scripts": {
     "tsc": "tsc",
     "watch:tsc": "tsc --watch",
-    "dev": "concurrently \"tsc --watch\" \"nodemon ./dist/server.js\""
+    "dev": "concurrently \"tsc --watch\" \"nodemon ./dist/server.js\"",
+    "schema": "cd ./src/database/schemas && cat *.prisma > ../schema.prisma && npx prisma format && npx prisma migrate dev --name init"
+  },
+  "prisma": {
+    "schema": "./src/database/schema.prisma"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-sns": "^3.352.0",
+    "@prisma/client": "4.16.2",
     "@sentry/node": "^7.47.0",
     "@sentry/tracing": "^7.51.2",
     "@types/aws-sdk": "^2.7.0",
@@ -81,13 +86,16 @@
     "swagger-ui-express": "^4.1.6",
     "typescript": "^4.1.6",
     "uuid": "^3.3.3",
-    "xlsx": "^0.15.4"
+    "xlsx": "^0.15.4",
+    "xlsx-js-style": "^1.2.0"
   },
   "devDependencies": {
     "@types/google-libphonenumber": "^7.4.23",
     "@types/node": "^14.14.37",
     "@types/pdfmake": "^0.1.21",
     "concurrently": "^8.0.1",
-    "nodemon": "^2.0.22"
+    "nodemon": "^2.0.22",
+    "prisma": "^4.16.2",
+    "ts-node": "^10.9.1"
   }
 }

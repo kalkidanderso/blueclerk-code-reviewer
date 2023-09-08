@@ -514,60 +514,76 @@ export const sendReportPdf = async (options: any) => {
 
 }
 
-export const sendReportEmailToCustomer = function (options: any) {
+export const sendReportEmailToCustomer = async (options: any) => {
 
-  const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env
+  const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env;
+
+  let { subject, message, customerEmail, customerName, companyName, companyEmail, companyLogo, recipientEmails, jobReportPdf, reportNumber } = options;
 
   AWS.config.update({
     region: AWS_REGION,
     accessKeyId: AWS_SES_ACCESSKEYID,
     secretAccessKey: AWS_SES_SECRETACCESSKEY,
-  })
+  });
 
-  const ses = new AWS.SES({ apiVersion: '2012-10-17' })
+  const ses = new AWS.SES({ apiVersion: '2012-10-17' });
+  const boundary = `NextPart${Math.random().toString().substr(2)}`;
 
-  return new Promise((resolve, reject) => {
-    ses.sendEmail(
-      {
-        Source: `"${options.companyName}" <${APP_EMAIL_NOREPLY}>`,
-        Destination: {
-          CcAddresses: options.ccEmails,
-          ToAddresses: options.recipientEmails,
-        },
-        Message: {
-          Subject: {
-            Data: `${options.companyName} has sent you a job report`,
-          },
-          Body: {
-            Html: {
-              Data: `
-              <div style="text-align: center;">
-              <p>Dear  ${options.customerName}</p>
-              <p>Please see your report information below :</p> 
-              <br />
-              <hr>
-              <p><strong>Report Number:</strong> ${options.reportNumber}</p>
-              <p><strong>Company:</strong> ${options.companyName}</p>
-              <p><strong>Job Type(s):</strong> ${options.jobTypes ?? 'N/A'}</p>
-              <p><strong>Date of work:</strong> ${options.workDate}</p>
-              <br />
-              <img src='https://blueclerk.com/wp-content/uploads/2020/07/logo.png' alt="blueclerk" />
-              </div>
-              `
-            },
-          },
-        },
-        ReplyToAddresses: [options.companyEmail ?? ""],
-      },
-      (err, info) => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve(info)
-        }
-      },
-    )
-  })
+  message = message?.replace(/{{small_company_logo}}/gi, `<img style=\"width:150px\" src=\"${companyLogo}\" alt=\"${companyName}\" />`);
+  // Replace \n to <br /> in HTML
+  message = message?.replace(/\n/gi, '<br />');
+
+  const SENDER = `"${companyName}" <${APP_EMAIL_NOREPLY ?? customerEmail ?? companyEmail}>`;
+  const RECIPIENT = recipientEmails;
+  const SUBJECT = eval('`' + subject + '`');
+  const BODY_HTML = `<div style=\"font-family:roboto; padding:10px; background-color: #EAECF3; text-align:center;\">
+                      <p><img style=\"width:350px\" src=\"${companyLogo}\" alt=\"${companyName}\" /></p>
+                      <p><strong>${companyName}</strong></p>
+                    </div>
+                    <div style=\"font-family:roboto; padding:10px\">
+                      ${eval('`' + message + '`')}
+                      <br /><br />
+                      <p style="padding:0px">Sent with BlueClerk Software</p>
+                      <a href="https://app.blueclerk.com"><img src="https://blueclerk.com/wp-content/uploads/2020/07/logo.png" /></a>
+                    </div>`;
+
+  const rawMessage = [
+    `From: ${SENDER}`,
+    `To: ${RECIPIENT}`,
+    `Reply-To: ${companyEmail ?? ""}`,
+    `Subject: ${SUBJECT}`,
+    `MIME-Version: 1.0`,
+    `Content-Type: multipart/mixed; boundary=\"${boundary}\"\n`,
+    `--${boundary}`,
+    `Content-Type: text/html\n`,
+    `${BODY_HTML}\n`,
+    `--${boundary}`
+  ];
+  // Attachment PDF if provided
+  if (jobReportPdf) {
+    const pdfFile = fs.readFileSync(jobReportPdf);
+    const ATTACHMENT = pdfFile.toString("base64").replace(/([^\0]{76})/g, "$1\n");
+    rawMessage.push(`Content-Type: application/octet-stream; name=\"${reportNumber}.pdf\"`);
+    rawMessage.push(`Content-Transfer-Encoding: base64`);
+    rawMessage.push(`Content-Disposition: attachment\n`);
+    rawMessage.push(`${ATTACHMENT}\n`);
+    rawMessage.push(`--${boundary}--`);
+  }
+
+  try {
+    await ses.sendRawEmail({
+      Source: SENDER,
+      Destinations: RECIPIENT,
+      RawMessage: { Data: rawMessage.join("\n") }
+    }).promise();
+  } catch (error) {
+    Sentry.captureException(error);
+    console.log('== AWS sendInvoiceEmailToCustomer Error:', error);
+    return;
+  }
+
+  return;
+
 }
 
 export const sendContractStartEmailToCompany = function (options: any) {

@@ -91,7 +91,8 @@ export const enum JobStatus {
     CANCELED,
     RESCHEDULED,
     PAUSED,
-    INCOMPLETE
+    INCOMPLETE,
+    PARTIALLY_COMPLETED
 }
 
 export const enum JobRequestStatus {
