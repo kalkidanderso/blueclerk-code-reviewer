@@ -9,8 +9,8 @@ model Invoice {
     alternativeId       String        @default(cuid())
     invoiceId           String
     invoiceType         Int           @default(0)
+    job                 Job?          @relation(fields: [jobId], references: [id])
     jobId               Int?
-    // TODO: JOB RELATIONSHIP
     purchaseOrderId     Int?
     // TODO: PURCHASEORDER RELATIONSHIP
     estimateId          Int?
@@ -20,8 +20,8 @@ model Invoice {
     issuedDate          DateTime
     dueDate             DateTime
     isDraft             Boolean       @default(false)
+    paymentTerm         Paymentterm   @relation(fields: [paymentTermId], references: [id])
     paymentTermId       Int
-    // TODO: PAYMENTTERM RELATIONSHIP
     note                String?
     customerPO          String
     customerContactId   Int
@@ -33,8 +33,8 @@ model Invoice {
     jobLocationId       Int
     jobSite             Jobsite       @relation(fields: [jobSiteId], references: [id])
     jobSiteId           Int
+    company             Company       @relation(fields: [companyId], references: [id])
     companyId           Int
-    // TODO: COMPANY RELATIONSHIP
     charges             Int           @default(0)
     taxAmount           Int           @default(0)
     subTotal            Int           @default(0)
@@ -42,8 +42,8 @@ model Invoice {
     shippingCost        Int           @default(0)
     tax                 Int
     taxPercentage       Int
+    createdBy           User          @relation(fields: [createdById], references: [id])
     createdById         Int
-    // TODO: USER RELATIONSHIP
     timeSpent           Int           @default(0)
     items               Json?
     paymentApplied      Int           @default(0)
@@ -57,8 +57,8 @@ model Invoice {
     commissionId        Int?
     // TODO:COMMISSION RELATIONSHIP
     isVoid              Boolean       @default(false)
+    workType            Worktype      @relation(fields: [workTypeId], references: [id])
     workTypeId          Int
-    // TODO: WORKTYPE RELATIONSHIP
     companyLocationId   Int
     // TODO: COMPANYLOCATION RELATIONSHIP
     technicianMessages  Json

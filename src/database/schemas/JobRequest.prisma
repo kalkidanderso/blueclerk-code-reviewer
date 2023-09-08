@@ -13,19 +13,19 @@ model Jobrequest {
     // TODO: CUSTOMER RELATIONSHIP
     customerContactId Int?
     // TODO: CUSTOMER RELATIONSHIP
+    company           Company     @relation(fields: [companyId], references: [id])
     companyId         Int
-    // TODO: COMPANY RELATIONSHIP
     jobCreated        Boolean     @default(false)
+    job               Job         @relation(fields: [jobId], references: [id])
     jobId             Int
-    // TODO: JOB RELATIONSHIP
     track             Json
+    createdByUser     User        @relation("jobRequestUserCreatedBy", fields: [createdById], references: [id])
     createdById       Int
-    // TODO: USER RELATIONSHIP
+    editedByUser      User        @relation("jobRequestUsereditedBy", fields: [editedById], references: [id])
     editedById        Int
-    // TODO: USER RELATIONSHIP
     editedAt          DateTime    @updatedAt
+    workType          Worktype    @relation(fields: [workTypeId], references: [id])
     workTypeId        Int
-    // TODO: WORKTYPE RELATIONSHIP
     companyLocationId Int
     // TODO: COMPANYLOCATION RELATIONSHIP
     createdAt         DateTime    @default(now())

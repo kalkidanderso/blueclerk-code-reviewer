@@ -1,8 +1,8 @@
 model Companyadmin {
-    id            Int    @id @default(autoincrement())
-    alternativeId String @default(cuid())
-    company       Int
-    // TODO: COMPANY RELATIONSHIP
+    id            Int      @id @default(autoincrement())
+    alternativeId String   @default(cuid())
+    company       Company? @relation(fields: [companyId], references: [id])
+    companyId     Int
 }
 
 model Supplieradmin {

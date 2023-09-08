@@ -78,11 +78,22 @@ model Company {
     updatedAt           DateTime          @updatedAt
 
     // job
-    contractorJobs      Job[]               @relation("jobContractor")
-    companyJobs         Job[]               @relation("jobCompany")
-    jobTasks            JobTask[]
-    companyCards        CompanyCard[]
-    commissionHistories CommissionHistory[] @relation("commissionHistoryContractor")
+    contractorJobs       Job[]                  @relation("jobContractor")
+    companyJobs          Job[]                  @relation("jobCompany")
+    jobTasks             JobTask[]
+    companyCards         CompanyCard[]
+    commissionHistories  CommissionHistory[]    @relation("commissionHistoryContractor")
+    advancePayment       Advancepayment[]
+    advancepaymentvendor Advancepaymentvendor[]
+    assignedvendor       Assignedvendor[]
+    chat                 Chat[]
+    companyadmin         Companyadmin[]
+    companycustomer      Companycustomer[]
+    servicetickets       Servicetickets[]
+    joblocation          Joblocation[]
+    jobrequest           Jobrequest[]
+    invoice              Invoice[]
+    paymentterm          Paymentterm[]
 
     @@index([plan, chargeDate])
 }

@@ -1,0 +1,8 @@
+model Companyprefix {
+    id            Int    @id @default(autoincrement())
+    alternativeId String @default(cuid())
+    prefix        String
+    maxJobId      Int
+    companyId     Int
+    // TODO: COMPANY RELATIONSHIP
+}

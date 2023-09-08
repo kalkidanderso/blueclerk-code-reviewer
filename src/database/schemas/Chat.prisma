@@ -8,13 +8,15 @@ model Chat {
     id            Int          @id @default(autoincrement())
     alternativeId String       @default(cuid())
     chatChannel   ChatChannels
+    user          User?        @relation(fields: [userId], references: [id])
     userId        Int
-    // TODO: USER RELATIONSHIP
+    company       Company?     @relation(fields: [companyId], references: [id])
     companyId     Int
-    // TODO: COMPANY RELATIONSHIP
     customerId    Int
     // TODO: CUSTOMER RELATIONSHIP
     replyTo       Int
+    reply         Chat         @relation("Replies", fields: [replyTo], references: [id])
+    replies       Chat[]       @relation("Replies")
     // TODO: CHAT RELATIONSHIP
     message       String
     images        Json
