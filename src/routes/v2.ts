@@ -47,21 +47,38 @@ export default function (sio: any) {
         invoiceController.exportInvoicesToExcel
     )
 
-    // Bounced Emails
+    // Bounced Emails for invoices
     router.post(
-        '/store-bounced-emails',
+        '/store-invoices-bounced-emails',
         validate(Validations.bounceEmail),
         isLambdaRequest,
-        bouncedEmails.store
+        bouncedEmails.storeforInvoices
     )
 
-    //mark-bounced-emails-as-read
+    // Bounced Emails for PO
     router.post(
-        '/mark-as-read',
+        '/store-po-request-bounced-emails',
+        validate(Validations.bounceEmail),
+        isLambdaRequest,
+        bouncedEmails.storeforPO
+    )
+
+    //mark-bounced-emails-as-read-for-invoices
+    router.post(
+        '/mark-as-read-invoices',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         isObjectIdValid,
-        bouncedEmails.markRead
+        bouncedEmails.markReadInvoiceNBounce
+    )
+
+    //mark-bounced-emails-as-read-for-PO
+    router.post(
+        '/mark-as-read-po',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        isObjectIdValid,
+        bouncedEmails.markReadPOBounce
     )
 
     router.post(
