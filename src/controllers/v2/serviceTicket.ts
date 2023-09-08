@@ -50,6 +50,7 @@ export const getServiceTickets = async (req: Request, res: Response) => {
             { company: companyId }
         ]
     };
+    
     _fillInitialQueryTickets(bodyParams, queryParams, initialQuery, "Ticket");
 
     const filteredInitialJobs = await ServiceTicket.aggregate([
@@ -62,7 +63,7 @@ export const getServiceTickets = async (req: Request, res: Response) => {
                 jobLocation: 1,
                 jobSite: 1,
                 "tasks.technician": 1,
-                HomeOwner: 1,
+                HomeOwner: 1
             },
         },
     ]);
@@ -141,12 +142,12 @@ export const getPORequest = async (req: Request, res: Response) => {
     const currentPage = bodyParams.currentPage || 0;
     const pageSize = bodyParams.pageSize || DefaultPageSize;
 
-    // Data query that used to search Tickets
     const initialQuery: any = {
         $and: [
             { company: companyId }
         ]
     };
+   
     
     if (showAll) {
         _fillInitialQueryTickets(bodyParams, queryParams, initialQuery, "All PO Request");
@@ -423,8 +424,17 @@ export const sendPORequest = async (req: Request, res: Response) => {
  */
 const _fillInitialQueryTickets = (bodyParams: any, queryParams: any, query: any, type: "Ticket" | "PO Request" | "All PO Request") => {
     const { workType, companyLocation } = queryParams;
-    const { technicianIds, status, startDate, endDate, customerId } = bodyParams;
+    const { technicianIds, status, startDate, endDate, customerId, bouncedEmailFlag , isHomeOccupied} = bodyParams;
     let technicianIdsArr: any[];
+    
+    if (bouncedEmailFlag) {
+        query['$and'].push({ bouncedEmailFlag: true });
+    }
+
+    if (isHomeOccupied) {
+        query['$and'].push({ isHomeOccupied: true });
+    }
+
     if (technicianIds) {
         // Validate is technician ids is already array or object
         technicianIdsArr = Array.isArray(technicianIds)
