@@ -11,11 +11,11 @@ model Joblocation {
     // TODO: CUSTOMER RELATIONSHIP
     homeOwnerID   Int
     // TODO: HOMEOWNER RELATIONSHIP
-    companyId     String
-    // //   TODO: COMPANY RELATIONSHIP
+    company       Company   @relation(fields: [companyId], references: [id])
+    companyId     Int
     inactiveAt    DateTime?
+    inactiveBy    User      @relation(fields: [inactiveById], references: [id])
     inactiveById  Int
-    // TODO: USER RELATIONSHIP
     quickbookId   String?
     createdAt     DateTime  @default(now()) // Track creation timestamp
     updatedAt     DateTime  @updatedAt

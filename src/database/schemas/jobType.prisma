@@ -17,6 +17,8 @@ model JobType {
     jobTaskJobTypes JobTaskJobType[]
     jobs            Job[]
 
+    servicetickets Servicetickets[]
+
     @@index([title], type: SpGist)
     @@index([createdBy, quickbookId])
     @@index([title, industryId, createdBy])

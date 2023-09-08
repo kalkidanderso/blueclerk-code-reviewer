@@ -21,22 +21,22 @@ model Servicetickets {
     dueDate           DateTime?
     customerId        Int?
     // // TODO: CUSTOMER RELATIONSHIP
+    createdByUser     User                 @relation("serviceTicketUserCreatedBy", fields: [createdById], references: [id])
     createdById       Int
-    // //   TODO: USER RELATIONSHIP
     note              String
     customerContactId Int?
-    // //   TODO: CONTACT RELATIONSHIP
+    // TODO: CONTACT RELATIONSHIP
     customerPO        String
     image             String
     images            Json?
+    company           Company              @relation(fields: [companyId], references: [id])
     companyId         Int
-    // //   TODO: COMPANY RELATIONSHIP
+    technicianUser    User                 @relation("serviceTicketUsertechnician", fields: [technicianId], references: [id])
     technicianId      Int
-    // //TODO: USER RELATIONSHIP
     status            Int                  @default(0)
     track             Json
+    editedByUser      User                 @relation("serviceTicketUsereditedBy", fields: [editedById], references: [id])
     editedById        Int
-    // //TODO: USER RELATIONSHIP
     editedAt          DateTime
     ticketId          String
     jobLocation       Joblocation          @relation("jobLocation", fields: [jobLocationId], references: [id])
@@ -45,20 +45,20 @@ model Servicetickets {
     jobSiteId         Int
     isHomeOccupied    Boolean              @default(false)
     homeOwnerId       Int
-    // //TODO: homeOwner RELATIONSHIP
+    // TODO: homeOwner RELATIONSHIP
     homeJobLocation   Joblocation          @relation("homeJobLocation", fields: [homeJobLocationId], references: [id])
     homeJobLocationId Int
     homeJobSite       Jobsite              @relation("homejobsite", fields: [homeJobSiteId], references: [id])
     homeJobSiteId     Int
+    jobType           JobType              @relation(fields: [jobTypeId], references: [id])
     jobTypeId         Int
-    // //TODO: jobType RELATIONSHIP
     tasks             ServiceTicketTasks[]
     itemId            Int
     // //TODO: item RELATIONSHIP
     jobCreated        Boolean              @default(false)
     source            String               @default("blueclerk")
+    workType          Worktype             @relation(fields: [workTypeId], references: [id])
     workTypeId        Int
-    // //TODO: workType RELATIONSHIP
     companyLocationId Int
     // //TODO: companyLocation RELATIONSHIP
     pooverriddenById  Int

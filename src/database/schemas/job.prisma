@@ -150,6 +150,9 @@ model Job {
 
     commissionHistory CommissionHistory[]
 
+    jobrequest Jobrequest[]
+    invoice    Invoice[]
+
     @@index([employeeType])
     @@index([image])
 }

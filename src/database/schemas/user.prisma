@@ -13,10 +13,10 @@ model UserAuth {
 }
 
 model User {
-    id                         Int                  @id @default(autoincrement())
-    alternativeId              String?              @unique
+    id                         Int                      @id @default(autoincrement())
+    alternativeId              String?                  @unique
     accountType                Int?
-    auth                       UserAuth             @relation(fields: [userAuthId], references: [id])
+    auth                       UserAuth                 @relation(fields: [userAuthId], references: [id])
     userAuthId                 Int
     profile                    Json?
     address                    Json?
@@ -25,26 +25,39 @@ model User {
     permissions                Json?
     emailPreferences           Json?
     // TODO: Contats need to be implemented
-    balance                    Int                  @default(0)
-    credit                     Int                  @default(0)
+    balance                    Int                      @default(0)
+    credit                     Int                      @default(0)
     commission                 Int?
     firebaseTokens             Json
-    createdAt                  DateTime             @default(now())
-    updatedAt                  DateTime             @updatedAt
-    verifiedCompanyBlockchains CompanyBlockchain[]  @relation("CompanyBlockchainVerifiedBy")
-    deniedCompanyBlockchains   CompanyBlockchain[]  @relation("CompanyBlockchainDeniedBy")
+    createdAt                  DateTime                 @default(now())
+    updatedAt                  DateTime                 @updatedAt
+    verifiedCompanyBlockchains CompanyBlockchain[]      @relation("CompanyBlockchainVerifiedBy")
+    deniedCompanyBlockchains   CompanyBlockchain[]      @relation("CompanyBlockchainDeniedBy")
     industries                 Industry[]
     jobCostings                JobCosting[]
     priceTiers                 PriceTier[]
     jobTypes                   JobType[]
-    updatedJobs                Job[]                @relation("jobTimeUpdatedBy")
-    createdJobs                Job[]                @relation("jobCreatedBy")
+    updatedJobs                Job[]                    @relation("jobTimeUpdatedBy")
+    createdJobs                Job[]                    @relation("jobCreatedBy")
     jobTracks                  JobTrack[]
     jobs                       Job[]
     jobTechnicianImages        JobTechnicianImage[]
     jobImages                  JobImage[]
     jobTasks                   JobTask[]
     jobTasksJobType            JobTaskJobType[]
-    commissionHistories        CommissionHistory[]  @relation("commissionHistoryTechnician")
-    editedCommissionHistories  CommissionHistory[]  @relation("commissionHistoryEditedBy")
+    commissionHistories        CommissionHistory[]      @relation("commissionHistoryTechnician")
+    editedCommissionHistories  CommissionHistory[]      @relation("commissionHistoryEditedBy")
+    createdAdvancePayment      Advancepayment[]         @relation("advancePaymentUserCreatedBy")
+    updatedAdvancePayment      Advancepayment[]         @relation("advancePaymentUserUpdatedBy")
+    voidedAdvancePayment       Advancepayment[]         @relation("advancePaymentUserVoidedBy")
+    advancepaymentemployee     Advancepaymentemployee[]
+    chat                       Chat[]
+    createdServiceTicket       Servicetickets[]         @relation("serviceTicketUserCreatedBy")
+    technicianServiceTicket    Servicetickets[]         @relation("serviceTicketUsertechnician")
+    editedServiceTicket        Servicetickets[]         @relation("serviceTicketUsereditedBy")
+    joblocation                Joblocation[]
+    createdJobRequest          Jobrequest[]             @relation("jobRequestUserCreatedBy")
+    editedJobRequest           Jobrequest[]             @relation("jobRequestUsereditedBy")
+    invoice                    Invoice[]
+    paymentterm                Paymentterm[]
 }
