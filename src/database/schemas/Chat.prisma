@@ -1,0 +1,22 @@
+enum ChatChannels {
+    serviceTicket
+    jobRequest
+    job
+}
+
+model Chat {
+    id            Int          @id @default(autoincrement())
+    alternativeId String       @default(cuid())
+    chatChannel   ChatChannels
+    userId        Int
+    // TODO: USER RELATIONSHIP
+    companyId     Int
+    // TODO: COMPANY RELATIONSHIP
+    customerId    Int
+    // TODO: CUSTOMER RELATIONSHIP
+    replyTo       Int
+    // TODO: CHAT RELATIONSHIP
+    message       String
+    images        Json
+    readStatus    Json
+}

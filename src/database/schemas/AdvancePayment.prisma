@@ -1,0 +1,45 @@
+model Advancepayment {
+    id                Int      @id @default(autoincrement())
+    alternativeId     String   @default(cuid())
+    companyId         Int
+    // TODO: COMPANY RELATIONSHIP
+    amount            Int      @default(0)
+    balance           Int      @default(0)
+    referenceNumber   String
+    paymentType       String
+    paidAt            DateTime
+    appliedAt         DateTime
+    note              String
+    isVoid            Boolean  @default(false)
+    voidedAt          DateTime
+    createdById       Int
+    // TODO: USER RELATIONSHIP
+    updatedById       Int
+    // TODO: USER RELATIONSHIP
+    voidedById        Int
+    // TODO: USER RELATIONSHIP
+    workTypeId        Int
+    // TODO: WORKTYPE RELATIONSHIP
+    companyLocationId Int
+    // TODO: COMPANYLOCATION RELATIONSHIP
+    createdAt         DateTime @default(now())
+    updatedAt         DateTime @updatedAt
+
+    @@index([paidAt])
+    @@index([isVoid, paidAt])
+    @@index([isVoid, appliedAt])
+}
+
+model Advancepaymentvendo {
+    id            Int    @id @default(autoincrement())
+    alternativeId String @default(cuid())
+    contractorId  Int?
+    // TODO: COMPANY RELATIONSHIOP
+}
+
+model Advancepaymentemployee {
+    id            Int    @id @default(autoincrement())
+    alternativeId String @default(cuid())
+    employeeId    Int?
+    // TODO: USER RELATIONSHIOP
+}

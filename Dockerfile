@@ -10,7 +10,7 @@ RUN apk update && apk upgrade && \
 
 WORKDIR /usr/src/app
 COPY ["package.json", "package-lock.json*", "npm-shrinkwrap.json*", "tsconfig.json", "./"]
-RUN npm install -g mongodb
+RUN npm install -g mongodb@5.8
 RUN npm install request
 RUN npm install
 RUN npm rebuild bcrypt --build-from-source
