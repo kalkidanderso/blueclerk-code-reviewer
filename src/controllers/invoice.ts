@@ -2669,13 +2669,6 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
     // Update email history and last email sent info
     const sendingDate = new Date();
-    invoice.emailHistory.push({
-        sentTo: customer.info?.email,
-        sentAt: sendingDate,
-        sentBy: user._id || null,
-        deliveryStatus: true
-    });
-
 
     recipientEmails.forEach((item) => {
         invoice.emailHistory.push({

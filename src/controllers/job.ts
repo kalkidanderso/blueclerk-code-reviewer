@@ -3064,6 +3064,11 @@ export const editJob = async (req: Request, res: Response) => {
             let date;
 
             if (params.scheduledStartTime) {
+                const isValidScheduledStartTime = moment(params.scheduledStartTime, 'YYYY-MM-DDTHH:mm:ss.SSSZ', true).isValid()
+                if (!isValidScheduledStartTime) {
+                    throw new Error('Invalid scheduledStartTime provided');
+                }
+
                 date = new Date(params.scheduleDate)
                 newStartTime = new Date(params.scheduledStartTime)
                 if (newStartTime != job.scheduledStartTime) {
@@ -3071,9 +3076,20 @@ export const editJob = async (req: Request, res: Response) => {
                 }
                 job.scheduledStartTime = newStartTime
                 if (linkedJob) { linkedJob.scheduledStartTime = newStartTime; }
-            }
+            }else if(!params.scheduledStartTime && job.scheduledStartTime!=null){
+                action += '|Updated ScheduledStartTime|';
+                job.scheduledStartTime = null;
+                if (linkedJob) {
+                    linkedJob.scheduledStartTime = null;
+                }
+            } 
 
             if (params.scheduledEndTime) {
+                const isValidScheduledEndTime = moment(params.scheduledEndTime, 'YYYY-MM-DDTHH:mm:ss.SSSZ', true).isValid()
+                if (!isValidScheduledEndTime) {
+                    throw new Error('Invalid scheduledEndTime provided');
+                }
+
                 date = new Date(params.scheduleDate)
                 newEndTime = new Date(params.scheduledEndTime)
                 if (newEndTime != job.scheduledEndTime) {
@@ -3081,7 +3097,13 @@ export const editJob = async (req: Request, res: Response) => {
                 }
                 job.scheduledEndTime = newEndTime
                 if (linkedJob) { linkedJob.scheduledEndTime = newEndTime; }
-            }
+            }else if(!params.scheduledEndTime && job.scheduledEndTime!=null){
+                action += '|Updated ScheduledEndTime|';
+                job.scheduledEndTime = null;
+                if (linkedJob) {
+                    linkedJob.scheduledEndTime = null;
+                }
+            } 
 
             if (params.equipmentId != undefined && params.equipmentId !== '""') {
                 if (params.equipmentId != job.equipmentId) {
