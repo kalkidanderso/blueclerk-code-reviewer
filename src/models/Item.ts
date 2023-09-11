@@ -12,6 +12,7 @@ export interface IncomeAccountRef {
     value:String
 }
 export interface IItem extends Document {
+    IncomeAccountRef: any;
 
     name: string
     description: string

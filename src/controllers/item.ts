@@ -152,6 +152,8 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
 export const updateItem = (req: Request, res: Response) => {
     
     const params = req.body;
+    const {account}=params;
+
     const isProduct=params.itemType=='Product';
     Item.findOne({ _id: params.itemId },
         (err: any, item: IItem) => {
@@ -164,7 +166,9 @@ export const updateItem = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': 'Invalid item id' })
             }
 
-            item.updateOne({ charges: params.charges, tax: params.tax, isFixed: isProduct?true:params.isFixed ,itemType:params.itemType,  productCost:params.productCost,salePrice:params.salePrice},
+            item.updateOne({ charges: params.charges, tax: params.tax, isFixed: isProduct?true:params.isFixed ,itemType:params.itemType,  productCost:params.productCost,salePrice:params.salePrice, 
+            IncomeAccountRef:{ name: account?.Name, value: account?.Id }
+            },
                 (err: any, raw: any) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
@@ -268,7 +272,8 @@ export const updateItems = async (req: Request, res: Response) => {
         itemObj.productCost=i.productCost ?? itemObj.productCost;
         itemObj.salePrice=i.salePrice ?? itemObj.salePrice;
         itemObj.itemType=i.itemType ?? itemObj.itemType;
-      
+        itemObj.IncomeAccountRef=i.IncomeAccountRef??itemObj.IncomeAccountRef;
+
 
         await itemObj.save(async (err) => {
             if (err) {
