@@ -1187,7 +1187,7 @@ export const updatePayment = async (req: Request, res: Response) => {
                 });
             })
         } else {
-            return res.json({ status: Status.Success, message: 'Payment successfully updated.', payment, customer, invoice });
+            return res.json({ status: Status.Success, message: 'Payment successfully updated.', payment, quickbookPayment: null, quickbookPaymentError: "Error in Company's QB authorization or Payment QB id", customer, invoice });
         }
 
     } catch (error) {
