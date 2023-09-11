@@ -40,7 +40,6 @@ export const getInvoices = async (req: Request, res: Response) => {
     let companyId = req.otherCompanyId || req.companyId;
     let currentPage = params.currentPage || 0;
     let pageSize = params.pageSize || DefaultPageSize;
-
     // Check if any filter provided to decide whether return all records or not
     let isAllRecords = await _getIsAllRecordsByParams(params);
     // Get the date of the last 90 days
@@ -254,7 +253,9 @@ const _fillInitialQuery = (params: any, queryParams: any, query: any) => {
         case true:
             query['$and'].push({ isVoid: isVoid });
             break;
-
+        case false:
+            query['$and'].push({ isVoid: isVoid });
+            break;
         default:
             /**
              * For isVoid false, use the $ne because we want to retrieve old invoices,
