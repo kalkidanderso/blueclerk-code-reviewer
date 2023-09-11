@@ -1,8 +1,8 @@
 model Invoicecommission {
     id            Int      @id @default(autoincrement())
     alternativeId String   @default(cuid())
-    invoiceId     Int
-    // TODO: INVOICE RELATIONSHIP
+    invoice       Invoice  @relation(fields: [invoiceId], references: [id])
+    invoiceId     Int      @unique
     technicians   Json?
     createdAt     DateTime @default(now())
     updatedAt     DateTime @updatedAt

@@ -7,10 +7,9 @@ model Jobsite {
     address       Json?
     jobLocation   Joblocation @relation(fields: [locationId], references: [id])
     locationId    Int
+    customer      Customer?   @relation(fields: [customerId], references: [id])
     customerId    Int?
-    // TODO: CUSTOMER RELATIONSHIP
-    homeOwnerID   Int?
-    // TODO: HOMEOWNER RELATIONSHIP
+    homeOwner     HomeOwners?
 
     tickets     Servicetickets[] @relation("jobsite")
     homeTickets Servicetickets[] @relation("homejobsite")

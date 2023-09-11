@@ -74,7 +74,6 @@ model Company {
     commissionType      String            @default("%")
     // TODO: commissionTier: {type: Schema.Types.ObjectId, ref: 'JobCosting'},
     // TODO: companyInvoices: [{ type: Schema.Types.ObjectId, ref: 'CompanyInvoice' }],
-    companyInvoices     Companyinvoice[]
     blockchain          CompanyBlockchain @relation(fields: [companyBlockchainId], references: [id])
     companyBlockchainId Int               @unique
     createdAt           DateTime          @default(now())
@@ -100,6 +99,11 @@ model Company {
     companyLocations              CompanyLocation[]
     jobCharges                    JobCharges[]
     saletaxes                     SaleTax[]
+    invoiceprefix                 Invoiceprefix[]
+    payment                       Payment[]
+    paymentvendor                 Paymentvendor[]
+    companyinvoice                Companyinvoice[]
+    companyprefix                 Companyprefix[]
 
     @@index([plan, chargeDate])
 }

@@ -12,4 +12,5 @@ model PriceTier {
     updatedAt     DateTime @updatedAt
 
     itemTiers ItemTier[]
+    customer  Customer[]
 }

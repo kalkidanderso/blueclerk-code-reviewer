@@ -7,4 +7,6 @@ model Supplier {
     supplierAdminId Int
     //TODO
     //admin SupplierAdmin @relation(fields: [supplierAdminId], references: [id])
+
+    supplieradmin Supplieradmin[]
 }

@@ -1,28 +1,27 @@
 model Advancepayment {
-    id              Int        @id @default(autoincrement())
-    alternativeId   String     @default(cuid())
-    company         Company    @relation(fields: [companyId], references: [id])
-    companyId       Int
-    amount          Int        @default(0)
-    balance         Int        @default(0)
-    referenceNumber String
-    paymentType     String
-    paidAt          DateTime
-    appliedAt       DateTime
-    note            String
-    isVoid          Boolean    @default(false)
-    voidedAt        DateTime
-    createdByUser   User       @relation("advancePaymentUserCreatedBy", fields: [createdById], references: [id])
-    createdById     Int
-    updatedByUser   User       @relation("advancePaymentUserUpdatedBy", fields: [updatedById], references: [id])
-    updatedById     Int
-    voidedByUser    User       @relation("advancePaymentUserVoidedBy", fields: [voidedById], references: [id])
-    voidedById      Int
-    workTypes       Worktype[]
-    // TODO: COMPANYLOCATION RELATIONSHIP
-    // companyLocations Companylocation[] 
-    createdAt       DateTime   @default(now())
-    updatedAt       DateTime   @updatedAt
+    id               Int               @id @default(autoincrement())
+    alternativeId    String            @default(cuid())
+    company          Company           @relation(fields: [companyId], references: [id])
+    companyId        Int
+    amount           Int               @default(0)
+    balance          Int               @default(0)
+    referenceNumber  String
+    paymentType      String
+    paidAt           DateTime
+    appliedAt        DateTime
+    note             String
+    isVoid           Boolean           @default(false)
+    voidedAt         DateTime
+    createdByUser    User              @relation("advancePaymentUserCreatedBy", fields: [createdById], references: [id])
+    createdById      Int
+    updatedByUser    User              @relation("advancePaymentUserUpdatedBy", fields: [updatedById], references: [id])
+    updatedById      Int
+    voidedByUser     User              @relation("advancePaymentUserVoidedBy", fields: [voidedById], references: [id])
+    voidedById       Int
+    workTypes        Worktype[]
+    companyLocations CompanyLocation[]
+    createdAt        DateTime          @default(now())
+    updatedAt        DateTime          @updatedAt
 
     @@index([paidAt])
     @@index([isVoid, paidAt])

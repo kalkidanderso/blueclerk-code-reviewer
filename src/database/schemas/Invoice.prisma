@@ -5,11 +5,11 @@ enum InvoiceStatus {
 }
 
 model Invoice {
-    id                  Int           @id @default(autoincrement())
-    alternativeId       String        @default(cuid())
+    id                  Int                @id @default(autoincrement())
+    alternativeId       String             @default(cuid())
     invoiceId           String
-    invoiceType         Int           @default(0)
-    job                 Job?          @relation(fields: [jobId], references: [id])
+    invoiceType         Int                @default(0)
+    job                 Job?               @relation(fields: [jobId], references: [id])
     jobId               Int?
     purchaseOrderId     Int?
     // TODO: PURCHASEORDER RELATIONSHIP
@@ -19,52 +19,53 @@ model Invoice {
     // TODO: JOBPURCHASEORDER RELATIONSHIP
     issuedDate          DateTime
     dueDate             DateTime
-    isDraft             Boolean       @default(false)
-    paymentTerm         Paymentterm   @relation(fields: [paymentTermId], references: [id])
+    isDraft             Boolean            @default(false)
+    paymentTerm         Paymentterm        @relation(fields: [paymentTermId], references: [id])
     paymentTermId       Int
     note                String?
     customerPO          String
+    customerContact     Contact            @relation(fields: [customerContactId], references: [id])
     customerContactId   Int
-    //TODO: CONTACT RELATIONSHIP
     vendorId            String
+    customer            Customer           @relation(fields: [customerId], references: [id])
     customerId          Int
-    // TODO: CUSTOMER RELATIONSHIP
-    jobLocation         Joblocation   @relation(fields: [jobLocationId], references: [id])
+    jobLocation         Joblocation        @relation(fields: [jobLocationId], references: [id])
     jobLocationId       Int
-    jobSite             Jobsite       @relation(fields: [jobSiteId], references: [id])
+    jobSite             Jobsite            @relation(fields: [jobSiteId], references: [id])
     jobSiteId           Int
-    company             Company       @relation(fields: [companyId], references: [id])
+    company             Company            @relation(fields: [companyId], references: [id])
     companyId           Int
-    charges             Int           @default(0)
-    taxAmount           Int           @default(0)
-    subTotal            Int           @default(0)
-    total               Int           @default(0)
-    shippingCost        Int           @default(0)
+    charges             Int                @default(0)
+    taxAmount           Int                @default(0)
+    subTotal            Int                @default(0)
+    total               Int                @default(0)
+    shippingCost        Int                @default(0)
     tax                 Int
     taxPercentage       Int
-    createdBy           User          @relation(fields: [createdById], references: [id])
+    createdBy           User               @relation(fields: [createdById], references: [id])
     createdById         Int
-    timeSpent           Int           @default(0)
+    timeSpent           Int                @default(0)
     items               Json?
-    paymentApplied      Int           @default(0)
+    paymentApplied      Int                @default(0)
     balanceDue          Int
-    paid                Boolean       @default(false)
-    serviceType         InvoiceStatus @default(UNPAID)
+    paid                Boolean            @default(false)
+    serviceType         InvoiceStatus      @default(UNPAID)
     emailHistory        Json
-    bouncedEmailFlag    Boolean       @default(false)
+    bouncedEmailFlag    Boolean            @default(false)
     lastEmailSent       DateTime
     quickbookId         String
-    commissionId        Int?
-    // TODO:COMMISSION RELATIONSHIP
-    isVoid              Boolean       @default(false)
-    workType            Worktype      @relation(fields: [workTypeId], references: [id])
+    invoicecommission   Invoicecommission?
+    isVoid              Boolean            @default(false)
+    workType            Worktype           @relation(fields: [workTypeId], references: [id])
     workTypeId          Int
+    companyLocation     CompanyLocation    @relation(fields: [companyLocationId], references: [id])
     companyLocationId   Int
-    // TODO: COMPANYLOCATION RELATIONSHIP
     technicianMessages  Json
-    showJobId           Boolean       @default(true)
-    createdAt           DateTime      @default(now())
-    updatedAt           DateTime      @updatedAt
+    showJobId           Boolean            @default(true)
+    createdAt           DateTime           @default(now())
+    updatedAt           DateTime           @updatedAt
+    paymentcustomer     Paymentcustomer[]
+    paymentvendors      Paymentvendor[]
 
     @@index([customerPO])
     @@index([vendorId])

@@ -47,6 +47,8 @@ model Items {
     quickbookId    String
     createdAt      Boolean       @default(true)
     updatedAt      Boolean       @default(true)
+
+    servicetickets Servicetickets[]
 }
 
 enum Item {

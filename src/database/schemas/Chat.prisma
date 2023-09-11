@@ -12,12 +12,11 @@ model Chat {
     userId        Int
     company       Company?     @relation(fields: [companyId], references: [id])
     companyId     Int
+    customer      Customer     @relation(fields: [customerId], references: [id])
     customerId    Int
-    // TODO: CUSTOMER RELATIONSHIP
     replyTo       Int
     reply         Chat         @relation("Replies", fields: [replyTo], references: [id])
     replies       Chat[]       @relation("Replies")
-    // TODO: CHAT RELATIONSHIP
     message       String
     images        Json
     readStatus    Json
