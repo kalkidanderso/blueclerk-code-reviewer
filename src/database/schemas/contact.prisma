@@ -1,0 +1,11 @@
+model Contact {
+    id Int @id @default(autoincrement())
+    name String
+    phone String
+    email String
+    isActive Boolean @default(true)
+    userId Int
+    // user User @relation(fields: [userId], references: [id])
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}

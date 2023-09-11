@@ -1,0 +1,12 @@
+model HomeOwners {
+    id Int @id @default(autoincrement())
+    profile Json ?
+    info Json ?
+    contact Json ?
+    jobLocationId Int
+    //TODO
+    //subdivision JobLocation @relation(fields: [jobLocationId], references: [id])
+    jobSiteId Int
+    //TODO
+    //address JobSite @relation(fields: [jobSiteId], references: [id])
+}

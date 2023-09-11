@@ -1,0 +1,55 @@
+model Items {
+    id Int @id @default(autoincrement())
+    name String
+    description String
+    sku String
+    isFixed Boolean @default(true)
+    charges Int @default(0)
+    tax Int @default(0)
+    // tiers: [{
+    //     _id: false,
+    //     tier: {
+    //         type: Schema.Types.ObjectId,
+    //         ref: 'PriceTier'
+    //     },
+    //     charge: Number,
+    //     updatedBy: {
+    //         type: Schema.Types.ObjectId,
+    //         ref: 'User'
+    //     },
+    //     updatedAt: Date
+    // }],
+    // costing: [{
+    //     _id: false,
+    //     tier: {
+    //         type: Schema.Types.ObjectId,
+    //         ref: 'JobCosting'
+    //     },
+    //     charge: Number,
+    //     updatedBy: {
+    //         type: Schema.Types.ObjectId,
+    //         ref: 'User'
+    //     },
+    //     updatedAt: Date
+    // }],
+    isDiscountItem Boolean @default(false)
+    isJobType Boolean @default(true)
+    jobTypeId Int
+    //TODO
+    //jobType JobType @relation(fields: [jobTypeId], references: [id])
+    itemType Item @default(Service)
+    productCost Int
+    salePrice Int
+    companyId Int
+    //TODO
+    //company Company @relation(fields: [companyId], references: [id])
+    isActive Boolean @default(true)
+    quickbookId String
+    createdAt Boolean @default(true)
+    updatedAt Boolean @default(true)
+}
+
+enum Item {
+    Service
+    Product
+}
