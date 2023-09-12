@@ -677,6 +677,7 @@ export const _updateQBItem = async (req: Request, res: Response, company: ICompa
         qbItem.Name = item.name;
         qbItem.Taxable = item.tax === 0 ? false : !false;
         qbItem.Sku = item.sku;
+        qbItem.IncomeAccountRef=item.IncomeAccountRef;
         qbItem.Type = item.itemType == 'Product' ? QBItemTypes.NONINVENTORY : QBItemTypes.SERVICE,
 
 
