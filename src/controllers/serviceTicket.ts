@@ -157,12 +157,38 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                 serviceTicket.images = job.images;
             }
 
+            //Retrieve image data from a job request when a ticket is created for a job request.
+            if (params.jobId) {
+                const jobRequest = await JobRequest.findOne({_id: params.jobRequestId});
+                const images:any = []
+                jobRequest?.requests.forEach(request => {
+                    const requestImages = request.images?.length ? request?.images : [];
+                    images.push(...requestImages);
+                });
+                serviceTicket.images = images;
+            }
+
             data.imagesUrl?.forEach((imageUrl: string) => serviceTicket.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() }));
             serviceTicket.source = params.source ? params.source : 'blueclerk';
             await serviceTicket.save(async (err: any) => {
                 if (err) {
                     return res.json({'status': Status.Error, 'message': Messages.GenericError});
                 }
+
+                if (params.jobRequestId) {
+                    const trackedServiceTicket = [{
+                        user: user._id,
+                        action: `|Job created by ${user.profile.displayName}|`,
+                        date: new Date()
+                    }];
+                    await JobRequest.findByIdAndUpdate(params.jobRequestId, {
+                        ticketCreated: true,
+                        job: serviceTicket._id,
+                        track: trackedServiceTicket,
+                        status: JobRequestStatus.SCHEDULED
+                    });
+                }
+
                 await company.updateOne({currentJobId: company.currentJobId+1 })
                     .exec(async (err: any)=>{
                         if (err) {
