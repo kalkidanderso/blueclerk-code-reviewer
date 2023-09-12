@@ -261,7 +261,7 @@ export const updateItems = async (req: Request, res: Response) => {
 
         // Handle isJobType status
         const jobType = await _handleItemJobType(itemObj, i, user._id);
-
+        const IncomeAccountRefObj=i.account?{ name: i.account?.Name, value: i.account?.Id } : itemObj.IncomeAccountRef;
         itemObj.name = i.name ?? itemObj.name;
         itemObj.description = i.description;
         itemObj.isJobType = i.isJobType ?? itemObj.isJobType;
@@ -272,15 +272,17 @@ export const updateItems = async (req: Request, res: Response) => {
         itemObj.productCost=i.productCost ?? itemObj.productCost;
         itemObj.salePrice=i.salePrice ?? itemObj.salePrice;
         itemObj.itemType=i.itemType ?? itemObj.itemType;
-        itemObj.IncomeAccountRef=i.IncomeAccountRef??itemObj.IncomeAccountRef;
+        itemObj.IncomeAccountRef=IncomeAccountRefObj;
+        
 
+      
 
         await itemObj.save(async (err) => {
             if (err) {
                 return res.json({ status: Status.Success, message: err.message, item: itemObj });
             }
             if (company.qbAuthorized && itemObj.quickbookId) {
-                await _updateQBItem(req, res, company, itemObj, async (err, errMsg) => { });
+                await _updateQBItem(req, res, company, itemObj,  async (err, errMsg) => { });
             }
         });
     }
