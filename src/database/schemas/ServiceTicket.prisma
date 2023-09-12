@@ -67,6 +67,8 @@ model Servicetickets {
     emailHistory      Json
     lastEmailSent     DateTime
 
+    jobs Job[]
+
     @@index([itemId])
     @@index([jobCreated, status])
     @@index([jobCreated, status, type])

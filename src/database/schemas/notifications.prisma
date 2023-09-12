@@ -1,22 +1,38 @@
+enum NotificationType {
+    ServiceTicketCreated
+    ContractInvitation
+    ContractAccepted
+    ContractCanceled
+    ContractRejected
+    ContractFinished
+    JobRescheduled
+    CompanyInvoiceFailed
+    JobRequestCreated
+    JobRequestStatusUpdated
+    NewChat
+    ChatRead
+    JobCreated
+    JobUpdated
+}
+
 model Notification {
-    id Int @id @default(autoincrement())
-    companyId Int
-    //TODO
-    //company Company @relation(fields: [companyId], references: [id])
-    customerId Int
-    userId Int
-    //TODO
-    customer Customer @relation(fields: [customerId], references: [id])
-    //TODO
-    // customerContact User @relation(fields: [userIdn], references: [id])
-        // notificationType: {
-        //     type: String,
-        //     enum: Object.values(NotificationTypes),
-        //     required: true
-        // },
-    message Json ?
-    readStatus Json ?
-    dismissedStatus Json ?
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    id                Int              @id @default(autoincrement())
+    companyId         Int
+    company           Company          @relation(fields: [companyId], references: [id])
+    customerId        Int
+    customer          Customer         @relation(fields: [customerId], references: [id])
+    customerContactId Int
+    customerContact   User             @relation(fields: [customerContactId], references: [id])
+    notificationType  NotificationType
+    message           Json?
+    isRead            Boolean          @default(false)
+    readById          Int?
+    readBy            User?            @relation("notificationReadBy", fields: [readById], references: [id])
+    readAt            DateTime?
+    isDismissed       Boolean          @default(false)
+    dismissedById     Int?
+    dismissedBy       User?            @relation("notificationDismissedBy", fields: [dismissedById], references: [id])
+    dismissedAt       DateTime?
+    createdAt         DateTime         @default(now())
+    updatedAt         DateTime         @updatedAt
 }

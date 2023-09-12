@@ -1,9 +1,8 @@
 model AssignedEmployee {
-    id            Int     @id @default(autoincrement())
-    alternativeId String? @unique
-    employeeId    Int
+    id               Int               @id @default(autoincrement())
+    alternativeId    String?           @unique
+    employeeId       Int
     // TODO: implement employee
-    // TODO: workTypes: [{ type: Schema.Types.ObjectId, ref: 'WorkType' }]
-
+    workTypes        Worktype[]
     companyLocations CompanyLocation[]
 }

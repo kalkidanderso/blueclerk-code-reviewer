@@ -33,7 +33,7 @@ model JobTask {
     contractorId               Int?
     contractor                 Company?         @relation(fields: [contractorId], references: [id])
     contractorCommissionTierId Int?
-    // TODO: ref JobCosting
+    contractorCommissionTier   JobCosting?      @relation(fields: [contractorCommissionTierId], references: [id])
     comment                    String?
     jobTypes                   JobTaskJobType[]
     paid                       Boolean?         @default(false)
@@ -85,9 +85,9 @@ model Job {
     parentJob          Job?                 @relation("JobParent", fields: [parentJobId], references: [id])
     childrenJob        Job[]                @relation("JobParent")
     ticketId           Int?
-    // TODO: ref ServiceTicket
+    ticket             Servicetickets?      @relation(fields: [ticketId], references: [id])
     requestId          Int?
-    // TODO: ref JobRequest
+    request            Jobrequest?          @relation("jobrequest", fields: [requestId], references: [id])
     equipmentId        Int?
     // TODO: ref CustomerEquiment
     technicianId       Int?
@@ -95,20 +95,20 @@ model Job {
     contractorId       Int?
     contractor         Company?             @relation("jobContractor", fields: [contractorId], references: [id])
     customerId         Int?
-    // TODO: ref Customer
+    customer           Customer?            @relation(fields: [customerId], references: [id])
     jobLocationId      Int?
-    // TODO: ref JobLocation
+    jobLocation        Joblocation?         @relation("jobJobLocation", fields: [jobLocationId], references: [id])
     jobSiteId          Int?
-    // TODO: ref JobSite
+    jobSite            Jobsite?             @relation("jobJobsite", fields: [jobSiteId], references: [id])
     isHomeOccupied     Boolean?             @default(false)
     homeOwnerId        Int?
-    // TODO: ref HomeOwner
+    homeOwner          HomeOwners?          @relation(fields: [homeOwnerId], references: [id])
     homeJobLocationId  Int?
-    // TODO: ref JobLocation
+    homeJobLocation    Joblocation?         @relation(fields: [homeJobLocationId], references: [id])
     homeJobSiteId      Int?
-    // TODO: ref JobLocation
+    homeJobSite        Jobsite?             @relation(fields: [homeJobSiteId], references: [id])
     customerContactId  Int?
-    // TODO: ref Contact
+    customerContact    Contact?             @relation(fields: [customerContactId], references: [id])
     customerPO         String?
     image              String?
     images             JobImage[]
@@ -144,7 +144,7 @@ model Job {
     commissionId        Int?
     // TODO: ref JobCommission
     workTypeId          Int?
-    // TODO: ref WorkType
+    workType            Worktype?        @relation(fields: [workTypeId], references: [id])
     companyLocationId   Int?
     companyLocation     CompanyLocation? @relation(fields: [companyLocationId], references: [id])
 

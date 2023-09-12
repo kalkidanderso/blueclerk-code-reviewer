@@ -4,4 +4,6 @@ model Assignedvendor {
     vendor        Company @relation(fields: [vendorId], references: [id])
     vendorId      Int
     workTypes     Json
+
+    companyLocations CompanyLocation[]
 }
