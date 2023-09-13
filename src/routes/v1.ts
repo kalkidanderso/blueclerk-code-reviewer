@@ -685,12 +685,12 @@ export default function (sio: any) {
         itemController.updateItem
     )
     router.post(
-        '/disableItem',
+        '/toggleItemStatus',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        validate(Validations.disableItem),
-        itemController.disableItem
+        validate(Validations.toggleItemStatus),
+        itemController.toggleItemStatus
     )
     router.post(
         '/checkItemExist',

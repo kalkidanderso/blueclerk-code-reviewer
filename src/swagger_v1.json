@@ -6139,12 +6139,12 @@
         ]
       }
     },
-    "/disableItem": {
+    "/toggleItemStatus": {
       "post": {
         "tags": [
           "Items"
         ],
-        "summary": "To disable the item",
+        "summary": "To Toggle the item state between active and inactive",
         "requestBody": {
           "content": {
             "application/x-www-form-urlencoded": {
