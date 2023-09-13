@@ -1,0 +1,19 @@
+{
+  "entryFile": "src/server.ts",
+  "noImplicitAdditionalProperties": "throw-on-extras",
+  "controllerPathGlobs": ["./src/**/*.controller.ts"],
+  "spec": {
+    "basePath": "/api/v3",
+    "outputDirectory": "./src/routes/v3",
+    "specVersion": 3,
+    "securityDefinitions": {
+      "Bearer": { "type": "apiKey", "name": "Authorization", "in": "header" }
+    }
+  },
+  "routes": {
+    "basePath": "/api/v3",
+    "authenticationModule": "./src/middleware/authentication.ts",
+    "routesDir": "./src/routes/v3"
+  }
+
+}
