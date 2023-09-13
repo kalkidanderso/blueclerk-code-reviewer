@@ -31,5 +31,7 @@ model Jobrequest {
     createdAt         DateTime    @default(now())
     updatedAt         DateTime    @updatedAt
 
+    jobs Job[] @relation("jobrequest")
+
     @@index([status])
 }

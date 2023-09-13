@@ -24,6 +24,7 @@ model User {
     contact          Json?
     permissions      Json?
     emailPreferences Json?
+    contacts         Contact[]
     // TODO: Contats need to be implemented
     balance          Int       @default(0)
     credit           Int       @default(0)
@@ -65,4 +66,8 @@ model User {
     jobChargesCreated             JobCharges[]
     saleTaxesCreated              SaleTax[]
     emailSchedules                EmailSchedule[]
+    updatedItemTiers              ItemTier[]
+    updatedItemCostings           ItemCosting[]
+    dismissedNotifications        Notification[]           @relation("notificationDismissedBy")
+    readedNotifications           Notification[]           @relation("notificationReadBy")
 }

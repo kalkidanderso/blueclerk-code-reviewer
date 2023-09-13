@@ -10,4 +10,7 @@ model JobCosting {
     inactiveAt    DateTime
     createdAt     DateTime @default(now())
     updatedAt     DateTime @updatedAt
+
+    jobTasks     JobTask[]
+    itemCostings ItemCosting[]
 }

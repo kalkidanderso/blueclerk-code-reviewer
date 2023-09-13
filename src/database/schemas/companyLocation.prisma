@@ -12,8 +12,8 @@ model CompanyLocation {
     contact                   Json
     companyId                 Int
     company                   Company            @relation(fields: [companyId], references: [id])
-    // TODO: workTypes: [{ type: Schema.Types.ObjectId, ref: 'WorkType' }],
-    // assignedVendors: [AssignedVendorSchema],
+    workTypes                 Worktype[]
+    assignedVendors           Assignedvendor[]
     assignedEmployees         AssignedEmployee[]
     poRequestEmailSender      String
     jobs                      Job[]

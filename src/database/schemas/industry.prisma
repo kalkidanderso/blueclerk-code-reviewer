@@ -5,8 +5,8 @@ model Industry {
     createdBy     Int
     user          User    @relation(fields: [createdBy], references: [id])
 
-    companyInfo CompanyInfo[]
-    jobTypes    JobType[]
+    companyInfos CompanyInfo[]
+    jobTypes     JobType[]
 
     @@index([title])
 }

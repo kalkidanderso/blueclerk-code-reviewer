@@ -18,6 +18,8 @@ model Jobsite {
     invoice Invoice[]
 
     jobRequest Jobrequest[]
+    homeJobs   Job[]
+    jobs       Job[]        @relation("jobJobsite")
 
     @@index([isActive])
     @@index([id, isActive])

@@ -10,4 +10,6 @@ model PriceTier {
     inactiveAt    DateTime
     createdAt     DateTime @default(now())
     updatedAt     DateTime @updatedAt
+
+    itemTiers ItemTier[]
 }

@@ -13,4 +13,5 @@ model Paymentterm {
     createdAt     DateTime  @default(now())
     updatedAt     DateTime  @updatedAt
     invoice       Invoice[]
+    companies     Company[] @relation("companyPaymentTerm")
 }
