@@ -9,15 +9,15 @@ model Payment {
     isVoid          Boolean  @default(false)
     voidedAt        DateTime
     note            String
+    company         Company  @relation(fields: [companyId], references: [id])
     companyId       Int
-    // TODO: COMPANY RELATIONSHIP
     quickbookId     String
     quickbookRefNum String
+    createdBy       User     @relation("paymentUserCreatedBy", fields: [createdById], references: [id])
     createdById     Int
-    // TODO: USER RELATIONSHIP
     createdAt       DateTime
+    updatedBy       User     @relation("paymentUserupdatedBy", fields: [updatedById], references: [id])
     updatedById     Int
-    // TODO: USER RELATIONSHIP
     workType        Json
     companyLocation Json
     updatedAt       DateTime
@@ -30,38 +30,34 @@ model Payment {
 }
 
 model Paymentcustomer {
-    id                Int    @id @default(autoincrement())
-    alternativeId     String @default(cuid())
-    customerId        Int
+    id               Int               @id @default(autoincrement())
+    alternativeId    String            @default(cuid())
+    customerId       Int
     // TODO: CUSTOMER RELATIONSHIP
-    invoiceId         Int?
-    // INVOICE RELATIONSHIP
-    workTypeId        Int
-    // TODO: WORKTYPE RELATIONSHIP
-    companyLocationId Int
-    // TODO: WORKTYPE RELATIONSHIP
+    invoice          Invoice?          @relation(fields: [invoiceId], references: [id])
+    invoiceId        Int?
+    worktypes        Worktype[]
+    companyLocations CompanyLocation[]
 }
 
 model Paymentvendor {
-    id            Int      @id @default(autoincrement())
-    alternativeId String   @default(cuid())
+    id            Int       @id @default(autoincrement())
+    alternativeId String    @default(cuid())
+    contractor    Company   @relation(fields: [contractorId], references: [id])
     contractorId  Int
-    // TODO: COMPANY RELATIONSHIP
-    invoices      Json
-    jobs          Json
+    invoices      Invoice[]
+    jobs          Job[]
     startDate     DateTime
     endDate       DateTime
     offset        Int
-    creditUsed    Int      @default(0)
-
-    @@index([invoices])
+    creditUsed    Int       @default(0)
 }
 
 model Paymentemployee {
     id            Int      @id @default(autoincrement())
     alternativeId String   @default(cuid())
+    employee      User     @relation(fields: [employeeId], references: [id])
     employeeId    Int
-    // TODO: USER RELATIONSHIP
     invoices      Json
     startDate     DateTime
     endDate       DateTime

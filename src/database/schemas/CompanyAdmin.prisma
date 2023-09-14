@@ -8,8 +8,8 @@ model Companyadmin {
 }
 
 model Supplieradmin {
-    id            Int    @id @default(autoincrement())
-    alternativeId String @default(cuid())
-    supplier      Int
-    // TODO: SUPPLIER RELATIONSHIP
+    id            Int      @id @default(autoincrement())
+    alternativeId String   @default(cuid())
+    supplier      Supplier @relation(fields: [supplierId], references: [id])
+    supplierId    Int
 }

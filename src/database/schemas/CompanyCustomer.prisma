@@ -3,9 +3,8 @@ model Companycustomer {
     alternativeId String   @default(cuid())
     company       Company? @relation(fields: [companyId], references: [id])
     companyId     Int
-    // TODO: COMPANY RELATIONSHIP
+    customer      Customer @relation(fields: [customerId], references: [id])
     customerId    Int
-    // TODO: CUSTOMER RELATIONSHIP
     status        Int      @default(1)
     isPreferred   Boolean  @default(false)
     createdAt     DateTime

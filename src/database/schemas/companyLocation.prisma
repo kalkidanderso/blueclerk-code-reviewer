@@ -17,6 +17,11 @@ model CompanyLocation {
     assignedEmployees         AssignedEmployee[]
     poRequestEmailSender      String
     jobs                      Job[]
+    servicetickets            Servicetickets[]
+    jobrequest                Jobrequest[]
+    invoice                   Invoice[]
+    advancepayments           Advancepayment[]
+    paymentcustomers          Paymentcustomer[]
 
     @@index([companyId, isActive, isMainLocation])
     @@index([companyId, isActive, isMainLocation, id])

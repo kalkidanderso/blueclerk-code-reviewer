@@ -151,8 +151,9 @@ model Job {
     commissionHistories CommissionHistory[]
     emailSchedules      EmailSchedule[]
 
-    jobrequest Jobrequest[]
-    invoice    Invoice[]
+    jobrequest     Jobrequest[]
+    invoice        Invoice[]
+    paymentvendors Paymentvendor[]
 
     @@index([employeeType])
     @@index([image])

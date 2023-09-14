@@ -4,12 +4,11 @@ enum serviceType {
 }
 
 model ServiceTicketTasks {
-    // does not contain id in mongoose but prisma needs it to work
     id        String         @id @default(cuid())
     ticket    Servicetickets @relation(fields: [ticketId], references: [id])
     ticketId  Int
-    jobTypeId String
-    // TODO: JOBTYPE RELATIONSHIP
+    jobType   JobType?       @relation(fields: [jobTypeId], references: [id])
+    jobTypeId Int?
     quantity  Int            @default(1)
     price     Int
 }
@@ -19,13 +18,13 @@ model Servicetickets {
     alternativeId     String               @default(cuid())
     createdAt         DateTime
     dueDate           DateTime?
+    customer          Customer?            @relation(fields: [customerId], references: [id])
     customerId        Int?
-    // // TODO: CUSTOMER RELATIONSHIP
     createdByUser     User                 @relation("serviceTicketUserCreatedBy", fields: [createdById], references: [id])
     createdById       Int
     note              String
+    customerContact   Contact?             @relation(fields: [customerContactId], references: [id])
     customerContactId Int?
-    // TODO: CONTACT RELATIONSHIP
     customerPO        String
     image             String
     images            Json?
@@ -44,8 +43,8 @@ model Servicetickets {
     jobSite           Jobsite              @relation("jobsite", fields: [jobSiteId], references: [id])
     jobSiteId         Int
     isHomeOccupied    Boolean              @default(false)
+    homeOwner         HomeOwners           @relation(fields: [homeOwnerId], references: [id])
     homeOwnerId       Int
-    // TODO: homeOwner RELATIONSHIP
     homeJobLocation   Joblocation          @relation("homeJobLocation", fields: [homeJobLocationId], references: [id])
     homeJobLocationId Int
     homeJobSite       Jobsite              @relation("homejobsite", fields: [homeJobSiteId], references: [id])
@@ -53,16 +52,16 @@ model Servicetickets {
     jobType           JobType              @relation(fields: [jobTypeId], references: [id])
     jobTypeId         Int
     tasks             ServiceTicketTasks[]
+    item              Items                @relation(fields: [itemId], references: [id])
     itemId            Int
-    // //TODO: item RELATIONSHIP
     jobCreated        Boolean              @default(false)
     source            String               @default("blueclerk")
     workType          Worktype             @relation(fields: [workTypeId], references: [id])
     workTypeId        Int
+    companyLocation   CompanyLocation      @relation(fields: [companyLocationId], references: [id])
     companyLocationId Int
-    // //TODO: companyLocation RELATIONSHIP
     pooverriddenById  Int
-    // //TODO: pooverriddenBy RELATIONSHIP
+    //TODO: pooverriddenBy RELATIONSHIP
     type              serviceType          @default(Ticket)
     emailHistory      Json
     lastEmailSent     DateTime

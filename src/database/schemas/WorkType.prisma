@@ -3,12 +3,13 @@ model Worktype {
     alternativeId     String             @default(cuid())
     title             String
     // TODO: TRIM @map("title") @before(validateAndTrim)
-    createdAt         DateTime
-    advancePayments   Advancepayment[]
-    servicetickets    Servicetickets[]
-    jobrequest        Jobrequest[]
-    invoice           Invoice[]
+    createdAt          DateTime
+    advancePayments    Advancepayment[]
+    servicetickets     Servicetickets[]
+    jobrequest         Jobrequest[]
+    invoice            Invoice[]
     companyLocations  CompanyLocation[]
     jobs              Job[]
     assignedEmployees AssignedEmployee[]
+    paymentcustomers Paymentcustomer[]
 }
