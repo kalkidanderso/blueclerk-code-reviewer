@@ -158,7 +158,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
             }
 
             //Retrieve image data from a job request when a ticket is created for a job request.
-            if (params.jobId) {
+            if (params.jobRequestId) {
                 const jobRequest = await JobRequest.findOne({_id: params.jobRequestId});
                 const images:any = []
                 jobRequest?.requests.forEach(request => {
@@ -166,6 +166,7 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
                     images.push(...requestImages);
                 });
                 serviceTicket.images = images;
+                serviceTicket.request = params.jobRequestId;
             }
 
             data.imagesUrl?.forEach((imageUrl: string) => serviceTicket.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() }));
