@@ -30,6 +30,7 @@ model Joblocation {
     homeJobs Job[]
     jobs     Job[]     @relation("jobJobLocation")
     tags     Tag[]
+    customerContract CustomerContract[]
 
     @@index([contacts])
     @@index([isActive])

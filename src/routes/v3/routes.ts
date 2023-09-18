@@ -5,7 +5,7 @@ import { Controller, ValidationService, FieldErrors, ValidateError, TsoaRoute, H
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { JobsController } from './../../controllers/v3/jobs/jobs.controller';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-import { UsersController } from './../../controllers/v3/users/users.controller';
+import { UsersController } from '../../controllers/v3/users.controller';
 import { expressAuthentication } from './../../middleware/authentication';
 // @ts-ignore - no great way to install types from subpackage
 const promiseAny = require('promise.any');

@@ -24,60 +24,62 @@ model CompanyBlockchain {
 }
 
 model Company {
-    id                  Int               @id @default(autoincrement())
-    alternativeId       String?           @unique
-    info                CompanyInfo?      @relation(fields: [companyInfoId], references: [id])
-    companyInfoId       Int?              @unique
+    id                  Int                @id @default(autoincrement())
+    alternativeId       String?            @unique
+    info                CompanyInfo?       @relation(fields: [companyInfoId], references: [id])
+    companyInfoId       Int?               @unique
     address             Json?
     contact             Json?
     other               Json?
     employees           Employee[]
     customers           Customer[]
+    employee            User?              @relation(fields: [employeeId], references: [id])
+    employeeId          Int?
     stripeId            String?
-    paid                Boolean           @default(false)
-    type                Int               @default(0)
-    plan                Int               @default(0)
+    paid                Boolean            @default(false)
+    type                Int                @default(0)
+    plan                Int                @default(0)
     chargeDate          DateTime
-    trialEndDate        DateTime
-    maxTechnicians      Int               @default(0)
-    maxManagers         Int               @default(0)
-    maxOfficeAdmins     Int               @default(0)
-    maxAdmins           Int               @default(0)
+    trialEndDate        DateTime?
+    maxTechnicians      Int                @default(0)
+    maxManagers         Int                @default(0)
+    maxOfficeAdmins     Int                @default(0)
+    maxAdmins           Int                @default(0)
     userPermissions     Json
-    currentJobId        Int               @default(0)
-    prefix              String
-    adminId             Int
-    admin               Companyadmin      @relation("admin", fields: [adminId], references: [id])
-    qbAccessToken       String
-    qbRefreshToken      String
-    realmId             String
-    qbCompanyName       String
-    qbCompanyEmail      String
+    currentJobId        Int                @default(0)
+    prefix              String?
+    adminId             Int?
+    admin               Companyadmin?      @relation("admin", fields: [adminId], references: [id])
+    qbAccessToken       String?
+    qbRefreshToken      String?
+    realmId             String?
+    qbCompanyName       String?
+    qbCompanyEmail      String?
     customersSynced     Boolean?
-    customersSyncedAt   DateTime
-    qbSync              Json
-    socketId            String
-    qbAuthorized        Boolean           @default(false)
-    qbRefeshTokenExpiry DateTime
-    currentInvoiceId    Int               @default(0)
-    emailPreferences    Json
-    invoicePrefix       String
-    currentPOId         Int               @default(0)
-    currentEstimateId   Int               @default(0)
-    itemTier            PriceTier[]
-    jobCostings         JobCosting[]
-    paymentTermId       Int
-    paymentTerm         Paymentterm       @relation("companyPaymentTerm", fields: [paymentTermId], references: [id])
-    balance             Int               @default(0)
-    credit              Int               @default(0)
+    customersSyncedAt   DateTime?
+    qbSync              Json?
+    socketId            String?
+    qbAuthorized        Boolean            @default(false)
+    qbRefeshTokenExpiry DateTime?
+    currentInvoiceId    Int                @default(0)
+    emailPreferences    Json?
+    invoicePrefix       String?
+    currentPOId         Int                @default(0)
+    currentEstimateId   Int                @default(0)
+    itemTier            Json?
+    costing             Json?
+    paymentTermId       Int?
+    paymentTerm         Paymentterm?       @relation("companyPaymentTerm", fields: [paymentTermId], references: [id])
+    balance             Int                @default(0)
+    credit              Int                @default(0)
     commission          Int?
-    commissionType      String            @default("%")
+    commissionType      String             @default("%")
     // TODO: commissionTier: {type: Schema.Types.ObjectId, ref: 'JobCosting'},
     // TODO: companyInvoices: [{ type: Schema.Types.ObjectId, ref: 'CompanyInvoice' }],
-    blockchain          CompanyBlockchain @relation(fields: [companyBlockchainId], references: [id])
-    companyBlockchainId Int               @unique
-    createdAt           DateTime          @default(now())
-    updatedAt           DateTime          @updatedAt
+    blockchain          CompanyBlockchain? @relation(fields: [companyBlockchainId], references: [id])
+    companyBlockchainId Int?               @unique
+    createdAt           DateTime           @default(now())
+    updatedAt           DateTime           @updatedAt
 
     contractorJobs                Job[]                  @relation("jobContractor")
     companyJobs                   Job[]                  @relation("jobCompany")
@@ -107,6 +109,7 @@ model Company {
     companyContracts              Contract[]             @relation("contractCompany")
     contractorContracts           Contract[]             @relation("contractContractor")
     tags                          Tag[]
+    customerContract              CustomerContract[]
 
     @@index([plan, chargeDate])
 }

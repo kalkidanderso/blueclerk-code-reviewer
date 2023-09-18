@@ -1,0 +1,18 @@
+model CustomerContract {
+    id            Int          @id @default(autoincrement())
+    alternativeId String       @default(cuid())
+    isActive      Boolean      @default(true)
+    info          Json?
+    contactName   String
+    company       Company?      @relation(fields: [companyId], references: [id])
+    companyId     Int?
+    customer      Customer?     @relation(fields: [customerId], references: [id])
+    customerId    Int?
+    // TODO: equipments: [{ type: Schema.Types.ObjectId, ref: 'CustomerEquipment' }],
+    joblocation   Joblocation? @relation(fields: [joblocationId], references: [id])
+    joblocationId Int?
+    paymentterm   Paymentterm?  @relation(fields: [paymenttermId], references: [id])
+    paymenttermId Int?
+    inactiveAt DateTime?
+    inactiveBy String?
+}
