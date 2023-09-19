@@ -65,4 +65,15 @@ model User {
     jobChargesCreated             JobCharges[]
     saleTaxesCreated              SaleTax[]
     emailSchedules                EmailSchedule[]
+    updatedItemTiers              ItemTier[]
+    updatedItemCostings           ItemCosting[]
+    dismissedNotifications        Notification[]           @relation("notificationDismissedBy")
+    readedNotifications           Notification[]           @relation("notificationReadBy")
+    createdPayment                Payment[]                @relation("paymentUserCreatedBy")
+    updatedPayment                Payment[]                @relation("paymentUserupdatedBy")
+    paymentemployee               Paymentemployee[]
+    inactiveByCustomer            Customer[]               @relation("customerUserinactiveBy")
+    adminCustomer                 Customer[]               @relation("customerUserAdmin")
+    contactUser                   Contact[]
+    jobrequest                    Jobrequest[]
 }

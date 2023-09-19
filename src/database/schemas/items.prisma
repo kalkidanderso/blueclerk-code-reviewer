@@ -1,0 +1,57 @@
+model ItemTier {
+    id          Int       @id @default(autoincrement())
+    tierId      Int
+    tier        PriceTier @relation(fields: [tierId], references: [id])
+    charge      Int
+    updatedById Int
+    updatedBy   User      @relation(fields: [updatedById], references: [id])
+    updatedAt   DateTime  @updatedAt
+
+    itemId Int
+    item   Items @relation(fields: [itemId], references: [id])
+}
+
+model ItemCosting {
+    id          Int        @id @default(autoincrement())
+    tierId      Int
+    tier        JobCosting @relation(fields: [tierId], references: [id])
+    charge      Int
+    updatedById Int
+    updatedBy   User       @relation(fields: [updatedById], references: [id])
+    updatedAt   DateTime   @updatedAt
+
+    itemId Int
+    item   Items @relation(fields: [itemId], references: [id])
+}
+
+model Items {
+    id             Int           @id @default(autoincrement())
+    name           String
+    description    String
+    sku            String
+    isFixed        Boolean       @default(true)
+    charges        Int           @default(0)
+    tax            Int           @default(0)
+    tiers          ItemTier[]
+    costing        ItemCosting[]
+    isDiscountItem Boolean       @default(false)
+    isJobType      Boolean       @default(true)
+    jobTypeId      Int
+    jobType        JobType       @relation(fields: [jobTypeId], references: [id])
+    itemType       Item          @default(Service)
+    productCost    Int
+    salePrice      Int
+    companyId      Int
+    company        Company       @relation(fields: [companyId], references: [id])
+    isActive       Boolean       @default(true)
+    quickbookId    String
+    createdAt      Boolean       @default(true)
+    updatedAt      Boolean       @default(true)
+
+    servicetickets Servicetickets[]
+}
+
+enum Item {
+    Service
+    Product
+}

@@ -17,7 +17,9 @@ model JobType {
     jobs            Job[]
     jobCharges      JobCharges[]
 
-    servicetickets Servicetickets[]
+    servicetickets     Servicetickets[]
+    items          Items[]
+    serviceTicketTasks ServiceTicketTasks[]
 
     @@index([title], type: SpGist)
     @@index([createdBy, quickbookId])

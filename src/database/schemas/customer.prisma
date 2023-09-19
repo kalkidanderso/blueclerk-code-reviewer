@@ -1,0 +1,46 @@
+model Customer {
+    id               Int         @id @default(autoincrement())
+    alternativeId    String      @default(cuid())
+    profile          Json?
+    address          Json?
+    location         Json?
+    contact          Json?
+    permissions      Json?
+    emailPreferences Json?
+    contacts         Contact[]
+    balance          Int         @default(0)
+    commission       Int?
+    isActive         Boolean     @default(true)
+    info             String?
+    contactName      String?
+    // TODO: CustomerEquipment CustomerEquipment[]
+    quickbookId      String?
+    credit           Int         @default(0)
+    itemTierId       Int
+    itemTier         PriceTier   @relation(fields: [itemTierId], references: [id])
+    jobCostingId     Int
+    jobCosting       JobCosting  @relation(fields: [jobCostingId], references: [id])
+    isCustomPrice    Boolean
+    customPrices     Json
+    discountPrices   Json
+    paymentTermId    Int
+    paymentTerm      Paymentterm @relation(fields: [paymentTermId], references: [id])
+    vendorId         String
+    inactiveAt       DateTime
+    inactiveById     Int
+    inactiveByUser   User        @relation("customerUserinactiveBy", fields: [inactiveById], references: [id])
+    adminId          Int
+    admin            User        @relation("customerUserAdmin", fields: [adminId], references: [id])
+    isPORequired     Boolean?    @default(false)
+    notes            String
+
+    serviceticket   Servicetickets[]
+    jobsite         Jobsite[]
+    joblocation     Joblocation[]
+    jobrequest      Jobrequest[]
+    invoice         Invoice[]
+    chat            Chat[]
+    companycustomer Companycustomer[]
+    jobs            Job[]
+    companies       Company[]
+}

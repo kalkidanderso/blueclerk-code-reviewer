@@ -16,8 +16,8 @@ model Companyinvoice {
     paid                   Boolean  @default(false)
     paidAt                 DateTime
     note                   String?
+    company                Company  @relation(fields: [companyId], references: [id])
     companyId              Int
-    // TODO: COMPANY RELATIONSHIP
     emailHistory           Json
     createdAt              DateTime @default(now())
     updatedAt              DateTime @updatedAt

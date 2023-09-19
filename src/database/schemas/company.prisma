@@ -32,7 +32,7 @@ model Company {
     contact             Json?
     other               Json?
     // TODO: employees: [{ type: Schema.Types.ObjectId, ref: 'Employee' }],
-    // TODO: customers: [{ type: Schema.Types.ObjectId, ref: 'Customer' }],
+    customers           Customer[]
     stripeId            String?
     paid                Boolean           @default(false)
     type                Int               @default(0)
@@ -46,7 +46,8 @@ model Company {
     userPermissions     Json
     currentJobId        Int               @default(0)
     prefix              String
-    // TODO: admin: { type: Schema.Types.ObjectId, ref: 'CompanyAdmin' },
+    adminId             Int
+    admin               Companyadmin      @relation("admin", fields: [adminId], references: [id])
     qbAccessToken       String
     qbRefreshToken      String
     realmId             String
@@ -65,7 +66,8 @@ model Company {
     currentEstimateId   Int               @default(0)
     itemTier            PriceTier[]
     jobCostings         JobCosting[]
-    // TODO: paymentTerm: {type: Schema.Types.ObjectId, ref: 'PaymentTerm'},
+    paymentTermId       Int
+    paymentTerm         Paymentterm       @relation("companyPaymentTerm", fields: [paymentTermId], references: [id])
     balance             Int               @default(0)
     credit              Int               @default(0)
     commission          Int?
@@ -97,6 +99,11 @@ model Company {
     companyLocations              CompanyLocation[]
     jobCharges                    JobCharges[]
     saletaxes                     SaleTax[]
+    invoiceprefix                 Invoiceprefix[]
+    payment                       Payment[]
+    paymentvendor                 Paymentvendor[]
+    companyinvoice                Companyinvoice[]
+    companyprefix                 Companyprefix[]
 
     @@index([plan, chargeDate])
 }

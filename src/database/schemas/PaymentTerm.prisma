@@ -1,16 +1,18 @@
 model Paymentterm {
-    id            Int       @id @default(autoincrement())
-    alternativeId String    @default(cuid())
+    id            Int        @id @default(autoincrement())
+    alternativeId String     @default(cuid())
     name          String
     dueDays       Int
-    isActive      Boolean   @default(true)
-    company       Company   @relation(fields: [companyId], references: [id])
+    isActive      Boolean    @default(true)
+    company       Company    @relation(fields: [companyId], references: [id])
     companyId     Int
     quickbookId   String
-    createdBy     User      @relation(fields: [createdById], references: [id])
+    createdBy     User       @relation(fields: [createdById], references: [id])
     createdById   Int
     deleteAt      DateTime
-    createdAt     DateTime  @default(now())
-    updatedAt     DateTime  @updatedAt
+    createdAt     DateTime   @default(now())
+    updatedAt     DateTime   @updatedAt
     invoice       Invoice[]
+    companies     Company[] @relation("companyPaymentTerm")
+    customer      Customer[]
 }
