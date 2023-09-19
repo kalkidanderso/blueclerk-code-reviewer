@@ -31,6 +31,8 @@ export const createJobType = (req: Request, res: Response) => {
 
     const params = req.body
     const user = <IUser>req.user
+    const {account}=params;
+
 
     var userId: any = null
     var industryId: any = null
@@ -73,7 +75,7 @@ export const createJobType = (req: Request, res: Response) => {
                 if (err) {
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
-                _createItem(req, res, jobType, null, (item, qbItem) => {
+                _createItem(req, res, jobType, null, account,(item, qbItem) => {
 
                     return res.json({ 'status': Status.Success, 'message': 'Job type created successfully.', jobType, item, quickbookItem: qbItem });
                 })
@@ -106,7 +108,7 @@ export const createJobType = (req: Request, res: Response) => {
                     return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
                 }
 
-                _createItem(req, res, jobType, req.company, (item, qbItem) => {
+                _createItem(req, res, jobType, req.company, account, (item, qbItem) => {
                     return res.json({ 'status': Status.Success, 'message': 'Job type created successfully.', jobType, item, quickbookItem: qbItem });
                 })
 
@@ -115,7 +117,7 @@ export const createJobType = (req: Request, res: Response) => {
     }
 }
 
-const _createItem = (req: Request, res: Response, jobType: IJobType, company: ICompany, next: (item: IItem, qbItem: IQBItem) => void) => {
+const _createItem = (req: Request, res: Response, jobType: IJobType, company: ICompany, account:any,next: (item: IItem, qbItem: IQBItem) => void) => {
 
     const params = req.body
     let companyId = company._id;
@@ -147,7 +149,9 @@ const _createItem = (req: Request, res: Response, jobType: IJobType, company: IC
             itemType:params.itemType,
             productCost:params.productCost,
             isFixed:isProduct?true:params.isFixed,
-            salePrice:params.salePrice
+            salePrice:params.salePrice,
+            IncomeAccountRef:{ name: account?.Name, value: account?.Id }
+
         }
     )
 

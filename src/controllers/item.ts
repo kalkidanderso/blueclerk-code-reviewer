@@ -13,7 +13,7 @@ import { ServiceTicket } from '../models/ServiceTicket';
 import { Job } from '../models/Job';
 import { JobCharges } from '../models/JobCharges';
 import { IInvoice, Invoice } from '../models/Invoice';
-import { _createQBItem, _updateQBItem, _updateQBItemsStatus, _transferQBItems } from '../controllers/quickbook.item';
+import { _createQBItem,_createQBItemWithAccount, _updateQBItem, _updateQBItemsStatus, _transferQBItems } from '../controllers/quickbook.item';
 import { _transferQBInvoiceItem } from '../controllers/quickbook.invoice';
 import * as Sentry from '@sentry/node';
 import { param } from 'express-validator';
@@ -59,7 +59,7 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
     const user = <IUser>req.user;
     const company = <ICompany>req.company;
     const itemTiers = [];
-
+    const {account}=params;
     // Iterate company itemTier to add to the new Item
     for (const t of company.itemTier.list) {
         itemTiers.push({ tier: t.tier });
@@ -76,7 +76,8 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
             itemType:params?.itemType,
             productCost:params.productCost,
             salePrice:params.salePrice,
-            isFixed:isProduct?true:params.isFixed
+            isFixed:isProduct?true:params.isFixed,
+            IncomeAccountRef:{ name: account?.Name, value: account?.Id }
         }
     )
 
@@ -86,8 +87,9 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
 
     if (company.qbAuthorized) {
 
+        if(account?.Id){
         // Create the new Item in QuickBooks
-        _createQBItem(req, res, company, item, async (err: any, errMsg: any, qbItem: IQBItem) => {
+        _createQBItemWithAccount(req, res, company, item,account, async (err: any, errMsg: any, qbItem: IQBItem) => {
             let qbSync=false;
             if (err) {
                 console.log('== createItem > _createQBItem');
@@ -110,6 +112,33 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
 
             return next();
         })
+    }else
+    
+    {
+        _createQBItem(req, res, company, item, async (err: any, errMsg: any, qbItem: IQBItem) => {
+            let qbSync=false;
+            if (err) {
+                console.log('== createItem > _createQBItem');
+                console.log('== errMsg:', errMsg);
+                return res.json({ status: Status.Error, message: errMsg });
+            }
+
+            if (qbItem) {
+                item.quickbookId = qbItem.Id;
+                await item.save();
+                qbSync=true;
+
+                // If company's items already synced, update the synced date
+                if (company.qbSync?.itemsSynced) {
+                    company.qbSync.itemsSyncedAt = new Date();
+                    await company.save();
+                }
+            }
+            res.json({ status: Status.Success, message: 'Item created successfully.', item,qbSync });
+
+            return next();
+        })  
+    }
         
 
     } else {
@@ -123,6 +152,8 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
 export const updateItem = (req: Request, res: Response) => {
     
     const params = req.body;
+    const {account}=params;
+
     const isProduct=params.itemType=='Product';
     Item.findOne({ _id: params.itemId },
         (err: any, item: IItem) => {
@@ -135,7 +166,9 @@ export const updateItem = (req: Request, res: Response) => {
                 return res.json({ 'status': Status.Error, 'message': 'Invalid item id' })
             }
 
-            item.updateOne({ charges: params.charges, tax: params.tax, isFixed: isProduct?true:params.isFixed ,itemType:params.itemType,  productCost:params.productCost,salePrice:params.salePrice},
+            item.updateOne({ charges: params.charges, tax: params.tax, isFixed: isProduct?true:params.isFixed ,itemType:params.itemType,  productCost:params.productCost,salePrice:params.salePrice, 
+            IncomeAccountRef:{ name: account?.Name, value: account?.Id }
+            },
                 (err: any, raw: any) => {
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
@@ -228,7 +261,7 @@ export const updateItems = async (req: Request, res: Response) => {
 
         // Handle isJobType status
         const jobType = await _handleItemJobType(itemObj, i, user._id);
-
+        const IncomeAccountRefObj=i.account?{ name: i.account?.Name, value: i.account?.Id } : itemObj.IncomeAccountRef;
         itemObj.name = i.name ?? itemObj.name;
         itemObj.description = i.description;
         itemObj.isJobType = i.isJobType ?? itemObj.isJobType;
@@ -239,6 +272,9 @@ export const updateItems = async (req: Request, res: Response) => {
         itemObj.productCost=i.productCost ?? itemObj.productCost;
         itemObj.salePrice=i.salePrice ?? itemObj.salePrice;
         itemObj.itemType=i.itemType ?? itemObj.itemType;
+        itemObj.IncomeAccountRef=IncomeAccountRefObj;
+        
+
       
 
         await itemObj.save(async (err) => {
@@ -246,7 +282,7 @@ export const updateItems = async (req: Request, res: Response) => {
                 return res.json({ status: Status.Success, message: err.message, item: itemObj });
             }
             if (company.qbAuthorized && itemObj.quickbookId) {
-                await _updateQBItem(req, res, company, itemObj, async (err, errMsg) => { });
+                await _updateQBItem(req, res, company, itemObj,  async (err, errMsg) => { });
             }
         });
     }
