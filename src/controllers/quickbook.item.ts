@@ -37,6 +37,66 @@ const _getQBItems = async (qbo: any): Promise<IQBItem[]> => {
  * this used by Job Type Controller when creating new Job Type & Item,
  * and this controller when syncing items
  */
+export const _createQBItemWithAccount = async (req: Request, res: Response, company: ICompany, item: IItem,account:any, next: (error: number, errorMessage: string, qbItem: IQBItem) => void) => {
+
+  // Always refresh the token first because token valid only for 60 minutes
+  _refreshToken(req, res, company, async (err, errMsg, company) => {
+    if(err){
+      console.log("refresh token");
+      console.log("errMsg",err)
+    }
+    if (err === 0) {
+      return res.json({ status: Status.Error, message: errMsg });
+    }
+
+    if (err === 400) {
+      await Company.findByIdAndUpdate(req.company._id, {
+        qbAuthorized: false,
+        qbAccessToken: undefined,
+        qbRefreshToken: undefined
+      });
+
+      return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
+    }
+
+    // Initiate node-quickbooks object with the refreshed company token
+    const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+    // Construct QB Item Entry
+    const qbItemEntry: IQBItem = {
+      Name: item.name,
+      Description: item.description,
+      Sku: item.sku,
+      Type: item.itemType == 'Product' ? QBItemTypes.NONINVENTORY : QBItemTypes.SERVICE,
+      UnitPrice: item.charges,
+      Active: item.isActive,
+      SalesTaxIncluded: false,
+      IncomeAccountRef: { name: account?.Name, value: account?.Id },
+      MetaData: { CreateTime: new Date(), LastUpdatedTime: new Date() }
+    };
+
+    // Create QB Item
+    qbo.createItem(qbItemEntry, async (err: any, qbItem: IQBItem) => {
+      if (err) {
+
+        return next(
+          Status.Error,
+          err.Fault?.Error[0]?.Message
+          || err.fault?.error[0]?.detail
+          || err.fault?.error[0]?.message
+          || Messages.GenericError,
+          null
+        );
+      }
+
+      return next(null, null, qbItem);
+    })
+  });
+}
+/**
+ * Generic function to create QuickBooks Item,
+ * this used by Job Type Controller when creating new Job Type & Item,
+ * and this controller when syncing items
+ */
 export const _createQBItem = async (req: Request, res: Response, company: ICompany, item: IItem, next: (error: number, errorMessage: string, qbItem: IQBItem) => void) => {
 
   // Always refresh the token first because token valid only for 60 minutes
@@ -92,8 +152,10 @@ export const _createQBItem = async (req: Request, res: Response, company: ICompa
  * To syncing item on DB to QB
  */
 export const syncQBItem = async (req: Request, res: Response) => {
+
   const user = <IUser>req.user;
-  const { itemId } = req.body;
+  const { itemId ,account} = req.body;
+
   let jobTypesToCreate: IJobType[] = [];
   let itemsToCreate: IItem[] = [];
   let createdItems: { _id: string, name: string }[] = [];
@@ -152,11 +214,33 @@ export const syncQBItem = async (req: Request, res: Response) => {
       }
 
       const qbItems: IQBItem[] = data?.QueryResponse?.Item;
-
       // Item not exist on QB, create it
       if (!qbItems) {
 
         // console.log("create qb item");
+if(account?.Id){
+  console.log("create qb item with custom account")
+  await _createQBItemWithAccount(req, res, company, blueClerkItem,account, (error, errMsg, qbItem) => {
+
+    if (errMsg) {
+
+      Sentry.captureException('Syncing failed creating', errMsg);
+      return res.json({ status: Status.Error, message: 'Item synced failed.' + errMsg });
+
+
+    }
+
+   if (qbItem) {
+
+      // QB Item created, update DB Item & JobType's quickbookId
+      Item.findByIdAndUpdate(blueClerkItem, { quickbookId: qbItem.Id }).exec();
+      JobType.findByIdAndUpdate(blueClerkItem.jobType, { quickbookId: qbItem.Id }).exec();
+      return res.json({ status: Status.Success, message: 'Item synced successfully.', createdItems, updatedItems });
+    }
+  })
+}
+else{
+  console.log("create qb item with default account")
 
         await _createQBItem(req, res, company, blueClerkItem, (error, errMsg, qbItem) => {
 
@@ -170,19 +254,21 @@ export const syncQBItem = async (req: Request, res: Response) => {
           }
 
           if (qbItem) {
+            
             // QB Item created, update DB Item & JobType's quickbookId
             Item.findByIdAndUpdate(blueClerkItem, { quickbookId: qbItem.Id }).exec();
             JobType.findByIdAndUpdate(blueClerkItem.jobType, { quickbookId: qbItem.Id }).exec();
             return res.json({ status: Status.Success, message: 'Item synced successfully.', createdItems, updatedItems });
           }
         })
+      }
       } else {
 
-
+        console.log("update qb item called")
         // QB Item exist, update DB Item in quickbook
         await _updateQBItem(req, res, company, blueClerkItem, async (error, errMsg) => {
 
-          if (errMsg) {
+          if (errMsg||error) {
             console.log(errMsg);
 
             Sentry.captureException('Syncing failed updating', errMsg);
@@ -201,6 +287,9 @@ export const syncQBItem = async (req: Request, res: Response) => {
     })
     if (blueClerkItem) {
       findQBItems();
+
+    }else{
+      return res.json({ status: Status.Error, message: 'Item synced failed.' });
 
     }
   }
@@ -313,7 +402,7 @@ export const syncQBItems = async (req: Request, res: Response) => {
 
         if (matchedItem) {
           // Item found, check and update quickbookId
-          await Item.findByIdAndUpdate(matchedItem, { quickbookId: qbItem.Id }).exec();
+          await Item.findByIdAndUpdate(matchedItem, { quickbookId: qbItem.Id,IncomeAccountRef:qbItem?.IncomeAccountRef }).exec();
           await JobType.findByIdAndUpdate(matchedItem.jobType, { quickbookId: qbItem.Id }).exec();
 
           const updatedItem = { _id: matchedItem._id, name: matchedItem.name }
@@ -333,6 +422,7 @@ export const syncQBItems = async (req: Request, res: Response) => {
               sku: qbItem.Sku,
               productCost: qbItem.PurchaseCost,
               tiers: [...company.itemTier?.list],
+              IncomeAccountRef:qbItem?.IncomeAccountRef,
               company: company._id,
               itemType: "Product",
               quickbookId: qbItem.Id,
@@ -370,6 +460,7 @@ export const syncQBItems = async (req: Request, res: Response) => {
                 description: qbItem.Description,
                 sku: qbItem.Sku,
                 charges: qbItem.UnitPrice,
+                IncomeAccountRef:qbItem?.IncomeAccountRef,
                 tiers: [...company.itemTier?.list],
                 company: company._id,
                 itemType: qbItem.Type,
@@ -411,21 +502,26 @@ export const syncQBItems = async (req: Request, res: Response) => {
 
         // Iterate all created Job Types
         const newJobTypes = jobTypesCreated.map(jobType => {
-          let itemExist=itemsToCreate.findIndex(item=>{return item.quickbookId==jobType.quickbookId&& item.name==jobType.title});
+          let itemExist=itemsToCreate.findIndex(item=>{
+           
+            return item.quickbookId==jobType.quickbookId && item.name==jobType.title});
+         
           if(itemExist>-1){
             let newItem=itemsToCreate[itemExist];
-            // console.log("newItem");
-            // console.log(newItem);
+          
             // @ts-ignore
-            itemsToCreate[itemExist]={...newItem,jobType:jobType._id};
+            itemsToCreate[itemExist]={...newItem,jobType:jobType._id,
+            };
           }
           // else
           {
-
+            const itemExistInQB:any=qbItems.filter(qbItemObj=>qbItemObj.Id==jobType.quickbookId)
             const newItem = new Item({
               name: jobType?.title,
               description: jobType?.description,
               sku: jobType?.sku,
+              IncomeAccountRef:itemExistInQB[0].IncomeAccountRef,
+
               tiers: [...company.itemTier?.list],
               company: company._id,
                 costing:company?.costing?.list,
@@ -557,7 +653,6 @@ export const _transferQBItems = async (req: Request, res: Response, company: ICo
 
 export const _updateQBItem = async (req: Request, res: Response, company: ICompany, item: IItem, next: (error: number, errorMessage: string) => void) => {
   _refreshToken(req, res, company, async (err, errMsg, company) => {
-    console.log('item', item)
     if (err === 0) {
       return res.json({ status: Status.Error, message: errMsg });
     }
@@ -575,7 +670,6 @@ export const _updateQBItem = async (req: Request, res: Response, company: ICompa
 
     qbo.getItem(item.quickbookId, async (err: any, qbItem: IQBItem) => {
 
-      console.log('qbItem', qbItem)
       if (qbItem) {
 
         qbItem.Description = item.description;
@@ -583,6 +677,7 @@ export const _updateQBItem = async (req: Request, res: Response, company: ICompa
         qbItem.Name = item.name;
         qbItem.Taxable = item.tax === 0 ? false : !false;
         qbItem.Sku = item.sku;
+        qbItem.IncomeAccountRef=item.IncomeAccountRef;
         qbItem.Type = item.itemType == 'Product' ? QBItemTypes.NONINVENTORY : QBItemTypes.SERVICE,
 
 

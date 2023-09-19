@@ -212,6 +212,7 @@ export const Validations = {
   getItems: [check('includeDiscountItems').optional().isBoolean().toBoolean()],
 
   createItem: [check('title').exists().withMessage(Messages.Required),
+  check('account').exists().withMessage(Messages.Required),
   check("itemType").optional().isIn(['Product', 'Service']).withMessage('Item type must be either "Product" or "Service"'),
   check("isFixed").optional({ checkFalsy: true }).custom((value: boolean, { req }: any) => {
     // Check if itemType is "Product" and isFixed is not true
@@ -549,6 +550,8 @@ export const Validations = {
   cancelEstimate: [check('estimateId').exists()],
 
   updateItem: [check('itemId').exists(), check('charges').exists(), check('isFixed').exists(), check('tax').exists()],
+  toggleItemStatus: [check('itemId').exists()],
+  itemExist: [check('name').exists()],
 
   searchDuplicatedItems: [check('keyword').exists().withMessage(Messages.Required)],
 

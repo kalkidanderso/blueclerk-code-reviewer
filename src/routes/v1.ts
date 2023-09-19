@@ -685,6 +685,22 @@ export default function (sio: any) {
         validate(Validations.updateItem),
         itemController.updateItem
     )
+    router.post(
+        '/toggleItemStatus',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        validate(Validations.toggleItemStatus),
+        itemController.toggleItemStatus
+    )
+    router.post(
+        '/checkItemExist',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        validate(Validations.itemExist),
+        itemController.disabledItemExists
+    )
 
     router.post(
         '/updateItems',
@@ -1524,6 +1540,14 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getQBUri),
         quickBookController.getQBUri
+    )
+    router.post(
+        '/getQBAccounts',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        // validate(Validations.getQBUri),
+        quickBookController.getQBAccounts
     )
 
     router.get(
