@@ -550,6 +550,8 @@ export const Validations = {
   cancelEstimate: [check('estimateId').exists()],
 
   updateItem: [check('itemId').exists(), check('charges').exists(), check('isFixed').exists(), check('tax').exists()],
+  toggleItemStatus: [check('itemId').exists()],
+  itemExist: [check('name').exists()],
 
   searchDuplicatedItems: [check('keyword').exists().withMessage(Messages.Required)],
 

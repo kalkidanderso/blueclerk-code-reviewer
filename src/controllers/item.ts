@@ -25,7 +25,6 @@ import { param } from 'express-validator';
 export const getItems = (req: Request, res: Response) => {
 
     const params = req.body;
-
     const query: any = {
         $or: [
             { company: null, isActive: true },
@@ -37,7 +36,13 @@ export const getItems = (req: Request, res: Response) => {
     if (!params.includeDiscountItems) {
         query.isDiscountItem = { $ne: true };
     }
-
+    if(params.includeInactiveItems){
+        delete query.isActive;
+    query["$or"]?.map((queryItem:any)=>{
+        delete queryItem.isActive;
+    })
+    }
+    
     Item.find(query)
         .populate({ path: 'tiers.tier', select: '-companyId -__v' })
         .populate({ path: 'costing.tier', select: '-companyId -__v' })
@@ -147,6 +152,57 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
         return next();
     }
 
+}
+export const disabledItemExists = (req: Request, res: Response) => {
+    
+    const params = req.body;
+
+    Item.findOne({ name: params.name, company: req.companyId },
+        (err: any, item: IItem) => {
+
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+
+            if (item == null || item == undefined) {
+                return res.json({ 'status': Status.Error, 'message': 'Item does not exist' })
+            }
+            if(item){
+                return res.json({ 'status': Status.Success, 'message': 'Item Exist',item })
+
+            }
+
+        
+
+        }
+    )
+}
+
+export const toggleItemStatus = (req: Request, res: Response) => {
+    
+    const params = req.body;
+    Item.findOne({ _id: params.itemId },
+        (err: any, item: IItem) => {
+
+            if (err) {
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            }
+
+            if (item == null || item == undefined) {
+                return res.json({ 'status': Status.Error, 'message': 'Invalid item id' })
+            }
+
+            item.updateOne({ isActive:!item.isActive},
+                (err: any, raw: any) => {
+                    if (err) {
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    }
+
+                    return res.json({ 'status': Status.Success, 'message': 'Item status changed successfully', itemStatus:item.isActive })
+                })
+
+        }
+    )
 }
 
 export const updateItem = (req: Request, res: Response) => {
