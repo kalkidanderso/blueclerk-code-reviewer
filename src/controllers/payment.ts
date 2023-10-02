@@ -1132,6 +1132,7 @@ export const updatePayment = async (req: Request, res: Response) => {
         company: company._id
     })
         .populate({ path: 'invoice' })
+        .populate({ path: 'customer' })
         .populate({ path: 'line.invoice' });
 
     if (!payment) {
@@ -1145,6 +1146,12 @@ export const updatePayment = async (req: Request, res: Response) => {
     const invoice = <IInvoice>payment.invoice;
 
     const updatedInvoices = paramsInvoices.map((elem:any) => elem.invoiceId);
+
+    for (let line of payment.line) {
+        if (!updatedInvoices.includes(line.invoice._id.toString())) {
+           await _unpaidInvoice(line.invoice, payment.customer);
+        }
+    }
 
     payment.line = payment.line.filter((line :any) => {
         if (updatedInvoices.includes(line.invoice._id.toString())) {
@@ -2509,4 +2516,32 @@ const _fillEmployeesAndVendorFromJobs = (techniciansCommissionsJobs: ITechnician
             }
         }
     }
+}
+
+/**
+ * To calculate invoice and customer payment amount related
+ */
+export const _unpaidInvoice = async (invoice: IInvoice, customer: ICustomer): Promise<void> => {
+
+    // Deduct the customer balance
+    customer.balance = 0;
+
+    // Fix default paymentApplied and balanceDue for old invoice
+    invoice.paymentApplied = 0;
+    invoice.balanceDue = invoice.total;
+
+    invoice.status = InvoiceStatus.UNPAID;
+    invoice.paid = false;
+
+    // Round the numbers
+    customer.balance = roundTwoDecimal(customer.balance);
+    invoice.balanceDue = roundTwoDecimal(invoice.balanceDue);
+    invoice.paymentApplied = roundTwoDecimal(invoice.paymentApplied);
+
+    // Save the customer's changes
+    await customer.save();
+    // Save the invoice's changes
+    await invoice.save();
+
+    return;
 }
