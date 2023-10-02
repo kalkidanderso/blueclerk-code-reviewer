@@ -1,0 +1,13 @@
+model SaleTax {
+    id            Int      @id @default(autoincrement())
+    alternativeId String?  @unique
+    state         String?
+    companyId     Int
+    company       Company  @relation(fields: [companyId], references: [id])
+    createdBy     Int
+    user          User     @relation(fields: [createdBy], references: [id])
+    createdAt     DateTime @default(now())
+
+    jobCharges JobCharges[]
+    jobs       Job[]
+}

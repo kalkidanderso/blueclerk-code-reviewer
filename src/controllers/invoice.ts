@@ -376,23 +376,35 @@ export const createInvoice = (req: Request, res: Response) => {
                 const job = <IJob>result[0]
 
                 // Convert jobTypes to ObjectId in array
-                const jobTypes = [];
+                const jobTypes: { id: any; quantity: number; price: number; }[] = [];
                 job.tasks.forEach(task => {
                     task.jobTypes.forEach(taskJobType => {
                         jobTypes.push({
                             id: taskJobType.jobType,
-                            quantity: taskJobType.quantity,
+                            quantity: taskJobType.completedCount || taskJobType.quantity,
                             price: taskJobType.price,
                         })
                     })
                 })
+
+                // To merge job types when they have the same item
+                const jobTypesFiltered = jobTypes.reduce((accumulator, currentObj) => {
+                    const existingItem = accumulator.find(item => item.id.toString() === currentObj.id.toString());
+                    
+                    if (existingItem) {
+                        existingItem.quantity += currentObj.quantity;
+                    } else {
+                        accumulator.push(currentObj);
+                    }
+                    return accumulator;
+                }, []);
                 // const jobTypeIds = job.tasks.map(task => task.jobType);
                 // Fallback for old job who still using one job type
-                if (!jobTypes.length) jobTypes.push({id: job.type, quantity: 1, price: 0});
+                if (!jobTypesFiltered.length) jobTypesFiltered.push({id: job.type, quantity: 1, price: 0});
                 // Search all jobTypes' items
                 // const items = Item.find({jobType: {$in: jobTypeIds}});
                 const items: any[] = []
-                jobTypes.forEach(async (jobType) => {
+                jobTypesFiltered.forEach(async (jobType) => {
                     const item: any = await Item.findOne({jobType: jobType.id})
                     item["quantity"] = jobType.quantity;
                     item["price"] = jobType.price;
@@ -1551,12 +1563,12 @@ const findAddedAndRemovedItems = (original: any, updated: any) => {
         
         if (updatedIds.includes(item.item.toString())) {
 
-            if (original[index].quantity != updated[index].quantity ) {
+            if (original[index]?.quantity != updated[index]?.quantity ) {
                 updatedItems.push({
                     "type":"updated",
                     "name": item?.name,
-                    "new": updated[index].quantity,
-                    "old": original[index].quantity,
+                    "new": updated[index]?.quantity,
+                    "old": original[index]?.quantity,
                 });
 
             }
@@ -1735,7 +1747,6 @@ export const updateInvoice = (req: Request, res: Response) => {
             // Retrieve payment term for this invoice
             let paymentTerm: IPaymentTerm;
             if (params.paymentTermId) {
-
                 paymentTerm = await PaymentTerm.findOne({ _id: params.paymentTermId, isActive: true });
                 if (!paymentTerm) {
                     return res.json({ status: Status.Error, message: 'Payment Term not found' });
@@ -1953,8 +1964,8 @@ export const updateInvoice = (req: Request, res: Response) => {
                                 const totalTechnician = invoiceCommission.technicians.length;
                                 for (const invoiceCommissionTechnician of invoiceCommission.technicians) {
                                     if (invoiceCommissionTechnician.contractor) {
-                                        const contractor = await Company.findOne({ _id: invoiceCommissionTechnician.contractor }).exec();
-                                        if (contractor) {
+                                        const contractor = await Company.findOne({_id: invoiceCommissionTechnician.contractor}).exec();
+                                        if (contractor && contractor.commissionType != "fixed") {
                                             if (Number(total) !== Number(oldTotalInvoice)) {
                                                 const getCommission = (t: any) => (t / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
                                                 const oldCommission = getCommission(oldTotal)
@@ -2658,13 +2669,6 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
 
     // Update email history and last email sent info
     const sendingDate = new Date();
-    invoice.emailHistory.push({
-        sentTo: customer.info?.email,
-        sentAt: sendingDate,
-        sentBy: user._id || null,
-        deliveryStatus: true
-    });
-
 
     recipientEmails.forEach((item) => {
         invoice.emailHistory.push({
@@ -4861,7 +4865,6 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
     if (!invoice.isDraft) {
 
         if (invoice.job) {
-
             const customer = await Customer.findById(invoice.customer);
             const job = await Job.findById(invoice.job);
             customer.balance += invoice.total;
@@ -4886,7 +4889,6 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
                             contractor.balance += Number(commission.toFixed(2));
                             contractor.save();
                         }
-
                         invoiceCommissionEntry.push(contractorEntry);
                     }
 
@@ -4973,7 +4975,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
 
             console.log("is a PO");
 
-            const companyUpdate = company.updateOne({ currentInvoiceId: invoiceNumber })
+            const companyUpdate = await company.updateOne({ currentInvoiceId: invoiceNumber })
             const poUpdate = PurchaseOrder.updateOne({ _id: invoice.purchaseOrder }, { invoiceCreated: true })
 
             const customer = await Customer.findById(invoice.customer);
@@ -5032,7 +5034,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
 
             console.log("is a estimate");
 
-            const companyUpdate = company.updateOne({ currentInvoiceId: invoiceNumber })
+            const companyUpdate = await company.updateOne({ currentInvoiceId: invoiceNumber })
             const estimateUpdate = Estimate.updateOne({ _id: invoice.estimate }, { invoiceCreated: true })
 
             if (!invoice.isDraft) {

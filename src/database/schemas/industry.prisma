@@ -1,0 +1,12 @@
+model Industry {
+    id            Int     @id @default(autoincrement())
+    alternativeId String? @unique
+    title         String
+    createdBy     Int
+    user          User    @relation(fields: [createdBy], references: [id])
+
+    companyInfos CompanyInfo[]
+    jobTypes     JobType[]
+
+    @@index([title])
+}

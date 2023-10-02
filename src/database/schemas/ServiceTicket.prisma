@@ -1,0 +1,75 @@
+enum serviceType {
+    Ticket
+    POResquest
+}
+
+model ServiceTicketTasks {
+    id        String         @id @default(cuid())
+    ticket    Servicetickets @relation(fields: [ticketId], references: [id])
+    ticketId  Int
+    jobType   JobType?       @relation(fields: [jobTypeId], references: [id])
+    jobTypeId Int?
+    quantity  Int            @default(1)
+    price     Int
+}
+
+model Servicetickets {
+    id                Int                  @id @default(autoincrement())
+    alternativeId     String               @default(cuid())
+    createdAt         DateTime
+    dueDate           DateTime?
+    customer          Customer?            @relation(fields: [customerId], references: [id])
+    customerId        Int?
+    createdByUser     User                 @relation("serviceTicketUserCreatedBy", fields: [createdById], references: [id])
+    createdById       Int
+    note              String
+    customerContact   Contact?             @relation(fields: [customerContactId], references: [id])
+    customerContactId Int?
+    customerPO        String
+    image             String
+    images            Json?
+    company           Company              @relation(fields: [companyId], references: [id])
+    companyId         Int
+    technicianUser    User                 @relation("serviceTicketUsertechnician", fields: [technicianId], references: [id])
+    technicianId      Int
+    status            Int                  @default(0)
+    track             Json
+    editedByUser      User                 @relation("serviceTicketUsereditedBy", fields: [editedById], references: [id])
+    editedById        Int
+    editedAt          DateTime
+    ticketId          String
+    jobLocation       Joblocation          @relation("jobLocation", fields: [jobLocationId], references: [id])
+    jobLocationId     Int
+    jobSite           Jobsite              @relation("jobsite", fields: [jobSiteId], references: [id])
+    jobSiteId         Int
+    isHomeOccupied    Boolean              @default(false)
+    homeOwner         HomeOwners           @relation(fields: [homeOwnerId], references: [id])
+    homeOwnerId       Int
+    homeJobLocation   Joblocation          @relation("homeJobLocation", fields: [homeJobLocationId], references: [id])
+    homeJobLocationId Int
+    homeJobSite       Jobsite              @relation("homejobsite", fields: [homeJobSiteId], references: [id])
+    homeJobSiteId     Int
+    jobType           JobType              @relation(fields: [jobTypeId], references: [id])
+    jobTypeId         Int
+    tasks             ServiceTicketTasks[]
+    item              Items                @relation(fields: [itemId], references: [id])
+    itemId            Int
+    jobCreated        Boolean              @default(false)
+    source            String               @default("blueclerk")
+    workType          Worktype             @relation(fields: [workTypeId], references: [id])
+    workTypeId        Int
+    companyLocation   CompanyLocation      @relation(fields: [companyLocationId], references: [id])
+    companyLocationId Int
+    pooverriddenById  Int
+    //TODO: pooverriddenBy RELATIONSHIP
+    type              serviceType          @default(Ticket)
+    emailHistory      Json
+    lastEmailSent     DateTime
+
+    jobs Job[]
+
+    @@index([itemId])
+    @@index([jobCreated, status])
+    @@index([jobCreated, status, type])
+    @@index([id])
+}

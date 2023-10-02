@@ -1,0 +1,9 @@
+model Assignedvendor {
+    id            Int     @id @default(autoincrement())
+    alternativeId String  @default(cuid())
+    vendor        Company @relation(fields: [vendorId], references: [id])
+    vendorId      Int
+    workTypes     Json
+
+    companyLocations CompanyLocation[]
+}

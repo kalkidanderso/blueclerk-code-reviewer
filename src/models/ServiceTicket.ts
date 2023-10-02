@@ -49,7 +49,8 @@ export interface IServiceTicket extends Document {
     emailHistory?: [{
         sentTo: string
         sentAt: Date,
-        sentBy: Schema.Types.ObjectId
+        sentBy: Schema.Types.ObjectId,
+        deliveryStatus: boolean
     }],
     lastEmailSent?: Date
 }
@@ -203,8 +204,16 @@ const ServiceTicketSchema = new Schema({
         sentBy: {
             type: Schema.Types.ObjectId,
             ref: 'User'
+        },
+        deliveryStatus: {
+            type: Boolean,
+            default: true
         }
     }],
+    bouncedEmailFlag: {
+        type: Boolean,
+        default: false
+    },
     lastEmailSent: {
         type: Date
     },

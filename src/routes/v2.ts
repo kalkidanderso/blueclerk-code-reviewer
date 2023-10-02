@@ -16,12 +16,13 @@ import * as jobController from '../controllers/v2/job';
 import * as serviceTicketController from '../controllers/v2/serviceTicket';
 import * as userPermissionController from '../controllers/v2/userPermission';
 import * as bouncedEmails from '../controllers/bouncedEmails';
+import { uploadImageInS3 } from '../middleware/multer';
 
 
 
 
 
-export default function () {
+export default function (sio: any) {
 
     const router: express.Router = express.Router()
 
@@ -46,21 +47,38 @@ export default function () {
         invoiceController.exportInvoicesToExcel
     )
 
-    // Bounced Emails
+    // Bounced Emails for invoices
     router.post(
-        '/store-bounced-emails',
+        '/store-invoices-bounced-emails',
         validate(Validations.bounceEmail),
         isLambdaRequest,
-        bouncedEmails.store
+        bouncedEmails.storeforInvoices
     )
 
-    //mark-bounced-emails-as-read
+    // Bounced Emails for PO
     router.post(
-        '/mark-as-read',
+        '/store-po-request-bounced-emails',
+        validate(Validations.bounceEmail),
+        isLambdaRequest,
+        bouncedEmails.storeforPO
+    )
+
+    //mark-bounced-emails-as-read-for-invoices
+    router.post(
+        '/mark-as-read-invoices',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         isObjectIdValid,
-        bouncedEmails.markRead
+        bouncedEmails.markReadInvoiceNBounce
+    )
+
+    //mark-bounced-emails-as-read-for-PO
+    router.post(
+        '/mark-as-read-po',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        isObjectIdValid,
+        bouncedEmails.markReadPOBounce
     )
 
     router.post(
@@ -132,7 +150,28 @@ export default function () {
         getCompanyId(),
         userPermissionController.updateUserPermission
     )
-    
+
+    router.post(
+        '/updatePartialJob',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Update),
+        uploadImageInS3.fields([{ name: 'image' }, { name: 'images' }]),
+        (req, res) => {
+            jobController.updatePartialJob(req, res, sio)
+        }
+    )
+
+    router.get(
+        '/getJobInvoice/:jobId',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        getCompanyId(),
+        checkUserPermissions(Permissions.Job_Detail),
+        jobController.getJobInvoice
+    )
+
     return router
 
 }

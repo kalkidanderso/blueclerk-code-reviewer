@@ -1,0 +1,12 @@
+model Supplier {
+    alternativeId String
+    id Int @id @default(autoincrement())
+    info Json ?
+    address Json ?
+    contact Json ?
+    supplierAdminId Int
+    //TODO
+    //admin SupplierAdmin @relation(fields: [supplierAdminId], references: [id])
+
+    supplieradmin Supplieradmin[]
+}

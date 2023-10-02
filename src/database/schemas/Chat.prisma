@@ -1,0 +1,23 @@
+enum ChatChannels {
+    serviceTicket
+    jobRequest
+    job
+}
+
+model Chat {
+    id            Int          @id @default(autoincrement())
+    alternativeId String       @default(cuid())
+    chatChannel   ChatChannels
+    user          User?        @relation(fields: [userId], references: [id])
+    userId        Int
+    company       Company?     @relation(fields: [companyId], references: [id])
+    companyId     Int
+    customer      Customer     @relation(fields: [customerId], references: [id])
+    customerId    Int
+    replyTo       Int
+    reply         Chat         @relation("Replies", fields: [replyTo], references: [id])
+    replies       Chat[]       @relation("Replies")
+    message       String
+    images        Json
+    readStatus    Json
+}

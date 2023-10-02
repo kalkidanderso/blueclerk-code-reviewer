@@ -1,0 +1,15 @@
+model EmailDefault {
+    id            Int      @id @default(autoincrement())
+    alternativeId String?  @unique
+    subject       String?
+    message       String
+    companyId     Int
+    company       Company  @relation(fields: [companyId], references: [id])
+    updatedBy     Int?
+    user          User?    @relation(fields: [updatedBy], references: [id])
+    emailType     String
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+
+    @@index([companyId, emailType])
+}

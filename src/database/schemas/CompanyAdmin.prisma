@@ -1,0 +1,15 @@
+model Companyadmin {
+    id            Int      @id @default(autoincrement())
+    alternativeId String   @default(cuid())
+    company       Company? @relation(fields: [companyId], references: [id])
+    companyId     Int      @unique
+
+    companies Company[] @relation("admin")
+}
+
+model Supplieradmin {
+    id            Int      @id @default(autoincrement())
+    alternativeId String   @default(cuid())
+    supplier      Supplier @relation(fields: [supplierId], references: [id])
+    supplierId    Int
+}

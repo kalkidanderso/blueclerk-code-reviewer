@@ -3,14 +3,22 @@ import { ObjectId } from 'mongodb';
 import moment from 'moment';
 
 import * as helper from '../../services/helper';
-import { Company } from '../../models/Company';
-import { Job, IJob } from '../../models/Job';
+import { Company, ICompany } from '../../models/Company';
+import { Job, IJob, TaskEntry, ITask } from '../../models/Job';
 import {
     splitArray, fillQueryCommon, getFilteredCustomerIds,
     getFilteredJobLocationsIds, getFilteredJobSitesIds, getFilteredTechniciansIds
 } from './common';
-import { DefaultPageSize, Status } from '../../common/constants';
+import { DefaultPageSize, JobStatus, Status } from '../../common/constants';
 import { IJobReport, JobReport } from '../../models/JobReport';
+import * as Sentry from '@sentry/node';
+import { IUser } from '../../models/User';
+import { Item } from '../../models/Item';
+import { JobCommission } from '../../models/JobCommission';
+import { ServiceTicket } from '../../models/ServiceTicket';
+import { createJobReport, handleMutltipleTechniciansTasks } from '../job';
+import { Invoice } from '../../models/Invoice';
+import { HomeOwner } from '../../models/HomeOwner';
 
 /**
  * Receives the request to get jobs
@@ -89,6 +97,9 @@ export const getJobs = async (req: Request, res: Response) => {
                             _id: 1,
                             profile: 1,
                             info: 1,
+                            contactName: 1,
+                            notes: 1,
+                            isPORequired: 1
                         },
                     },
                 ],
@@ -174,6 +185,7 @@ export const getJobs = async (req: Request, res: Response) => {
                 "_id": 1,
                 "jobId": 1,
                 "images": 1,
+                "technicianImages": 1,
                 "status": "$status",
                 "isHomeOccupied": "$isHomeOccupied",
                 "createdBy": "$createdBy",
@@ -368,6 +380,160 @@ export const getAllJobReports = async (req: Request, res: Response) => {
     });
 }
 
+export const updatePartialJob = async (req: Request, res: Response, sio: any) => {
+    const params = req.body;
+    const user = <IUser>req.user;
+    const company  = <ICompany>req.company;
+
+    Job.findOne({ _id: params.jobId })
+        .populate({
+            path: 'tasks.contractor',
+        })
+        .populate({
+            path: 'ticket',
+        })
+        .populate({
+            path: 'customer',
+        })
+        .populate({
+            path: 'tasks.technician',
+            select: 'profile.displayName'
+        })
+        .populate({
+            path: "tasks.jobTypes.jobType"
+        })
+        .then(async (job: IJob) => {
+            let action = '';
+            let ticketAction = '';
+            
+            const track = job.track ? job.track : [];
+
+            let needUpdate = false;
+            const newJobTypes:any = [];
+            //Update Completed Count when job is completed
+            if (params.isCompletedJob) {
+                let newTasks = JSON.parse(params.newJobTasks);
+                if (newTasks) {
+                    job.tasks.forEach((task) => {
+                        let newTask = newTasks.find((res: any) => res._id == task._id);
+
+                        let allJobTypeStatus:any = [];
+                        task.jobTypes.forEach((jobType) => {
+                            let newJobType = newTask?.jobTypes?.find((res: any) => res._id == jobType._id);
+                            if (newJobType) {
+                                jobType.jobCostingQuantity = newJobType.completedCount;
+                                jobType.completedCount = newJobType.completedCount;
+
+                                if ((jobType.completedCount ?? jobType.quantity) < jobType.quantity) {
+                                    jobType.status = JobStatus.PARTIALLY_COMPLETED;
+                                    needUpdate = true;
+                                }
+                            }
+                            newJobTypes.unshift(jobType);
+                            allJobTypeStatus.push(jobType.status);
+                        });
+
+                        if (allJobTypeStatus.every((status: JobStatus) => status === JobStatus.FINISHED)) {
+                            // All new job type task are FINISHED, Job is FINISHED
+                            task.status = JobStatus.FINISHED;;
+                        }
+                    })
+                }
+                if (needUpdate) {
+                    job.commission = await _calculateJobCommission(job.tasks, job._id);
+                }
+            } else {
+                needUpdate = true;
+            }
+
+            if (!needUpdate) {
+                return res.json({ 'status': Status.Success, 'message': 'Job rescheduled successfully.'});
+            }
+
+            switch (params.action) {
+                case "close-job":
+                    job.status = JobStatus.FINISHED;
+
+                    //Commission Calculation
+                    job.commission = await _calculateJobCommission(job.tasks, job._id);
+
+                    action = '|Finishing the job|';
+                    ticketAction = `|Job finished by ${user.profile.displayName}|`;
+
+                    break;
+                case "create-new-ticket":
+                case "create-new-po-request":
+                    await _splitJobAndCreateTicket(req, res, sio, job);
+
+                    action = `|Closed Job and Created New ${params.type}|`;
+                    ticketAction = `|Closeed Job and Created New ${params.type} by ${user.profile.displayName}|`;
+                    break;
+                case "reschedule":
+                    await _splitJobAndReschedule(req, res, sio, job);
+
+                    action = `|Reacheduled Job|`;
+                    ticketAction = `|Rescheduled Job by ${user.profile.displayName}|`;
+                    break;
+                default:
+                    break;
+            }
+
+            if (action) {
+                track.push({
+                    user: user._id,
+                    action,
+                    date: new Date()
+                })    
+            }
+            try {
+                //Save Job Update
+                await job.save();
+
+                if (job?.ticket && ticketAction) {
+                    const serviceTicket = await ServiceTicket.findById(job.ticket);
+                    serviceTicket.track.push({
+                        user: user._id,
+                        action: ticketAction,
+                        date: new Date()
+                    });
+
+                    await serviceTicket.save();
+                }
+
+                let customerName = job.customer ?
+                job.customer.profile?.displayName :
+                (job.ticket ? (job.ticket.customer ? job.ticket.customer?.profile?.displayName : null) : null);
+
+                let date = job.scheduleDate;
+                let technicianName = null;
+                if (job.tasks.length > 1) {
+                    technicianName = 'Multiple Techs';
+                } else {
+                    technicianName = job.tasks[0].technician.profile.displayName;
+                }
+
+                await createJobReport(job._id, job.company, customerName, technicianName, date, company._id);
+                return res.json({ 'status': Status.Success, 'message': 'Job rescheduled successfully.', job: job});
+            } catch (err) {
+                Sentry.captureException(err);
+                return res.json({ 'status': Status.Error, 'message': err.message });
+            }
+        })
+        .catch((err) => {
+            Sentry.captureException(err);
+            return res.json({ 'status': Status.Error, 'message': err.message });
+        });
+}
+
+export const getJobInvoice = async (req: Request, res: Response, sio: any) => {
+    const { jobId } = req.params;
+    let invoice = await Invoice.findOne({job: jobId})
+
+    return res.json({
+        status: Status.Success,
+        invoice,
+    });
+}
 
 /**
  * ===================================
@@ -610,4 +776,268 @@ const _getFilteredJobReportsIds = async (filteredInitialJobReports: any[], param
         },
     ])).map((value: any) => value._id); 
     return values;
+}
+
+/**
+ * 
+ * @param tasks 
+ * @param jobId 
+ * @returns commissionId
+ */
+const _calculateJobCommission = async (tasks: any, jobId: string) => {
+    let commissionId = null;
+    let invoiceCommissionEntry: any[] = [];
+                    
+    for (const task of tasks) {
+        task.status = JobStatus.FINISHED;
+        let contractorCommissionEntry = {
+            contractor: task.contractor?._id,
+            technician: task.contractor?.admin,
+            commission: 0,
+            commissionAmount: 0
+        }
+        
+        let contractor = task.contractor as ICompany;
+        if(contractor && contractor.commissionType == "fixed"){
+            for (const j of task.jobTypes) {
+                let balance = 0;
+
+                const jobType = await Item.findOne({ jobType: j.jobType })
+                const commissionTierId = contractor.commissionTier
+                if (commissionTierId) {
+                    const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
+                    if (commissionTier?.charge){
+                        balance += commissionTier.charge * (j.completedCount ?? (j.quantity || 1));
+                        contractorCommissionEntry.commission += commissionTier.charge * (j.completedCount ?? (j.quantity || 1));
+                        contractorCommissionEntry.commissionAmount += commissionTier.charge * (j.completedCount ?? (j.quantity || 1));
+                    }
+                }
+                await Company.findByIdAndUpdate(
+                    contractor?._id,
+                    { $inc: { balance } },
+                    { new: true }
+                ).exec()
+            }
+            invoiceCommissionEntry.push(contractorCommissionEntry);
+        }
+    }
+    
+    if (invoiceCommissionEntry.length) {
+        const jobCommisssion = await new JobCommission({
+            job: jobId,
+            technicians: invoiceCommissionEntry
+        }).save();
+        commissionId = jobCommisssion;
+    }
+    return commissionId
+}
+
+/**
+ * 
+ * @param req 
+ * @param res 
+ * @param sio 
+ * @param job 
+ * @returns {
+ *      newTicket
+ * }
+ */
+const _splitJobAndCreateTicket = async (req: Request, res: Response, sio: any, job: IJob) => {
+    const ticketJobTypes: any = [];
+
+    let isJobHaveItems: boolean = false;
+    job.tasks.forEach((task) => {
+        const newJobTypes: any = [];
+        task.jobTypes.forEach((jobType) => {
+            if ((jobType.completedCount || 0) < jobType.quantity && jobType.status == 7) {
+                //Split Quantity
+                ticketJobTypes.push({
+                    quantity: jobType.quantity - jobType.completedCount,
+                    jobType: jobType.jobType,
+                    price: jobType.price
+                });
+
+                if (jobType.completedCount) {
+                    jobType.quantity = jobType.completedCount;
+                    jobType.status = JobStatus.FINISHED;
+
+                    newJobTypes.push(jobType);
+                }
+            } else {
+                newJobTypes.push(jobType);
+            }
+        });
+
+        task.jobTypes = newJobTypes;
+        if (newJobTypes.length) {
+            isJobHaveItems = true;
+            task.status = JobStatus.FINISHED;
+        }else{
+            task.status = JobStatus.CANCELED;
+        }
+    });
+    
+    if (isJobHaveItems) {
+        //Chnges Job Status to be Completed
+        job.status = JobStatus.FINISHED;
+    } else {
+        //Chnges Job Status to be Canceled
+        job.status = JobStatus.CANCELED;
+    }
+
+    //Commission Calculation
+    job.commission = await _calculateJobCommission(job.tasks, job._id);
+}
+
+/**
+ * 
+ * @param req 
+ * @param res 
+ * @param sio 
+ * @param job 
+ */
+
+const _splitJobAndReschedule = async (req: Request, res: Response, sio: any, job: IJob) => {
+    const params = req.body;
+    const user = <IUser>req.user;
+    const company  = <ICompany>req.company;
+
+    let jobId = `Job ${company.currentJobId + 1}`;
+    if (company.prefix) {
+        jobId = `Job ${company.prefix}-${company.currentJobId + 1}`;
+    }
+
+    const imagesUrl: string[] = [];
+    if (req.files) {
+        const paramsImageFile = JSON.parse(JSON.stringify(req.files));
+
+        // Push image location from req.files to imagesUrl
+        paramsImageFile?.image?.forEach((image: any) => imagesUrl.push(image.location));
+        paramsImageFile?.images?.forEach((image: any) => imagesUrl.push(image.location));
+    }
+
+    let tasks:any = [];
+    let paramTasks: TaskEntry[] = params.tasks ?? [];
+    // To handle any over-stringified strings
+    if (!Array.isArray(paramTasks)) {
+        paramTasks = JSON.parse(params.tasks);
+    }
+    try {
+        tasks = await handleMutltipleTechniciansTasks({ req, res, parentJob: undefined, paramTasks, serviceTicket: job.ticket });
+    } catch (error) {
+        Sentry.captureException(error);
+        return res.json({ status: Status.Error, message: error.message });
+    }
+
+    job.tasks.forEach((task) => {
+        let newJobTypes: any = [];
+        task.jobTypes.forEach((jobType) => {
+            if ((jobType.completedCount || 0) < jobType.quantity && jobType.status == 7) {
+                if (jobType.completedCount) {
+                    jobType.quantity = jobType.completedCount;
+                    jobType.status = JobStatus.FINISHED;
+
+                    newJobTypes.push(jobType);
+                }
+            } else {
+                newJobTypes.push(jobType);
+            }
+        });
+        task.status = JobStatus.FINISHED;
+
+        tasks.forEach((newTask:any, index:number) => {
+            if (newTask.technician.toString() == task.technician?._id.toString()) {
+                newJobTypes = newJobTypes.concat(newTask.jobTypes);
+                task.status = JobStatus.PENDING;
+
+                tasks.splice(index, 1);
+            }
+        })
+
+        task.jobTypes = newJobTypes;
+    });
+    
+    job.tasks = job.tasks.concat(tasks);
+    job.scheduleDate = params.scheduleDate;
+    job.description = params.description;
+
+    let newStartTime: any = null
+    let newEndTime: any = null
+    let date;
+    if (params.scheduledStartTime) {
+        date = new Date(params.scheduleDate)
+        newStartTime = new Date(params.scheduledStartTime)
+        job.scheduledStartTime = newStartTime;
+    }
+
+    if (params.scheduledEndTime) {
+        date = new Date(params.scheduleDate)
+        newEndTime = new Date(params.scheduledEndTime)
+        job.scheduledEndTime = newEndTime;
+    }
+
+    if (params.equipmentId != undefined && params.equipmentId !== '""') {
+        job.equipmentId = params.equipmentId;
+    }
+
+    if (params.jobLocationId) {
+        job.jobLocation = params.jobLocationId;
+    }
+
+    if (params.jobSiteId) {
+        job.jobSite = params.jobSiteId;
+    }
+
+    if (params.homeJobLocationId) {
+        job.homeJobLocation = params.homeJobLocationId;
+    }
+
+    if (params.homeJobSiteId) {
+        job.homeJobSite = params.homeJobSiteId;
+    }
+
+    if (params.isHomeOccupied 
+        || params.isHomeOccupied === false 
+        || params.isHomeOccupied === true) {
+
+        job.isHomeOccupied = params.isHomeOccupied;
+    }
+
+    if(params.isHomeOccupied === true) {
+        if(params.homeOwnerId && params.homeOwnerId !== job.homeOwner) {
+            const newHomeOwner = await HomeOwner.findOne({ _id: params.homeOwnerId });
+            if(!newHomeOwner) {
+                return res.json({ 'status': Status.NotFound, 'message': 'Provided homeOwnerId does not correspond with any home owner' });
+            }
+            job.homeOwner = params.homeOwnerId;
+        }
+        else {
+            if(params.isHomeOccupied === true && !job.homeOwner) {
+                return res.json({ 'status': Status.Error, 'message': 'Home Owner is required when home is occupied' });
+            }
+        }
+    }
+    else if(params.isHomeOccupied === false) {
+        job.homeOwner = null;
+    }
+
+    if (params.customerContactId) {
+        job.customerContactId = params.customerContactId;
+    }
+
+    if (params.customerPO) {
+        job.customerPO = params.customerPO;
+    }
+
+    if (imagesUrl?.length) {
+        imagesUrl.forEach(imageUrl => {
+            job.images.push({ imageUrl, uploadedBy: user.id, createdAt: new Date() });
+        });
+    }
+
+    if (params.scheduleTimeAMPM) {
+        job.scheduleTimeAMPM = params.scheduleTimeAMPM; 
+    }
+
+    job.status = JobStatus.PENDING;
 }

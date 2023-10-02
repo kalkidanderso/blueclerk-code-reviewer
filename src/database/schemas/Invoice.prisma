@@ -1,0 +1,80 @@
+enum InvoiceStatus {
+    UNPAID
+    PARTIALLY_PAID
+    PAID
+}
+
+model Invoice {
+    id                  Int                @id @default(autoincrement())
+    alternativeId       String             @default(cuid())
+    invoiceId           String
+    invoiceType         Int                @default(0)
+    job                 Job?               @relation(fields: [jobId], references: [id])
+    jobId               Int?
+    purchaseOrderId     Int?
+    // TODO: PURCHASEORDER RELATIONSHIP
+    estimateId          Int?
+    // TODO: ESTIMATE RELATIONSHIP
+    jobPurchaseOrdersId Int?
+    // TODO: JOBPURCHASEORDER RELATIONSHIP
+    issuedDate          DateTime
+    dueDate             DateTime
+    isDraft             Boolean            @default(false)
+    paymentTerm         Paymentterm        @relation(fields: [paymentTermId], references: [id])
+    paymentTermId       Int
+    note                String?
+    customerPO          String
+    customerContact     Contact            @relation(fields: [customerContactId], references: [id])
+    customerContactId   Int
+    vendorId            String
+    customer            Customer           @relation(fields: [customerId], references: [id])
+    customerId          Int
+    jobLocation         Joblocation        @relation(fields: [jobLocationId], references: [id])
+    jobLocationId       Int
+    jobSite             Jobsite            @relation(fields: [jobSiteId], references: [id])
+    jobSiteId           Int
+    company             Company            @relation(fields: [companyId], references: [id])
+    companyId           Int
+    charges             Int                @default(0)
+    taxAmount           Int                @default(0)
+    subTotal            Int                @default(0)
+    total               Int                @default(0)
+    shippingCost        Int                @default(0)
+    tax                 Int
+    taxPercentage       Int
+    createdBy           User               @relation(fields: [createdById], references: [id])
+    createdById         Int
+    timeSpent           Int                @default(0)
+    items               Json?
+    paymentApplied      Int                @default(0)
+    balanceDue          Int
+    paid                Boolean            @default(false)
+    serviceType         InvoiceStatus      @default(UNPAID)
+    emailHistory        Json
+    bouncedEmailFlag    Boolean            @default(false)
+    lastEmailSent       DateTime
+    quickbookId         String
+    invoicecommission   Invoicecommission?
+    isVoid              Boolean            @default(false)
+    workType            Worktype           @relation(fields: [workTypeId], references: [id])
+    workTypeId          Int
+    companyLocation     CompanyLocation    @relation(fields: [companyLocationId], references: [id])
+    companyLocationId   Int
+    technicianMessages  Json
+    showJobId           Boolean            @default(true)
+    createdAt           DateTime           @default(now())
+    updatedAt           DateTime           @updatedAt
+    paymentcustomer     Paymentcustomer[]
+    paymentvendors      Paymentvendor[]
+
+    @@index([customerPO])
+    @@index([vendorId])
+    @@index([customerContactId])
+    @@index([isDraft])
+    @@index([issuedDate, isDraft])
+    @@index([isVoid])
+    @@index([quickbookId, isDraft, isVoid])
+    @@index([createdAt, id, isDraft, isVoid])
+    @@index([issuedDate, note, vendorId, invoiceId])
+    @@index([createdAt, isDraft, isVoid, invoiceId, customerPO, vendorId])
+}

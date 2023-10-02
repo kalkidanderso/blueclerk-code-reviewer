@@ -1,0 +1,28 @@
+model JobType {
+    id            Int       @id @default(autoincrement())
+    alternativeId String?   @unique
+    title         String
+    description   String?
+    sku           String?
+    industryId    Int?
+    industry      Industry? @relation(fields: [industryId], references: [id])
+    createdBy     Int?
+    user          User?     @relation(fields: [createdBy], references: [id])
+    isActive      Boolean   @default(true)
+    quickbookId   String?
+    createdAt     DateTime  @default(now())
+    updatedAt     DateTime  @updatedAt
+
+    jobTaskJobTypes JobTaskJobType[]
+    jobs            Job[]
+    jobCharges      JobCharges[]
+
+    servicetickets     Servicetickets[]
+    items          Items[]
+    serviceTicketTasks ServiceTicketTasks[]
+
+    @@index([title], type: SpGist)
+    @@index([createdBy, quickbookId])
+    @@index([title, industryId, createdBy])
+    @@index([createdBy, industryId, isActive])
+}

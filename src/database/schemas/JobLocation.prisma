@@ -1,0 +1,39 @@
+model Joblocation {
+    id            Int         @id @default(autoincrement())
+    alternativeId String      @default(cuid())
+    name          String
+    contacts      Json
+    location      Json?
+    address       Json?
+    jobSites      Json?
+    isActive      Boolean?
+    customer      Customer    @relation(fields: [customerId], references: [id])
+    customerId    Int
+    homeOwner     HomeOwners?
+    company       Company     @relation(fields: [companyId], references: [id])
+    companyId     Int
+    inactiveAt    DateTime?
+    inactiveBy    User        @relation(fields: [inactiveById], references: [id])
+    inactiveById  Int
+    quickbookId   String?
+    createdAt     DateTime    @default(now())
+    updatedAt     DateTime    @updatedAt
+
+    tickets     Servicetickets[] @relation("jobLocation")
+    homeTickets Servicetickets[] @relation("homeJobLocation")
+
+    invoice Invoice[]
+
+    jobRequest Jobrequest[]
+
+    jobSite     Jobsite[]
+    homeJobs Job[]
+    jobs     Job[]     @relation("jobJobLocation")
+
+    @@index([contacts])
+    @@index([isActive])
+    @@index([address])
+    @@index([id, isActive])
+    @@index([quickbookId])
+    @@index([name, address, location])
+}

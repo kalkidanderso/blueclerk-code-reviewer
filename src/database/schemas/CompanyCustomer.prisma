@@ -1,0 +1,11 @@
+model Companycustomer {
+    id            Int      @id @default(autoincrement())
+    alternativeId String   @default(cuid())
+    company       Company? @relation(fields: [companyId], references: [id])
+    companyId     Int
+    customer      Customer @relation(fields: [customerId], references: [id])
+    customerId    Int
+    status        Int      @default(1)
+    isPreferred   Boolean  @default(false)
+    createdAt     DateTime
+}

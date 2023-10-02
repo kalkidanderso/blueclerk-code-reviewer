@@ -1,0 +1,24 @@
+model Companyinvoice {
+    id                     Int      @id @default(autoincrement())
+    alternativeId          String   @default(cuid())
+    technicians            Int?     @default(0)
+    managers               Int?     @default(0)
+    officeAdmins           Int?     @default(0)
+    admins                 Int?     @default(0)
+    contractors            Int?     @default(0)
+    charges                Int      @default(0)
+    tax                    Int      @default(0)
+    total                  Int      @default(0)
+    isDraft                Boolean  @default(false)
+    stripeId               String
+    stripeHostedInvoiceUrl String
+    stripeInvoicePdf       String
+    paid                   Boolean  @default(false)
+    paidAt                 DateTime
+    note                   String?
+    company                Company  @relation(fields: [companyId], references: [id])
+    companyId              Int
+    emailHistory           Json
+    createdAt              DateTime @default(now())
+    updatedAt              DateTime @updatedAt
+}

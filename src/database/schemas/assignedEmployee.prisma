@@ -1,0 +1,8 @@
+model AssignedEmployee {
+    id               Int               @id @default(autoincrement())
+    alternativeId    String?           @unique
+    employeeId       Int
+    // TODO: implement employee
+    workTypes        Worktype[]
+    companyLocations CompanyLocation[]
+}

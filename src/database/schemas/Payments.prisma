@@ -1,0 +1,68 @@
+model Payment {
+    id              Int      @id @default(autoincrement())
+    alternativeId   String   @default(cuid())
+    amountPaid      Int      @default(0)
+    referenceNumber String
+    paymentType     String
+    line            Json
+    paidAt          DateTime
+    isVoid          Boolean  @default(false)
+    voidedAt        DateTime
+    note            String
+    company         Company  @relation(fields: [companyId], references: [id])
+    companyId       Int
+    quickbookId     String
+    quickbookRefNum String
+    createdBy       User     @relation("paymentUserCreatedBy", fields: [createdById], references: [id])
+    createdById     Int
+    createdAt       DateTime
+    updatedBy       User     @relation("paymentUserupdatedBy", fields: [updatedById], references: [id])
+    updatedById     Int
+    workType        Json
+    companyLocation Json
+    updatedAt       DateTime
+
+    @@index([quickbookId])
+    @@index([quickbookId, isVoid])
+    @@index([paidAt, isVoid])
+    @@index([quickbookId, referenceNumber, paymentType, isVoid])
+    @@index([quickbookId, referenceNumber, paymentType, isVoid, line])
+}
+
+model Paymentcustomer {
+    id               Int               @id @default(autoincrement())
+    alternativeId    String            @default(cuid())
+    customerId       Int
+    // TODO: CUSTOMER RELATIONSHIP
+    invoice          Invoice?          @relation(fields: [invoiceId], references: [id])
+    invoiceId        Int?
+    worktypes        Worktype[]
+    companyLocations CompanyLocation[]
+}
+
+model Paymentvendor {
+    id            Int       @id @default(autoincrement())
+    alternativeId String    @default(cuid())
+    contractor    Company   @relation(fields: [contractorId], references: [id])
+    contractorId  Int
+    invoices      Invoice[]
+    jobs          Job[]
+    startDate     DateTime
+    endDate       DateTime
+    offset        Int
+    creditUsed    Int       @default(0)
+}
+
+model Paymentemployee {
+    id            Int      @id @default(autoincrement())
+    alternativeId String   @default(cuid())
+    employee      User     @relation(fields: [employeeId], references: [id])
+    employeeId    Int
+    invoices      Json
+    startDate     DateTime
+    endDate       DateTime
+    offset        Int
+    creditUsed    Int      @default(0)
+
+    @@index([invoices])
+}

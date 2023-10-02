@@ -12,6 +12,8 @@ import passportMiddleWare from './middleware/passport'
 import { MongoError } from 'mongodb'
 import routesV1 from './routes/v1'
 import routesV2 from './routes/v2'
+import { RegisterRoutes } from "./routes/v3/routes";
+import * as swaggerDocumentV3 from './routes/v3/swagger.json';
 import swaggerUi from 'swagger-ui-express'
 import * as swaggerDocumentV1 from './swagger_v1.json'
 import * as swaggerDocumentV2 from './swagger_v2.json'
@@ -35,6 +37,8 @@ import { Customer } from './models/Customer';
 import { Status, Messages, JobStatus } from './common/constants';
 import { _initializeFirebase } from './services/firebase';
 import { getRegisteredUser } from './blockchain/registerUser';
+import { errorHandler } from './middleware/errorHandler';
+
 const timeout = require('connect-timeout');
 const MongoStore = require('connect-mongo');
 
@@ -132,10 +136,19 @@ const options = {
       {
         url: '/swagger/v2',
         name: 'Version 2'
+      },
+      {
+        url: '/swagger/v3',
+        name: 'Version 3'
       }
     ]
   }
 }
+
+RegisterRoutes(app);
+
+app.use(errorHandler);
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(null, options));
 const swaggerRoutes = ()=>{
   const router: express.Router = express.Router();
@@ -144,11 +157,15 @@ const swaggerRoutes = ()=>{
     swaggerDocumentV1.servers.push({ url: process.env.BASE_URL || "https://blueclerk-node-api.deploy.blueclerk.com/api/v1" });
     return res.json(swaggerDocumentV1);
   })
-
   //Documentation version 1
   router.get('/v2', async (req, res) => {
     swaggerDocumentV2.servers.push({ url: process.env.BASE_URL_V2 || "https://blueclerk-node-api.deploy.blueclerk.com/api/v2" });
     return res.json(swaggerDocumentV2);
+  })
+
+  router.get('/v3', async (req, res) => {
+    swaggerDocumentV3.servers.push({ url: process.env.BASE_URL_V3 || "https://blueclerk-node-api.deploy.blueclerk.com/api/v3" });
+    return res.json(swaggerDocumentV3);
   })
   return router;
 }
@@ -200,7 +217,7 @@ sio.on('disconnect', (socket: any) => {
   console.log('Disconnected at ', new Date());
 })
 app.use('/api/v1', routesV1(sio))
-app.use('/api/v2', routesV2())
+app.use('/api/v2', routesV2(sio))
 new CronJob('0 0 1 * *', function () {
   // console.log('You will see this message every second');
 
