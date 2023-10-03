@@ -2904,11 +2904,15 @@ export const updateJobTask = async (req: Request, res: Response) => {
         }
 
         if (invoiceCommissionEntry.length) {
-            const jobCommisssion = await new JobCommission({
-                job: job._id,
-                technicians: invoiceCommissionEntry
-            }).save();
-            job.commission = jobCommisssion;
+            if (job.commission) {
+                await JobCommission.findByIdAndUpdate({_id: job.commission}, { $set : { technicians : invoiceCommissionEntry}});
+            }else{
+                const jobCommisssion = await new JobCommission({
+                    job: job._id,
+                    technicians: invoiceCommissionEntry
+                }).save();
+                job.commission = jobCommisssion;
+            }
         }
     }
 
