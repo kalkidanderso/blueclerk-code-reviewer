@@ -1,10 +1,8 @@
 FROM node:14.20-alpine3.15
 
 ARG node_environment
-ARG database_url
 
 ENV NODE_ENV $node_environment
-ENV DATABASE_URL $database_url
 
 RUN apk update && apk upgrade && \
     apk --no-cache --virtual build-dependencies add \
@@ -21,7 +19,6 @@ ENV PM2_PUBLIC_KEY orlibi61uru1kzv
 ENV PM2_SECRET_KEY 88riceao9xegxk2
 COPY . .
 EXPOSE 3006
-RUN npm run schema
 RUN npm run tsc
 RUN npm link mongodb
 CMD ["pm2-runtime", "dist/server.js"]
