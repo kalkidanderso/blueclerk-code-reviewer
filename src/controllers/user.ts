@@ -84,23 +84,30 @@ export const login = (req: Request, res: Response, sio: any) => {
                                 return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
                             }
 
-                            //Set new Firebase Token 
+                            // Save the firebase registration token to send notification
+                            user.firebaseTokens = user.firebaseTokens.length ? user.firebaseTokens : [];
+                            // Handle firebase registration token is provided
                             if (params.fbToken) {
-                                if (user.firebaseTokens) {
-                                    let newFBTokens = user.firebaseTokens.filter(res => res.token != params.fbToken);
-                                    newFBTokens.push({
-                                        token: params.fbToken,
-                                        createdAt: new Date(),
-                                        updatedAt: new Date(),
-                                    });
+                                // Find if the token is existing for the user
+                                const tokenFound = user.firebaseTokens?.find((fbt: any) => fbt.token === params.fbToken);
 
-                                    user.firebaseTokens = newFBTokens;
+                                if (tokenFound) {
+                                    /**
+                                     * Token found, just update the timestamp,
+                                     * to make sure we know that token is active.
+                                     * TODO: To clean up any stale tokens
+                                     */
+                                    tokenFound.updatedAt = new Date();
                                 } else {
-                                    user.firebaseTokens = [{
+                                    /**
+                                     * Registration token is new,
+                                     * add it to the user
+                                     */
+                                    user.firebaseTokens.push({
                                         token: params.fbToken,
                                         createdAt: new Date(),
-                                        updatedAt: new Date(),
-                                    }];
+                                        updatedAt: new Date()
+                                    });
                                 }
                                 user.save();
                             }
@@ -130,26 +137,31 @@ export const login = (req: Request, res: Response, sio: any) => {
                         return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
                     }
                     
-                    //Set new Firebase Token 
+                    // Save the firebase registration token to send notification
+                    user.firebaseTokens = user.firebaseTokens.length ? user.firebaseTokens : [];
+                    // Handle firebase registration token is provided
                     if (params.fbToken) {
-                        if (user.firebaseTokens) {
-                            let newFBTokens = user.firebaseTokens.filter(res => res.token != params.fbToken);
-                            newFBTokens.push({
-                                token: params.fbToken,
-                                createdAt: new Date(),
-                                updatedAt: new Date(),
-                            });
+                        // Find if the token is existing for the user
+                        const tokenFound = user.firebaseTokens?.find((fbt: any) => fbt.token === params.fbToken);
 
-                            user.firebaseTokens = newFBTokens;
+                        if (tokenFound) {
+                            /**
+                             * Token found, just update the timestamp,
+                             * to make sure we know that token is active.
+                             * TODO: To clean up any stale tokens
+                             */
+                            tokenFound.updatedAt = new Date();
                         } else {
-                            user.firebaseTokens = [{
+                            /**
+                             * Registration token is new,
+                             * add it to the user
+                             */
+                            user.firebaseTokens.push({
                                 token: params.fbToken,
                                 createdAt: new Date(),
-                                updatedAt: new Date(),
-                            }];
+                                updatedAt: new Date()
+                            });
                         }
-                        console.log(user.firebaseTokens);
-                        
                         user.save();
                     }
 
@@ -195,23 +207,30 @@ export const login = (req: Request, res: Response, sio: any) => {
                         return res.json({ 'status': Status.Error, 'message': Messages.InvalidEmailPassword })
                     }
 
-                   //Set new Firebase Token 
-                   if (params.fbToken) {
-                        if (user.firebaseTokens) {
-                            let newFBTokens = user.firebaseTokens.filter(res => res.token != params.fbToken);
-                            newFBTokens.push({
-                                token: params.fbToken,
-                                createdAt: new Date(),
-                                updatedAt: new Date(),
-                            });
+                    // Save the firebase registration token to send notification
+                    user.firebaseTokens = user.firebaseTokens.length ? user.firebaseTokens : [];
+                    // Handle firebase registration token is provided
+                    if (params.fbToken) {
+                        // Find if the token is existing for the user
+                        const tokenFound = user.firebaseTokens?.find((fbt: any) => fbt.token === params.fbToken);
 
-                            user.firebaseTokens = newFBTokens;
+                        if (tokenFound) {
+                            /**
+                             * Token found, just update the timestamp,
+                             * to make sure we know that token is active.
+                             * TODO: To clean up any stale tokens
+                             */
+                            tokenFound.updatedAt = new Date();
                         } else {
-                            user.firebaseTokens = [{
+                            /**
+                             * Registration token is new,
+                             * add it to the user
+                             */
+                            user.firebaseTokens.push({
                                 token: params.fbToken,
                                 createdAt: new Date(),
-                                updatedAt: new Date(),
-                            }];
+                                updatedAt: new Date()
+                            });
                         }
                         user.save();
                     }

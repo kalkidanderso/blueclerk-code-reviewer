@@ -141,6 +141,9 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                                                     }, {
                                                         text: moment.utc(jobReport.job?.scheduleDate).format('ll') || 'N/A',
                                                         style: 'boldGreyRight'
+                                                    }, {
+                                                        text: jobReport.job.rescheduled ? "(Rescheduled)" : "",
+                                                        style: 'fieldLabelRight'
                                                     }]
                                                 }
                                             ]

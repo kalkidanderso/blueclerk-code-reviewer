@@ -79,6 +79,7 @@ export interface IJob extends Document {
     commission?: Schema.Types.ObjectId | IJobCommission
     workType: Schema.Types.ObjectId  | any
     companyLocation: Schema.Types.ObjectId  | any
+    rescheduled: boolean
 }
 
 export interface ITask extends Document {
@@ -474,6 +475,11 @@ const JobSchema = new Schema({
     companyLocation: {
         type: Schema.Types.ObjectId,
         ref: 'CompanyLocation',
+    },
+    rescheduled: {
+        type: Boolean,
+        default: false,
+        required: false
     },
 }, { timestamps: { updatedAt: true } })
 
