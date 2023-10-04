@@ -19,6 +19,7 @@ model Jobsite {
     jobRequest Jobrequest[]
     homeJobs   Job[]
     jobs       Job[]        @relation("jobJobsite")
+    tags       Tag[]
 
     @@index([isActive])
     @@index([id, isActive])

@@ -12,26 +12,39 @@ model UserAuth {
     @@index([socialId, connectorType])
 }
 
-model User {
-    id               Int       @id @default(autoincrement())
-    alternativeId    String?   @unique
-    accountType      Int?
-    auth             UserAuth? @relation(fields: [userAuthId], references: [id])
-    userAuthId       Int?      @unique
-    profile          Json?
-    address          Json?
-    location         Json?
-    contact          Json?
-    permissions      Json?
-    emailPreferences Json?
-    // TODO: Contats need to be implemented
-    balance          Int       @default(0)
-    credit           Int       @default(0)
-    commission       Int?
-    firebaseTokens   Json
-    createdAt        DateTime  @default(now())
-    updatedAt        DateTime  @updatedAt
+model Employee {
+    id                    Int     @id @default(autoincrement())
+    companyId             Int
+    company               Company @relation(fields: [companyId], references: [id])
+    status                Int     @default(1)
+    extraPermissions      Json
+    agreed                Boolean @default(false)
+    canAccessAllLocations Boolean @default(false)
+    userId                Int?    @unique
+    user                  User?   @relation(fields: [userId], references: [id])
+}
 
+model User {
+    id                            Int                      @id @default(autoincrement())
+    alternativeId                 String?                  @unique
+    accountType                   Int?
+    auth                          UserAuth?                @relation(fields: [userAuthId], references: [id])
+    userAuthId                    Int?                     @unique
+    profile                       Json?
+    address                       Json?
+    location                      Json?
+    contact                       Json?
+    permissions                   Json?
+    emailPreferences              Json?
+    // TODO: Contats need to be implemented
+    balance                       Int                      @default(0)
+    credit                        Int                      @default(0)
+    commission                    Int?
+    firebaseTokens                Json
+    createdAt                     DateTime                 @default(now())
+    updatedAt                     DateTime                 @updatedAt
+    employee                      Employee?
+    companyAdmin                  Companyadmin?
     companyBlockchainsVerified    CompanyBlockchain[]      @relation("CompanyBlockchainVerifiedBy")
     companyBlockchainsdenied      CompanyBlockchain[]      @relation("CompanyBlockchainDeniedBy")
     industriesCreated             Industry[]
@@ -76,4 +89,7 @@ model User {
     adminCustomer                 Customer[]               @relation("customerUserAdmin")
     contactUser                   Contact[]
     jobrequest                    Jobrequest[]
+    contractsCreated              Contract[]               @relation("contractCreatedBy")
+    contractsFinished             Contract[]               @relation("contractFinishedBy")
+    tagsCreated                   Tag[]
 }
