@@ -4694,7 +4694,7 @@ export const createServiceTicketJob = async (
     newJob.job?.tasks?.forEach(async (task) => {
         // Send simple notification to mobile through Firebase,
         // for mobile internal usage, not saving to DB
-        await firebaseNotification({
+        firebaseNotification({
             recipientId: task.technician,
             notificationType: NotificationTypes.JOB_CREATED,
             fbNotificationType: FbNotificationType.JOB_ADDED,
