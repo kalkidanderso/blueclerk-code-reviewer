@@ -1,0 +1,17 @@
+model Contract {
+    id               Int      @id @default(autoincrement())
+    companyId        Int
+    company          Company  @relation("contractCompany", fields: [companyId], references: [id])
+    contractorId     Int
+    contractor       Company  @relation("contractContractor", fields: [contractorId], references: [id])
+    contractorEmail  String
+    status           Int      @default(0)
+    createdById      Int
+    createdBy        User     @relation("contractCreatedBy", fields: [createdById], references: [id])
+    finishedById     Int
+    finishedBy       User     @relation("contractFinishedBy", fields: [finishedById], references: [id])
+    finishedAt       DateTime
+    extraPermissions Json
+    createdAt        DateTime @default(now())
+    updatedAt        DateTime @updatedAt
+}

@@ -31,7 +31,7 @@ model Company {
     address             Json?
     contact             Json?
     other               Json?
-    // TODO: employees: [{ type: Schema.Types.ObjectId, ref: 'Employee' }],
+    employees           Employee[]
     customers           Customer[]
     stripeId            String?
     paid                Boolean           @default(false)
@@ -104,6 +104,9 @@ model Company {
     paymentvendor                 Paymentvendor[]
     companyinvoice                Companyinvoice[]
     companyprefix                 Companyprefix[]
+    companyContracts              Contract[]             @relation("contractCompany")
+    contractorContracts           Contract[]             @relation("contractContractor")
+    tags                          Tag[]
 
     @@index([plan, chargeDate])
 }
