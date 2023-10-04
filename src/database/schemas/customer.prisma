@@ -43,4 +43,5 @@ model Customer {
     companycustomer Companycustomer[]
     jobs            Job[]
     companies       Company[]
+    tags            Tag[]
 }
