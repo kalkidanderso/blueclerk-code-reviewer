@@ -256,10 +256,6 @@ const _fillInitialQuery = (params: any, queryParams: any, query: any) => {
         case false:
             query['$and'].push({ isVoid: { $ne: true } });
             break;
-<<<<<<< HEAD
-=======
-
->>>>>>> 4be3b6b866303518e7e78d918d05a39812ab872d
         default:
             /**
              * For isVoid false, use the $ne because we want to retrieve old invoices,
