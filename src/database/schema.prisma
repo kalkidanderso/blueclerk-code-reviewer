@@ -1,47 +1,56 @@
 model Advancepayment {
-  id               Int               @id @default(autoincrement())
-  alternativeId    String            @default(cuid())
-  company          Company           @relation(fields: [companyId], references: [id])
-  companyId        Int
-  amount           Int               @default(0)
-  balance          Int               @default(0)
-  referenceNumber  String
-  paymentType      String
-  paidAt           DateTime
-  appliedAt        DateTime
-  note             String
-  isVoid           Boolean           @default(false)
-  voidedAt         DateTime
-  createdByUser    User              @relation("advancePaymentUserCreatedBy", fields: [createdById], references: [id])
-  createdById      Int
-  updatedByUser    User              @relation("advancePaymentUserUpdatedBy", fields: [updatedById], references: [id])
-  updatedById      Int
-  voidedByUser     User              @relation("advancePaymentUserVoidedBy", fields: [voidedById], references: [id])
-  voidedById       Int
-  workTypes        Worktype[]
-  companyLocations CompanyLocation[]
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  id                     Int                     @id @default(autoincrement())
+  alternativeId          String                  @default(cuid())
+  companyId              Int
+  company                Company                 @relation(fields: [companyId], references: [id])
+  amount                 Int                     @default(0)
+  balance                Int                     @default(0)
+  paymentType            String?
+  referenceNumber        String?
+  paidAt                 DateTime?
+  appliedAt              DateTime?
+  note                   String?
+  isVoid                 Boolean?                @default(false)
+  voidedAt               DateTime?
+  createdByUser          User                    @relation("advancePaymentUserCreatedBy", fields: [createdById], references: [id])
+  createdById            Int
+  updatedByUser          User                    @relation("advancePaymentUserUpdatedBy", fields: [updatedById], references: [id])
+  updatedById            Int
+  voidedByUser           User                    @relation("advancePaymentUserVoidedBy", fields: [voidedById], references: [id])
+  voidedById             Int
+  workType               Worktype[]
+  companyLocation        CompanyLocation[]
+  advancePaymentVendor   Advancepaymentvendor?
+  advancePaymentEmployee Advancepaymentemployee?
 
+  @@index([companyId])
   @@index([paidAt])
   @@index([isVoid, paidAt])
-  @@index([isVoid, appliedAt])
 }
 
 model Advancepaymentvendor {
-  id            Int      @id @default(autoincrement())
-  alternativeId String   @default(cuid())
-  contractor    Company? @relation(fields: [contractorId], references: [id])
-  contractorId  Int?
+  id               Int            @id @default(autoincrement())
+  alternativeId    String         @default(cuid())
+  contractorId     Int
+  contractor       Company        @relation(fields: [contractorId], references: [id])
+  advancePaymentId Int            @unique
+  advancePayment   Advancepayment @relation(fields: [advancePaymentId], references: [id])
+
+  @@index([contractorId])
+  @@index([advancePaymentId])
 }
 
 model Advancepaymentemployee {
-  id            Int    @id @default(autoincrement())
-  alternativeId String @default(cuid())
-  employee      User?  @relation(fields: [employeeId], references: [id])
-  employeeId    Int?
-}
+  id               Int            @id @default(autoincrement())
+  alternativeId    String         @default(cuid())
+  employeeId       Int
+  employee         User           @relation(fields: [employeeId], references: [id])
+  advancePaymentId Int            @unique
+  advancePayment   Advancepayment @relation(fields: [advancePaymentId], references: [id])
 
+  @@index([employeeId])
+  @@index([advancePaymentId])
+}
 model Assignedvendor {
   id            Int     @id @default(autoincrement())
   alternativeId String  @default(cuid())
@@ -547,7 +556,6 @@ model Worktype {
   assignedEmployees AssignedEmployee[]
   paymentcustomers  Paymentcustomer[]
 }
-
 model AssignedEmployee {
   id               Int               @id @default(autoincrement())
   alternativeId    String?           @unique
@@ -678,7 +686,7 @@ model Company {
   companyCards                  CompanyCard[]
   contractorCommissionHistories CommissionHistory[]    @relation("commissionHistoryContractor")
   advancePayment                Advancepayment[]
-  advancepaymentvendor          Advancepaymentvendor[]
+  advancePaymentVendor          Advancepaymentvendor[]
   assignedvendor                Assignedvendor[]
   chat                          Chat[]
   companyadmin                  Companyadmin[]
@@ -757,7 +765,6 @@ model CompanyLocation {
   @@index([companyId, isActive, isMainLocation])
   @@index([companyId, isActive, isMainLocation, id])
 }
-
 model Contact {
   id            Int      @id @default(autoincrement())
   alternativeId String   @default(cuid())
@@ -1372,7 +1379,7 @@ model User {
   createdAdvancePayment         Advancepayment[]         @relation("advancePaymentUserCreatedBy")
   updatedAdvancePayment         Advancepayment[]         @relation("advancePaymentUserUpdatedBy")
   voidedAdvancePayment          Advancepayment[]         @relation("advancePaymentUserVoidedBy")
-  advancepaymentemployee        Advancepaymentemployee[]
+  advancePaymentEmployee        Advancepaymentemployee[]
   chat                          Chat[]
   createdServiceTicket          Servicetickets[]         @relation("serviceTicketUserCreatedBy")
   technicianServiceTicket       Servicetickets[]         @relation("serviceTicketUsertechnician")
@@ -1397,9 +1404,9 @@ model User {
   adminCustomer                 Customer[]               @relation("customerUserAdmin")
   contactUser                   Contact[]
   jobrequest                    Jobrequest[]
+  Notification                  Notification[]
   contractsCreated              Contract[]               @relation("contractCreatedBy")
   contractsFinished             Contract[]               @relation("contractFinishedBy")
   tagsCreated                   Tag[]
   company                       Company[]
-  Notification                  Notification[]
 }
