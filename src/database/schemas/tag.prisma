@@ -1,0 +1,18 @@
+model Tag {
+    id            Int         @id @default(autoincrement())
+    info          Json
+    images        Json
+    jobLocationId Int
+    jobLocation   Joblocation @relation(fields: [jobLocationId], references: [id])
+    jobSiteId     Int
+    jobSite       Jobsite     @relation(fields: [jobSiteId], references: [id])
+    note          String?
+    address       String?
+    customerId    Int
+    customer      Customer    @relation(fields: [customerId], references: [id])
+    companyId     Int
+    company       Company     @relation(fields: [companyId], references: [id])
+    createdById   Int
+    createdBy     User        @relation(fields: [createdById], references: [id])
+    createdAt     DateTime    @default(now())
+}

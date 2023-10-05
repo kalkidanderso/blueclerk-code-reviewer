@@ -5345,10 +5345,11 @@ export const updateJobCommission = async (req: Request, res: Response) => {
                 displayName: user.profile.displayName,
             },
         });
-        await commissionHistory.save()
+        await commissionHistory.save();
 
-        const commission = await JobCommission.findOne({ job: body.job });
+        const jobDetail = await Job.findById(body.job);
 
+        const commission = await JobCommission.findById(jobDetail.commission);
         if (commission) {
             if (commission.technicians) {
                 // Find the vendor on the invoice commisison object

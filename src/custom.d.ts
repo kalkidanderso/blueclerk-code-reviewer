@@ -8,6 +8,11 @@ declare namespace Express {
        technician?: any,
        contractor?: any,
        userSession?: any,
-       sessionId?: any
+       sessionId?: any,
+       v3?: {
+         userSession?: any,
+         sessionId?: any,
+         company?: any,
+       }
     }
  }
