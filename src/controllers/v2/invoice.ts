@@ -40,7 +40,6 @@ export const getInvoices = async (req: Request, res: Response) => {
     let companyId = req.otherCompanyId || req.companyId;
     let currentPage = params.currentPage || 0;
     let pageSize = params.pageSize || DefaultPageSize;
-
     // Check if any filter provided to decide whether return all records or not
     let isAllRecords = await _getIsAllRecordsByParams(params);
     // Get the date of the last 90 days
@@ -257,7 +256,10 @@ const _fillInitialQuery = (params: any, queryParams: any, query: any) => {
         case false:
             query['$and'].push({ isVoid: { $ne: true } });
             break;
+<<<<<<< HEAD
+=======
 
+>>>>>>> 4be3b6b866303518e7e78d918d05a39812ab872d
         default:
             /**
              * For isVoid false, use the $ne because we want to retrieve old invoices,
@@ -806,12 +808,11 @@ const _getFinalInvoicesIds = async (filteredInitialInvoices: any[], params: any)
     ])).map((value: any) => value._id);
 }
 
-
 /**
  * Retrieve all invoices data with filter options
- * Export invoices to excel 
+ * Export invoices to excel
  * @param req request
- * @param res response 
+ * @param res response
  * @returns invoices
  */
 const _getDataInvoices = async (req: Request, res: Response) => {
@@ -850,10 +851,10 @@ const _getDataInvoices = async (req: Request, res: Response) => {
         { $match: initialQuery },
         {
             $project:
-            {
-                job: 1,
-                customer: 1,
-            },
+                {
+                    job: 1,
+                    customer: 1,
+                },
         },
     ]);
 
@@ -930,8 +931,8 @@ const _getDataInvoices = async (req: Request, res: Response) => {
  *      emailSendDate
  *      contactName
  *      contactEmail
-*   }
-*/
+ *   }
+ */
 const _converInvoiceToRowExcel = (invoice: any): any => {
     const row = {
         paymentStatus: '',
