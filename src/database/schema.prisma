@@ -1,27 +1,33 @@
 model Advancepayment {
-  id               Int               @id @default(autoincrement())
-  alternativeId    String            @default(cuid())
-  company          Company           @relation(fields: [companyId], references: [id])
-  companyId        Int
-  amount           Int               @default(0)
-  balance          Int               @default(0)
-  referenceNumber  String
-  paymentType      String
-  paidAt           DateTime
-  appliedAt        DateTime
-  note             String
-  isVoid           Boolean           @default(false)
-  voidedAt         DateTime
-  createdByUser    User              @relation("advancePaymentUserCreatedBy", fields: [createdById], references: [id])
-  createdById      Int
-  updatedByUser    User              @relation("advancePaymentUserUpdatedBy", fields: [updatedById], references: [id])
-  updatedById      Int
-  voidedByUser     User              @relation("advancePaymentUserVoidedBy", fields: [voidedById], references: [id])
-  voidedById       Int
-  workTypes        Worktype[]
-  companyLocations CompanyLocation[]
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  id                Int             @id @default(autoincrement())
+  alternativeId     String          @default(cuid())
+  company           Company         @relation("advancePaymentCompany", fields: [companyId], references: [id])
+  companyId         Int
+  amount            Int             @default(0)
+  balance           Int             @default(0)
+  referenceNumber   String
+  paymentType       String
+  paidAt            DateTime
+  appliedAt         DateTime
+  note              String
+  isVoid            Boolean         @default(false)
+  voidedAt          DateTime
+  createdByUser     User            @relation("advancePaymentUserCreatedBy", fields: [createdById], references: [id])
+  createdById       Int
+  updatedByUser     User            @relation("advancePaymentUserUpdatedBy", fields: [updatedById], references: [id])
+  updatedById       Int
+  voidedByUser      User            @relation("advancePaymentUserVoidedBy", fields: [voidedById], references: [id])
+  voidedById        Int
+  workType          Worktype        @relation(fields: [workTypeId], references: [id])
+  workTypeId        Int
+  companyLocation   CompanyLocation @relation(fields: [companyLocationId], references: [id])
+  companyLocationId Int
+  contractor        Company?        @relation("advancePaymentContractor", fields: [contractorId], references: [id])
+  contractorId      Int?
+  employee          User?           @relation("advancePaymentEmployee", fields: [employeeId], references: [id])
+  employeeId        Int?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   @@index([paidAt])
   @@index([isVoid, paidAt])
@@ -677,7 +683,8 @@ model Company {
   jobTasks                      JobTask[]
   companyCards                  CompanyCard[]
   contractorCommissionHistories CommissionHistory[]    @relation("commissionHistoryContractor")
-  advancePayment                Advancepayment[]
+  companyAdvancePayment         Advancepayment[]       @relation("advancePaymentCompany")
+  contractorAdvancePayment      Advancepayment[]       @relation("advancePaymentContractor")
   advancepaymentvendor          Advancepaymentvendor[]
   assignedvendor                Assignedvendor[]
   chat                          Chat[]
@@ -708,7 +715,6 @@ model Company {
 
   @@index([plan, chargeDate])
 }
-
 model CompanyCard {
   id              Int      @id @default(autoincrement())
   alternativeId   String?  @unique
@@ -1332,27 +1338,26 @@ model Employee {
 }
 
 model User {
-  id               Int           @id @default(autoincrement())
-  alternativeId    String?       @unique
-  accountType      Int?
-  auth             UserAuth?     @relation(fields: [userAuthId], references: [id])
-  userAuthId       Int?          @unique
-  profile          Json?
-  address          Json?
-  location         Json?
-  contact          Json?
-  permissions      Json?
-  emailPreferences Json?
+  id                            Int                      @id @default(autoincrement())
+  alternativeId                 String?                  @unique
+  accountType                   Int?
+  auth                          UserAuth?                @relation(fields: [userAuthId], references: [id])
+  userAuthId                    Int?                     @unique
+  profile                       Json?
+  address                       Json?
+  location                      Json?
+  contact                       Json?
+  permissions                   Json?
+  emailPreferences              Json?
   // TODO: Contats need to be implemented
-  balance          Int           @default(0)
-  credit           Int           @default(0)
-  commission       Int?
-  firebaseTokens   Json
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  employee         Employee?
-  companyAdmin     Companyadmin?
-
+  balance                       Int                      @default(0)
+  credit                        Int                      @default(0)
+  commission                    Int?
+  firebaseTokens                Json
+  createdAt                     DateTime                 @default(now())
+  updatedAt                     DateTime                 @updatedAt
+  employee                      Employee?
+  companyAdmin                  Companyadmin?
   companyBlockchainsVerified    CompanyBlockchain[]      @relation("CompanyBlockchainVerifiedBy")
   companyBlockchainsdenied      CompanyBlockchain[]      @relation("CompanyBlockchainDeniedBy")
   industriesCreated             Industry[]
@@ -1373,6 +1378,7 @@ model User {
   updatedAdvancePayment         Advancepayment[]         @relation("advancePaymentUserUpdatedBy")
   voidedAdvancePayment          Advancepayment[]         @relation("advancePaymentUserVoidedBy")
   advancepaymentemployee        Advancepaymentemployee[]
+  employeeAdvancePayment        Advancepayment[]         @relation("advancePaymentEmployee")
   chat                          Chat[]
   createdServiceTicket          Servicetickets[]         @relation("serviceTicketUserCreatedBy")
   technicianServiceTicket       Servicetickets[]         @relation("serviceTicketUsertechnician")

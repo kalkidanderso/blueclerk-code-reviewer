@@ -86,7 +86,8 @@ model Company {
     jobTasks                      JobTask[]
     companyCards                  CompanyCard[]
     contractorCommissionHistories CommissionHistory[]    @relation("commissionHistoryContractor")
-    advancePayment                Advancepayment[]
+    companyAdvancePayment         Advancepayment[] @relation("advancePaymentCompany")
+    contractorAdvancePayment      Advancepayment[] @relation("advancePaymentContractor")
     advancepaymentvendor          Advancepaymentvendor[]
     assignedvendor                Assignedvendor[]
     chat                          Chat[]
@@ -106,6 +107,8 @@ model Company {
     paymentvendor                 Paymentvendor[]
     companyinvoice                Companyinvoice[]
     companyprefix                 Companyprefix[]
+    Items                         Items[]
+    Notification                  Notification[]
     companyContracts              Contract[]             @relation("contractCompany")
     contractorContracts           Contract[]             @relation("contractContractor")
     tags                          Tag[]
