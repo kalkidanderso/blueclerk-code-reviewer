@@ -1705,7 +1705,7 @@ const changesManage = (newObj: any, oldObj: any) => {
 
         else if (key == "customerPO" ) {
             if (newObj[key] != oldObj[key]) {
-                logs.push(getInvoiceLogsPefix(key));
+                logs.push(`Edited PO number (old: ${oldObj[key]} new: ${newObj[key]})`)
             }
         }
     })
