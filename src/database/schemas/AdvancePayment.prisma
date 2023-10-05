@@ -1,48 +1,52 @@
 model Advancepayment {
-  id                Int             @id @default(autoincrement())
-  alternativeId     String          @default(cuid())
-  company           Company         @relation("advancePaymentCompany",  fields: [companyId], references: [id])
-  companyId         Int
-  amount            Int             @default(0)
-  balance           Int             @default(0)
-  referenceNumber   String
-  paymentType       String
-  paidAt            DateTime
-  appliedAt         DateTime
-  note              String
-  isVoid            Boolean         @default(false)
-  voidedAt          DateTime
-  createdByUser     User            @relation("advancePaymentUserCreatedBy", fields: [createdById], references: [id])
-  createdById       Int
-  updatedByUser     User            @relation("advancePaymentUserUpdatedBy", fields: [updatedById], references: [id])
-  updatedById       Int
-  voidedByUser      User            @relation("advancePaymentUserVoidedBy", fields: [voidedById], references: [id])
-  voidedById        Int
-  workType          Worktype        @relation(fields: [workTypeId], references: [id])
-  workTypeId        Int
-  companyLocation   CompanyLocation @relation(fields: [companyLocationId], references: [id])
-  companyLocationId Int
-  contractor        Company?        @relation("advancePaymentContractor", fields: [contractorId], references: [id])
-  contractorId      Int?
-  employee          User?           @relation("advancePaymentEmployee", fields: [employeeId], references: [id])
-  employeeId        Int?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id                     Int                     @id @default(autoincrement())
+  alternativeId          String                  @default(cuid())
+  companyId              Int
+  company                Company                 @relation(fields: [companyId], references: [id])
+  amount                 Int                     @default(0)
+  balance                Int                      @default(0)
+  paymentType            String?
+  referenceNumber        String?
+  paidAt                 DateTime?
+  appliedAt              DateTime?
+  note                   String?
+  isVoid                 Boolean?                @default(false)
+  voidedAt               DateTime?
+  createdByUser          User                    @relation("advancePaymentUserCreatedBy", fields: [createdById], references: [id])
+  createdById            Int
+  updatedByUser          User                    @relation("advancePaymentUserUpdatedBy", fields: [updatedById], references: [id])
+  updatedById            Int
+  voidedByUser           User                    @relation("advancePaymentUserVoidedBy", fields: [voidedById], references: [id])
+  voidedById             Int
+  workType               Worktype[]
+  companyLocation        CompanyLocation[]
+  advancePaymentVendor   Advancepaymentvendor?
+  advancePaymentEmployee Advancepaymentemployee?
 
+  @@index([companyId])
   @@index([paidAt])
   @@index([isVoid, paidAt])
-  @@index([isVoid, appliedAt])
 }
 model Advancepaymentvendor {
-    id            Int      @id @default(autoincrement())
-    alternativeId String   @default(cuid())
-    contractor    Company? @relation(fields: [contractorId], references: [id])
-    contractorId  Int?
+  id               Int            @id @default(autoincrement())
+  alternativeId    String         @default(cuid())
+  contractorId     Int
+  contractor       Company        @relation(fields: [contractorId], references: [id])
+  advancePaymentId Int            @unique
+  advancePayment   Advancepayment @relation(fields: [advancePaymentId], references: [id])
+
+  @@index([contractorId])
+  @@index([advancePaymentId])
 }
 
 model Advancepaymentemployee {
-    id            Int    @id @default(autoincrement())
-    alternativeId String @default(cuid())
-    employee      User?  @relation(fields: [employeeId], references: [id])
-    employeeId    Int?
+  id               Int            @id @default(autoincrement())
+  alternativeId    String         @default(cuid())
+  employeeId       Int
+  employee         User           @relation(fields: [employeeId], references: [id])
+  advancePaymentId Int            @unique
+  advancePayment   Advancepayment @relation(fields: [advancePaymentId], references: [id])
+
+  @@index([employeeId])
+  @@index([advancePaymentId])
 }
