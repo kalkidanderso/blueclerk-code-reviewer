@@ -50,10 +50,24 @@ const dbConnect = DB_HOST === 'localhost'
   ? `mongodb://${DB_HOST}/${DB_NAME}`
   : `mongodb+srv://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?retryWrites=true&w=majority`;
 
-mongoose.set('useCreateIndex', true)
+mongoose.set('useCreateIndex', true);
+const mongoOptions = {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  useFindAndModify: false,
+  poolSize: 5
+};
+
+
+// Increasing pool size for production
+if (process.env.ENVIRONMENT === 'production') {
+  mongoOptions.poolSize = 15;
+}
+
+
 mongoose.connect(
   dbConnect,
-  { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false },
+  mongoOptions,
   (err: MongoError) => {
 
     if (err) return console.log(`Database connection error: ${err}`)
@@ -150,7 +164,7 @@ RegisterRoutes(app);
 app.use(errorHandler);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(null, options));
-const swaggerRoutes = ()=>{
+const swaggerRoutes = () => {
   const router: express.Router = express.Router();
   //Documentation version 1
   router.get('/v1', async (req, res) => {
