@@ -1,4 +1,4 @@
-import { AccountTypes, Role } from "@common/constants";
+import { AccountTypes, Role } from "../../common/constants";
 
 export interface ILoginInput {
     email: string;
