@@ -1,4 +1,4 @@
-import { AccountTypes, Role } from "src/common/constants";
+import { AccountTypes, Role } from "@common/constants";
 
 export interface ILoginInput {
     email: string;
@@ -71,5 +71,38 @@ export interface IUser {
         createdAt: Date,
         updatedAt: Date
     }[],
+}
 
+export interface ICompanyAdmin {
+
+    company: any
+}
+
+export interface IEmployee {
+
+    company: any
+    status: Number,
+    extraPermissions: {
+        on: [number],
+        off: [number]
+    },
+    agreed: boolean
+    canAccessAllLocations: boolean;
+}
+
+export interface IUserRegister {
+    accountType: string
+    email: string
+    password: string
+    firstName: string
+    lastName: string
+    phone: string
+    companyName?: string
+    supplierName?: string
+    industryId?: number
+    companyId?: number
+    customerId?: number
+    role?: string
+    isci?: boolean
+    cid?: number
 }

@@ -1,11 +1,11 @@
 model UserAuth {
-    id                   Int      @id @default(autoincrement())
-    email                String   @unique
+    id                   Int       @id @default(autoincrement())
+    email                String    @unique
     password             String
-    resetPasswordToken   String
-    resetPasswordExpires DateTime
-    socialId             String
-    connectorType        Int      @default(0)
+    resetPasswordToken   String?
+    resetPasswordExpires DateTime?
+    socialId             String?
+    connectorType        Int?      @default(0)
     User                 User?
 
     @@index([email])
@@ -45,6 +45,7 @@ model User {
     updatedAt                     DateTime                 @updatedAt
     employee                      Employee?
     companyAdmin                  Companyadmin?
+
     companyBlockchainsVerified    CompanyBlockchain[]      @relation("CompanyBlockchainVerifiedBy")
     companyBlockchainsdenied      CompanyBlockchain[]      @relation("CompanyBlockchainDeniedBy")
     industriesCreated             Industry[]
@@ -92,4 +93,5 @@ model User {
     contractsCreated              Contract[]               @relation("contractCreatedBy")
     contractsFinished             Contract[]               @relation("contractFinishedBy")
     tagsCreated                   Tag[]
+    company                       Company[]
 }

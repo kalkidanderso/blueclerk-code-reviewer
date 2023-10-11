@@ -10,15 +10,15 @@ model Companyinvoice {
     tax                    Int      @default(0)
     total                  Int      @default(0)
     isDraft                Boolean  @default(false)
-    stripeId               String
-    stripeHostedInvoiceUrl String
-    stripeInvoicePdf       String
+    stripeId               String?
+    stripeHostedInvoiceUrl String?
+    stripeInvoicePdf       String?
     paid                   Boolean  @default(false)
-    paidAt                 DateTime
+    paidAt                 DateTime?
     note                   String?
     company                Company  @relation(fields: [companyId], references: [id])
     companyId              Int
-    emailHistory           Json
+    emailHistory           Json?
     createdAt              DateTime @default(now())
     updatedAt              DateTime @updatedAt
 }

@@ -2,7 +2,7 @@ import { Prisma, PrismaClient } from "@prisma/client"
 import { Request, Response, NextFunction } from "express"
 import * as Sentry from '@sentry/node';
 import { Messages, Role, Status } from "../../common/constants"
-import { IUser } from "../../controllers/v3/users/users.types"
+import { IUser } from "../../types/v3/users.types"
 
 export const checkPermissions = (minAuth: Role, req: Request, res: Response, next: NextFunction) => {
         const user = <IUser>req.user

@@ -13,6 +13,7 @@ declare namespace Express {
          userSession?: any,
          sessionId?: any,
          company?: any,
+         companyId?: number,
        }
     }
  }

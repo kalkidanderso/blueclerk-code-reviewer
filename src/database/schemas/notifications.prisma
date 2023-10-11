@@ -19,10 +19,10 @@ model Notification {
     id                Int              @id @default(autoincrement())
     companyId         Int
     company           Company          @relation(fields: [companyId], references: [id])
-    customerId        Int
-    customer          Customer         @relation(fields: [customerId], references: [id])
-    customerContactId Int
-    customerContact   User             @relation(fields: [customerContactId], references: [id])
+    customerId        Int?
+    customer          Customer?         @relation(fields: [customerId], references: [id])
+    customerContactId Int?
+    customerContact   User?             @relation(fields: [customerContactId], references: [id])
     notificationType  NotificationType
     message           Json?
     isRead            Boolean          @default(false)

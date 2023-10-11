@@ -42,12 +42,33 @@ model Advancepaymentemployee {
   employeeId    Int?
 }
 
+model AssignedEmployee {
+  id               Int               @id @default(autoincrement())
+  alternativeId    String?           @unique
+  employeeId       Int
+  // TODO: implement employee
+  workTypes        Worktype[]
+  companyLocations CompanyLocation[]
+}
+
 model Assignedvendor {
   id            Int     @id @default(autoincrement())
   alternativeId String  @default(cuid())
   vendor        Company @relation(fields: [vendorId], references: [id])
   vendorId      Int
   workTypes     Json
+
+  companyLocations CompanyLocation[]
+}
+
+model BouncedEmail {
+  id            Int      @id @default(autoincrement())
+  alternativeId String?  @unique
+  email         String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([email])
 }
 
 enum ChatChannels {
@@ -64,8 +85,8 @@ model Chat {
   userId        Int
   company       Company?     @relation(fields: [companyId], references: [id])
   companyId     Int
+  customer      Customer     @relation(fields: [customerId], references: [id])
   customerId    Int
-  // TODO: CUSTOMER RELATIONSHIP
   replyTo       Int
   reply         Chat         @relation("Replies", fields: [replyTo], references: [id])
   replies       Chat[]       @relation("Replies")
@@ -74,18 +95,63 @@ model Chat {
   readStatus    Json
 }
 
+model CommissionHistory {
+  id                         Int       @id @default(autoincrement())
+  alternativeId              String    @unique
+  technicianIdORContractorId Int
+  technician                 User?     @relation("commissionHistoryTechnician", fields: [technicianIdORContractorId], references: [id], map: "commissionHistory_technician_fkey")
+  contractor                 Company?  @relation("commissionHistoryContractor", fields: [technicianIdORContractorId], references: [id], map: "commissionHistory_contractor_fkey")
+  type                       String
+  effectiveDate              DateTime?
+  commission                 Float?
+  addition                   Json?
+  deduction                  Json?
+  commissionType             String?
+  editedUserId               Int?
+  editedBy                   User?     @relation("commissionHistoryEditedBy", fields: [editedUserId], references: [id])
+  jobId                      Int
+  job                        Job       @relation(fields: [jobId], references: [id])
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+
+  @@index([effectiveDate])
+}
+
 model Companyadmin {
-  id            Int      @id @default(autoincrement())
-  alternativeId String   @default(cuid())
-  company       Company? @relation(fields: [companyId], references: [id])
-  companyId     Int
+  id            Int       @id @default(autoincrement())
+  alternativeId String    @default(cuid())
+  company       Company?  @relation(fields: [companyId], references: [id])
+  companyId     Int       @unique
+  userId        Int       @unique
+  user          User      @relation(fields: [userId], references: [id])
+  companies     Company[] @relation("admin")
 }
 
 model Supplieradmin {
-  id            Int    @id @default(autoincrement())
-  alternativeId String @default(cuid())
-  supplier      Int
-  // TODO: SUPPLIER RELATIONSHIP
+  id            Int      @id @default(autoincrement())
+  alternativeId String   @default(cuid())
+  supplier      Supplier @relation(fields: [supplierId], references: [id])
+  supplierId    Int
+}
+
+model CompanyCard {
+  id              Int      @id @default(autoincrement())
+  alternativeId   String?  @unique
+  ending          String?
+  expirationMonth String?
+  expirationYear  String?
+  cardType        String?
+  name            String?
+  token           String?
+  cardStripeId    String?
+  address         String?
+  city            String?
+  state           String?
+  zipCode         String?
+  companyId       Int      @unique
+  company         Company  @relation(fields: [companyId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Companycustomer {
@@ -93,36 +159,65 @@ model Companycustomer {
   alternativeId String   @default(cuid())
   company       Company? @relation(fields: [companyId], references: [id])
   companyId     Int
+  customer      Customer @relation(fields: [customerId], references: [id])
   customerId    Int
-  // TODO: CUSTOMER RELATIONSHIP
   status        Int      @default(1)
   isPreferred   Boolean  @default(false)
   createdAt     DateTime
 }
 
 model Companyinvoice {
-  id                     Int      @id @default(autoincrement())
-  alternativeId          String   @default(cuid())
-  technicians            Int?     @default(0)
-  managers               Int?     @default(0)
-  officeAdmins           Int?     @default(0)
-  admins                 Int?     @default(0)
-  contractors            Int?     @default(0)
-  charges                Int      @default(0)
-  tax                    Int      @default(0)
-  total                  Int      @default(0)
-  isDraft                Boolean  @default(false)
-  stripeId               String
-  stripeHostedInvoiceUrl String
-  stripeInvoicePdf       String
-  paid                   Boolean  @default(false)
-  paidAt                 DateTime
+  id                     Int       @id @default(autoincrement())
+  alternativeId          String    @default(cuid())
+  technicians            Int?      @default(0)
+  managers               Int?      @default(0)
+  officeAdmins           Int?      @default(0)
+  admins                 Int?      @default(0)
+  contractors            Int?      @default(0)
+  charges                Int       @default(0)
+  tax                    Int       @default(0)
+  total                  Int       @default(0)
+  isDraft                Boolean   @default(false)
+  stripeId               String?
+  stripeHostedInvoiceUrl String?
+  stripeInvoicePdf       String?
+  paid                   Boolean   @default(false)
+  paidAt                 DateTime?
   note                   String?
-  company                Company  @relation(fields: [companyId], references: [id])
+  company                Company   @relation(fields: [companyId], references: [id])
   companyId              Int
-  emailHistory           Json
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  emailHistory           Json?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+}
+
+model CompanyLocation {
+  id                        Int                @id @default(autoincrement())
+  alternativeId             String?            @unique
+  name                      String?
+  isActive                  Boolean            @default(true)
+  isMainLocation            Boolean            @default(true)
+  contactName               String
+  info                      Json
+  address                   Json
+  isAddressAsBillingAddress Boolean            @default(false)
+  billingAddress            Json
+  contact                   Json
+  companyId                 Int
+  company                   Company            @relation(fields: [companyId], references: [id])
+  workTypes                 Worktype[]
+  assignedVendors           Assignedvendor[]
+  assignedEmployees         AssignedEmployee[]
+  poRequestEmailSender      String
+  jobs                      Job[]
+  servicetickets            Servicetickets[]
+  jobrequest                Jobrequest[]
+  invoice                   Invoice[]
+  advancepayments           Advancepayment[]
+  paymentcustomers          Paymentcustomer[]
+
+  @@index([companyId, isActive, isMainLocation])
+  @@index([companyId, isActive, isMainLocation, id])
 }
 
 model Companyprefix {
@@ -130,6 +225,318 @@ model Companyprefix {
   alternativeId String  @default(cuid())
   prefix        String
   maxJobId      Int
+  company       Company @relation(fields: [companyId], references: [id])
+  companyId     Int
+}
+
+model CompanyInfo {
+  id           Int       @id @default(autoincrement())
+  companyName  String?
+  industryId   Int?      @unique
+  industry     Industry? @relation(fields: [industryId], references: [id])
+  logoUrl      String?
+  companyEmail String?
+  displayName  String?
+  company      Company?
+
+  @@index([companyEmail])
+}
+
+model CompanyBlockchain {
+  id           Int       @id @default(autoincrement())
+  verified     Boolean   @default(false)
+  verifiedAt   DateTime?
+  verifiedById Int?
+  verifiedBy   User?     @relation("CompanyBlockchainVerifiedBy", fields: [verifiedById], references: [id])
+  deniedAt     DateTime?
+  deniedById   Int?
+  deniedBy     User?     @relation("CompanyBlockchainDeniedBy", fields: [deniedById], references: [id])
+  company      Company?
+}
+
+model Company {
+  id                  Int                @id @default(autoincrement())
+  alternativeId       String?            @unique
+  info                CompanyInfo?       @relation(fields: [companyInfoId], references: [id])
+  companyInfoId       Int?               @unique
+  address             Json?
+  contact             Json?
+  other               Json?
+  employees           Employee[]
+  customers           Customer[]
+  employee            User?              @relation(fields: [employeeId], references: [id])
+  employeeId          Int?
+  stripeId            String?
+  paid                Boolean            @default(false)
+  type                Int                @default(0)
+  plan                Int                @default(0)
+  chargeDate          DateTime
+  trialEndDate        DateTime?
+  maxTechnicians      Int                @default(0)
+  maxManagers         Int                @default(0)
+  maxOfficeAdmins     Int                @default(0)
+  maxAdmins           Int                @default(0)
+  userPermissions     Json
+  currentJobId        Int                @default(0)
+  prefix              String?
+  adminId             Int?
+  admin               Companyadmin?      @relation("admin", fields: [adminId], references: [id])
+  qbAccessToken       String?
+  qbRefreshToken      String?
+  realmId             String?
+  qbCompanyName       String?
+  qbCompanyEmail      String?
+  customersSynced     Boolean?
+  customersSyncedAt   DateTime?
+  qbSync              Json?
+  socketId            String?
+  qbAuthorized        Boolean            @default(false)
+  qbRefeshTokenExpiry DateTime?
+  currentInvoiceId    Int                @default(0)
+  emailPreferences    Json?
+  invoicePrefix       String?
+  currentPOId         Int                @default(0)
+  currentEstimateId   Int                @default(0)
+  itemTier            Json?
+  costing             Json?
+  paymentTermId       Int?
+  paymentTerm         Paymentterm?       @relation("companyPaymentTerm", fields: [paymentTermId], references: [id])
+  balance             Int                @default(0)
+  credit              Int                @default(0)
+  commission          Int?
+  commissionType      String             @default("%")
+  // TODO: commissionTier: {type: Schema.Types.ObjectId, ref: 'JobCosting'},
+  // TODO: companyInvoices: [{ type: Schema.Types.ObjectId, ref: 'CompanyInvoice' }],
+  blockchain          CompanyBlockchain? @relation(fields: [companyBlockchainId], references: [id])
+  companyBlockchainId Int?               @unique
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  contractorJobs                Job[]                  @relation("jobContractor")
+  companyJobs                   Job[]                  @relation("jobCompany")
+  jobTasks                      JobTask[]
+  companyCards                  CompanyCard[]
+  contractorCommissionHistories CommissionHistory[]    @relation("commissionHistoryContractor")
+  advancePayment                Advancepayment[]
+  advancepaymentvendor          Advancepaymentvendor[]
+  assignedvendor                Assignedvendor[]
+  chat                          Chat[]
+  companyadmin                  Companyadmin[]
+  companycustomer               Companycustomer[]
+  servicetickets                Servicetickets[]
+  joblocation                   Joblocation[]
+  jobrequest                    Jobrequest[]
+  invoice                       Invoice[]
+  paymentterm                   Paymentterm[]
+  emaildefaults                 EmailDefault[]
+  companyLocations              CompanyLocation[]
+  jobCharges                    JobCharges[]
+  saletaxes                     SaleTax[]
+  invoiceprefix                 Invoiceprefix[]
+  payment                       Payment[]
+  paymentvendor                 Paymentvendor[]
+  companyinvoice                Companyinvoice[]
+  companyprefix                 Companyprefix[]
+  companyContracts              Contract[]             @relation("contractCompany")
+  contractorContracts           Contract[]             @relation("contractContractor")
+  tags                          Tag[]
+  customerContract              CustomerContract[]
+  Items                         Items[]
+  JobCosting                    JobCosting[]
+  Notification                  Notification[]
+  PriceTier                     PriceTier[]
+
+  @@index([plan, chargeDate])
+}
+
+model Contact {
+  id            Int      @id @default(autoincrement())
+  alternativeId String   @default(cuid())
+  name          String
+  phone         String
+  email         String
+  isActive      Boolean  @default(true)
+  user          User?    @relation(fields: [userId], references: [id])
+  userId        Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  servicetickets Servicetickets[]
+  invoice        Invoice[]
+  jobs           Job[]
+  Customer       Customer?        @relation(fields: [customerId], references: [id])
+  customerId     Int?
+}
+
+model Contract {
+  id               Int      @id @default(autoincrement())
+  companyId        Int
+  company          Company  @relation("contractCompany", fields: [companyId], references: [id])
+  contractorId     Int
+  contractor       Company  @relation("contractContractor", fields: [contractorId], references: [id])
+  contractorEmail  String
+  status           Int      @default(0)
+  createdById      Int
+  createdBy        User     @relation("contractCreatedBy", fields: [createdById], references: [id])
+  finishedById     Int
+  finishedBy       User     @relation("contractFinishedBy", fields: [finishedById], references: [id])
+  finishedAt       DateTime
+  extraPermissions Json
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model CustomerContract {
+  id            Int          @id @default(autoincrement())
+  alternativeId String       @default(cuid())
+  isActive      Boolean      @default(true)
+  info          Json?
+  contactName   String
+  company       Company?     @relation(fields: [companyId], references: [id])
+  companyId     Int?
+  customer      Customer?    @relation(fields: [customerId], references: [id])
+  customerId    Int?
+  // TODO: equipments: [{ type: Schema.Types.ObjectId, ref: 'CustomerEquipment' }],
+  joblocation   Joblocation? @relation(fields: [joblocationId], references: [id])
+  joblocationId Int?
+  paymentterm   Paymentterm? @relation(fields: [paymenttermId], references: [id])
+  paymenttermId Int?
+  inactiveAt    DateTime?
+  inactiveBy    String?
+}
+
+model Customer {
+  id               Int         @id @default(autoincrement())
+  alternativeId    String      @default(cuid())
+  profile          Json?
+  address          Json?
+  location         Json?
+  contact          Json?
+  permissions      Json?
+  emailPreferences Json?
+  contacts         Contact[]
+  balance          Int         @default(0)
+  commission       Int?
+  isActive         Boolean     @default(true)
+  info             String?
+  contactName      String?
+  // TODO: CustomerEquipment CustomerEquipment[]
+  quickbookId      String?
+  credit           Int         @default(0)
+  itemTierId       Int
+  itemTier         PriceTier   @relation(fields: [itemTierId], references: [id])
+  jobCostingId     Int
+  jobCosting       JobCosting  @relation(fields: [jobCostingId], references: [id])
+  isCustomPrice    Boolean
+  customPrices     Json
+  discountPrices   Json
+  paymentTermId    Int
+  paymentTerm      Paymentterm @relation(fields: [paymentTermId], references: [id])
+  vendorId         String
+  inactiveAt       DateTime
+  inactiveById     Int
+  inactiveByUser   User        @relation("customerUserinactiveBy", fields: [inactiveById], references: [id])
+  adminId          Int
+  admin            User        @relation("customerUserAdmin", fields: [adminId], references: [id])
+  isPORequired     Boolean?    @default(false)
+  notes            String
+
+  serviceticket    Servicetickets[]
+  jobsite          Jobsite[]
+  joblocation      Joblocation[]
+  jobrequest       Jobrequest[]
+  invoice          Invoice[]
+  chat             Chat[]
+  companycustomer  Companycustomer[]
+  jobs             Job[]
+  companies        Company[]
+  tags             Tag[]
+  customerContract CustomerContract[]
+  Notification     Notification[]
+}
+
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model EmailDefault {
+  id            Int      @id @default(autoincrement())
+  alternativeId String?  @unique
+  subject       String?
+  message       String
+  companyId     Int
+  company       Company  @relation(fields: [companyId], references: [id])
+  updatedBy     Int?
+  user          User?    @relation(fields: [updatedBy], references: [id])
+  emailType     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId, emailType])
+}
+
+model EmailSchedule {
+  id            Int     @id @default(autoincrement())
+  alternativeId String? @unique
+  userId        Int
+  user          User    @relation(fields: [userId], references: [id])
+  type          Int     @default(0)
+  jobs          Job[]
+  pulled        Boolean @default(false)
+
+  @@index([pulled])
+}
+
+model HomeOwners {
+  id             Int              @id @default(autoincrement())
+  alternativeId  String           @default(cuid())
+  profile        Json
+  info           Json
+  contact        Json
+  subdivision    Joblocation      @relation(fields: [subdivisionId], references: [id])
+  subdivisionId  Int              @unique
+  address        Jobsite          @relation(fields: [addressId], references: [id])
+  addressId      Int              @unique
+  servicetickets Servicetickets[]
+  jobs           Job[]
+}
+
+model Industry {
+  id            Int     @id @default(autoincrement())
+  alternativeId String? @unique
+  title         String
+  createdBy     Int
+  user          User    @relation(fields: [createdBy], references: [id])
+
+  companyInfos CompanyInfo[]
+  jobTypes     JobType[]
+
+  @@index([title])
+}
+
+model Invoicecommission {
+  id            Int      @id @default(autoincrement())
+  alternativeId String   @default(cuid())
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id])
+  invoiceId     Int      @unique
+  technicians   Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Invoiceprefix {
+  id            Int     @id @default(autoincrement())
+  alternativeId String  @default(cuid())
+  prefix        String
+  maxInvoiceId  Int
   company       Company @relation(fields: [companyId], references: [id])
   companyId     Int
 }
@@ -160,11 +567,11 @@ model Invoice {
   paymentTermId       Int
   note                String?
   customerPO          String
+  customerContact     Contact            @relation(fields: [customerContactId], references: [id])
   customerContactId   Int
-  //TODO: CONTACT RELATIONSHIP
   vendorId            String
+  customer            Customer           @relation(fields: [customerId], references: [id])
   customerId          Int
-  // TODO: CUSTOMER RELATIONSHIP
   jobLocation         Joblocation        @relation(fields: [jobLocationId], references: [id])
   jobLocationId       Int
   jobSite             Jobsite            @relation(fields: [jobSiteId], references: [id])
@@ -215,46 +622,118 @@ model Invoice {
   @@index([createdAt, isDraft, isVoid, invoiceId, customerPO, vendorId])
 }
 
-model Invoicecommission {
-  id            Int      @id @default(autoincrement())
-  alternativeId String   @default(cuid())
-  invoice       Invoice  @relation(fields: [invoiceId], references: [id])
-  invoiceId     Int      @unique
-  technicians   Json?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+model ItemTier {
+  id          Int       @id @default(autoincrement())
+  tierId      Int
+  tier        PriceTier @relation(fields: [tierId], references: [id])
+  charge      Int
+  updatedById Int
+  updatedBy   User      @relation(fields: [updatedById], references: [id])
+  updatedAt   DateTime  @updatedAt
+
+  itemId Int
+  item   Items @relation(fields: [itemId], references: [id])
 }
 
-model Invoiceprefix {
-  id            Int     @id @default(autoincrement())
-  alternativeId String  @default(cuid())
-  prefix        String
-  maxInvoiceId  Int
-  company       Company @relation(fields: [companyId], references: [id])
+model ItemCosting {
+  id          Int        @id @default(autoincrement())
+  tierId      Int
+  tier        JobCosting @relation(fields: [tierId], references: [id])
+  charge      Int
+  updatedById Int
+  updatedBy   User       @relation(fields: [updatedById], references: [id])
+  updatedAt   DateTime   @updatedAt
+
+  itemId Int
+  item   Items @relation(fields: [itemId], references: [id])
+}
+
+model Items {
+  id             Int           @id @default(autoincrement())
+  name           String
+  description    String
+  sku            String
+  isFixed        Boolean       @default(true)
+  charges        Int           @default(0)
+  tax            Int           @default(0)
+  tiers          ItemTier[]
+  costing        ItemCosting[]
+  isDiscountItem Boolean       @default(false)
+  isJobType      Boolean       @default(true)
+  jobTypeId      Int
+  jobType        JobType       @relation(fields: [jobTypeId], references: [id])
+  itemType       Item          @default(Service)
+  productCost    Int
+  salePrice      Int
+  companyId      Int
+  company        Company       @relation(fields: [companyId], references: [id])
+  isActive       Boolean       @default(true)
+  quickbookId    String
+  createdAt      Boolean       @default(true)
+  updatedAt      Boolean       @default(true)
+
+  servicetickets Servicetickets[]
+}
+
+enum Item {
+  Service
+  Product
+}
+
+model JobCharges {
+  id            Int      @id @default(autoincrement())
+  alternativeId String?  @unique
+  charges       Int?
+  isFixed       Boolean  @default(true)
+  jobTypeId     Int
+  jobType       JobType  @relation(fields: [jobTypeId], references: [id])
   companyId     Int
+  company       Company  @relation(fields: [companyId], references: [id])
+  createdBy     Int
+  user          User     @relation(fields: [createdBy], references: [id])
+  createdAt     DateTime @default(now())
+  salesTaxId    Int
+  salesTax      SaleTax  @relation(fields: [salesTaxId], references: [id])
+}
+
+model JobCosting {
+  id            Int      @id @default(autoincrement())
+  alternativeId String?  @unique
+  companyId     Int
+  company       Company  @relation(fields: [companyId], references: [id])
+  name          String
+  isActive      Boolean  @default(true)
+  inactiveById  Int?
+  inactiveBy    User?    @relation(fields: [inactiveById], references: [id])
+  inactiveAt    DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  jobTasks     JobTask[]
+  itemCostings ItemCosting[]
+  customer     Customer[]
 }
 
 model Joblocation {
-  id            Int       @id @default(autoincrement())
-  alternativeId String    @default(cuid())
+  id            Int         @id @default(autoincrement())
+  alternativeId String      @default(cuid())
   name          String
   contacts      Json
   location      Json?
   address       Json?
   jobSites      Json?
   isActive      Boolean?
+  customer      Customer    @relation(fields: [customerId], references: [id])
   customerId    Int
-  // TODO: CUSTOMER RELATIONSHIP
-  homeOwnerID   Int
-  // TODO: HOMEOWNER RELATIONSHIP
-  company       Company   @relation(fields: [companyId], references: [id])
+  homeOwner     HomeOwners?
+  company       Company     @relation(fields: [companyId], references: [id])
   companyId     Int
   inactiveAt    DateTime?
-  inactiveBy    User      @relation(fields: [inactiveById], references: [id])
+  inactiveBy    User        @relation(fields: [inactiveById], references: [id])
   inactiveById  Int
   quickbookId   String?
-  createdAt     DateTime  @default(now()) // Track creation timestamp
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   tickets     Servicetickets[] @relation("jobLocation")
   homeTickets Servicetickets[] @relation("homeJobLocation")
@@ -263,7 +742,11 @@ model Joblocation {
 
   jobRequest Jobrequest[]
 
-  jobSite Jobsite[]
+  jobSite          Jobsite[]
+  homeJobs         Job[]
+  jobs             Job[]              @relation("jobJobLocation")
+  tags             Tag[]
+  customerContract CustomerContract[]
 
   @@index([contacts])
   @@index([isActive])
@@ -271,6 +754,167 @@ model Joblocation {
   @@index([id, isActive])
   @@index([quickbookId])
   @@index([name, address, location])
+}
+
+model JobTaskJobType {
+  id                   Int       @id @default(autoincrement())
+  jobTypeId            Int?
+  jobType              JobType?  @relation(fields: [jobTypeId], references: [id])
+  isSelfFinished       Boolean?  @default(false)
+  status               Int?      @default(0)
+  charges              Float?    @default(0.0)
+  startTime            DateTime?
+  tempStartTime        DateTime?
+  endTime              DateTime?
+  timeSpent            Int?      @default(0)
+  pausedCount          Int?      @default(0)
+  timeUpdatedById      Int?
+  timeUpdatedBy        User?     @relation(fields: [timeUpdatedById], references: [id])
+  timeUpdatedAt        DateTime?
+  equipmentScanned     Boolean?  @default(false)
+  noOfEquipmentScanned Int?      @default(0)
+  quantity             Int?      @default(0)
+  price                Float?
+  completedCount       Int?
+  completedComment     String?
+  jobCostingQuantity   Int?
+  JobTask              JobTask?  @relation(fields: [jobTaskId], references: [id])
+  jobTaskId            Int?
+}
+
+model JobTask {
+  id                         Int              @id @default(autoincrement())
+  status                     Int?             @default(0)
+  employeeType               Boolean?         @default(false)
+  technicianId               Int?
+  technician                 User?            @relation(fields: [technicianId], references: [id])
+  contractorId               Int?
+  contractor                 Company?         @relation(fields: [contractorId], references: [id])
+  contractorCommissionTierId Int?
+  contractorCommissionTier   JobCosting?      @relation(fields: [contractorCommissionTierId], references: [id])
+  comment                    String?
+  jobTypes                   JobTaskJobType[]
+  paid                       Boolean?         @default(false)
+  paidAt                     DateTime?
+  Job                        Job?             @relation(fields: [jobId], references: [id])
+  jobId                      Int?
+}
+
+model JobTrack {
+  id     Int      @id @default(autoincrement())
+  userId Int?
+  user   User?    @relation(fields: [userId], references: [id])
+  action String?
+  note   String?
+  date   DateTime @default(now())
+  Job    Job?     @relation(fields: [jobId], references: [id])
+  jobId  Int?
+}
+
+model JobImage {
+  id           Int      @id @default(autoincrement())
+  imageUrl     String
+  uploadedById Int
+  user         User     @relation(fields: [uploadedById], references: [id])
+  createAt     DateTime @default(now())
+  Job          Job?     @relation(fields: [jobId], references: [id])
+  jobId        Int?
+}
+
+model JobTechnicianImage {
+  id           Int      @id @default(autoincrement())
+  imageUrl     String?
+  uploadedById Int
+  user         User     @relation(fields: [uploadedById], references: [id])
+  createAt     DateTime @default(now())
+  Job          Job?     @relation(fields: [jobId], references: [id])
+  jobId        Int?
+}
+
+model Job {
+  id                 Int                  @id @default(autoincrement())
+  alternativeId      String?              @unique
+  scheduleTimeAMPM   Int?                 @default(0)
+  scheduleDate       DateTime?
+  scheduledStartTime DateTime?
+  scheduledEndTime   DateTime?
+  jobId              String?
+  parentJobId        Int?                 @unique
+  parentJob          Job?                 @relation("JobParent", fields: [parentJobId], references: [id])
+  childrenJob        Job[]                @relation("JobParent")
+  ticketId           Int?
+  ticket             Servicetickets?      @relation(fields: [ticketId], references: [id])
+  requestId          Int?
+  request            Jobrequest?          @relation("jobrequest", fields: [requestId], references: [id])
+  equipmentId        Int?
+  // TODO: ref CustomerEquiment
+  technicianId       Int?
+  technician         User?                @relation(fields: [technicianId], references: [id])
+  contractorId       Int?
+  contractor         Company?             @relation("jobContractor", fields: [contractorId], references: [id])
+  customerId         Int?
+  customer           Customer?            @relation(fields: [customerId], references: [id])
+  jobLocationId      Int?
+  jobLocation        Joblocation?         @relation("jobJobLocation", fields: [jobLocationId], references: [id])
+  jobSiteId          Int?
+  jobSite            Jobsite?             @relation("jobJobsite", fields: [jobSiteId], references: [id])
+  isHomeOccupied     Boolean?             @default(false)
+  homeOwnerId        Int?
+  homeOwner          HomeOwners?          @relation(fields: [homeOwnerId], references: [id])
+  homeJobLocationId  Int?
+  homeJobLocation    Joblocation?         @relation(fields: [homeJobLocationId], references: [id])
+  homeJobSiteId      Int?
+  homeJobSite        Jobsite?             @relation(fields: [homeJobSiteId], references: [id])
+  customerContactId  Int?
+  customerContact    Contact?             @relation(fields: [customerContactId], references: [id])
+  customerPO         String?
+  image              String?
+  images             JobImage[]
+  technicianImages   JobTechnicianImage[]
+
+  typeId              Int?
+  type                JobType?         @relation(fields: [typeId], references: [id])
+  tasksBackup         Json?
+  tasks               JobTask[]
+  companyId           Int?
+  company             Company?         @relation("jobCompany", fields: [companyId], references: [id])
+  description         String?
+  status              Int?             @default(0)
+  track               JobTrack[]
+  comment             String?
+  createdAt           DateTime?        @default(now())
+  createdById         Int?
+  createdBy           User?            @relation("jobCreatedBy", fields: [createdById], references: [id])
+  updatedAt           DateTime?        @updatedAt
+  employeeType        Boolean?         @default(false)
+  charges             Int?             @default(0)
+  salesTaxId          Int?
+  salesTax            SaleTax?         @relation(fields: [salesTaxId], references: [id])
+  startTime           DateTime?
+  endTime             DateTime?
+  timeSpent           Int?             @default(0)
+  timeUpdatedById     Int?
+  timeUpdatedBy       User?            @relation("jobTimeUpdatedBy", fields: [timeUpdatedById], references: [id])
+  timeUpdatedAt       DateTime?
+  equipmentScanned    Boolean?         @default(false)
+  noOfEquimentScanned Int?             @default(0)
+  completeOnTime      Boolean?         @default(false)
+  commissionId        Int?
+  // TODO: ref JobCommission
+  workTypeId          Int?
+  workType            Worktype?        @relation(fields: [workTypeId], references: [id])
+  companyLocationId   Int?
+  companyLocation     CompanyLocation? @relation(fields: [companyLocationId], references: [id])
+
+  commissionHistories CommissionHistory[]
+  emailSchedules      EmailSchedule[]
+
+  jobrequest     Jobrequest[]
+  invoice        Invoice[]
+  paymentvendors Paymentvendor[]
+
+  @@index([employeeType])
+  @@index([image])
 }
 
 model Jobrequest {
@@ -284,10 +928,10 @@ model Jobrequest {
   jobSite           Jobsite         @relation(fields: [jobSiteId], references: [id])
   jobSiteId         Int
   requests          Json
+  customer          Customer?       @relation(fields: [customerId], references: [id])
   customerId        Int?
-  // TODO: CUSTOMER RELATIONSHIP
+  customerContact   User?           @relation(fields: [customerContactId], references: [id])
   customerContactId Int?
-  // TODO: CUSTOMER RELATIONSHIP
   company           Company         @relation(fields: [companyId], references: [id])
   companyId         Int
   jobCreated        Boolean         @default(false)
@@ -306,6 +950,8 @@ model Jobrequest {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
+  jobs Job[] @relation("jobrequest")
+
   @@index([status])
 }
 
@@ -318,10 +964,9 @@ model Jobsite {
   address       Json?
   jobLocation   Joblocation @relation(fields: [locationId], references: [id])
   locationId    Int
+  customer      Customer?   @relation(fields: [customerId], references: [id])
   customerId    Int?
-  // TODO: CUSTOMER RELATIONSHIP
-  homeOwnerID   Int?
-  // TODO: HOMEOWNER RELATIONSHIP
+  homeOwner     HomeOwners?
 
   tickets     Servicetickets[] @relation("jobsite")
   homeTickets Servicetickets[] @relation("homejobsite")
@@ -329,27 +974,81 @@ model Jobsite {
   invoice Invoice[]
 
   jobRequest Jobrequest[]
+  homeJobs   Job[]
+  jobs       Job[]        @relation("jobJobsite")
+  tags       Tag[]
 
   @@index([isActive])
   @@index([id, isActive])
   @@index([address])
 }
 
-model Paymentterm {
+model JobType {
   id            Int       @id @default(autoincrement())
-  alternativeId String    @default(cuid())
-  name          String
-  dueDays       Int
+  alternativeId String?   @unique
+  title         String
+  description   String?
+  sku           String?
+  industryId    Int?
+  industry      Industry? @relation(fields: [industryId], references: [id])
+  createdBy     Int?
+  user          User?     @relation(fields: [createdBy], references: [id])
   isActive      Boolean   @default(true)
-  company       Company   @relation(fields: [companyId], references: [id])
-  companyId     Int
-  quickbookId   String
-  createdBy     User      @relation(fields: [createdById], references: [id])
-  createdById   Int
-  deleteAt      DateTime
+  quickbookId   String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  invoice       Invoice[]
+
+  jobTaskJobTypes JobTaskJobType[]
+  jobs            Job[]
+  jobCharges      JobCharges[]
+
+  servicetickets     Servicetickets[]
+  items              Items[]
+  serviceTicketTasks ServiceTicketTasks[]
+
+  @@index([title], type: SpGist)
+  @@index([createdBy, quickbookId])
+  @@index([title, industryId, createdBy])
+  @@index([createdBy, industryId, isActive])
+}
+
+enum NotificationType {
+  ServiceTicketCreated
+  ContractInvitation
+  ContractAccepted
+  ContractCanceled
+  ContractRejected
+  ContractFinished
+  JobRescheduled
+  CompanyInvoiceFailed
+  JobRequestCreated
+  JobRequestStatusUpdated
+  NewChat
+  ChatRead
+  JobCreated
+  JobUpdated
+}
+
+model Notification {
+  id                Int              @id @default(autoincrement())
+  companyId         Int
+  company           Company          @relation(fields: [companyId], references: [id])
+  customerId        Int?
+  customer          Customer?        @relation(fields: [customerId], references: [id])
+  customerContactId Int?
+  customerContact   User?            @relation(fields: [customerContactId], references: [id])
+  notificationType  NotificationType
+  message           Json?
+  isRead            Boolean          @default(false)
+  readById          Int?
+  readBy            User?            @relation("notificationReadBy", fields: [readById], references: [id])
+  readAt            DateTime?
+  isDismissed       Boolean          @default(false)
+  dismissedById     Int?
+  dismissedBy       User?            @relation("notificationDismissedBy", fields: [dismissedById], references: [id])
+  dismissedAt       DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 }
 
 model Payment {
@@ -421,6 +1120,57 @@ model Paymentemployee {
   @@index([invoices])
 }
 
+model Paymentterm {
+  id               Int                @id @default(autoincrement())
+  alternativeId    String             @default(cuid())
+  name             String
+  dueDays          Int
+  isActive         Boolean            @default(true)
+  company          Company            @relation(fields: [companyId], references: [id])
+  companyId        Int
+  quickbookId      String
+  createdBy        User               @relation(fields: [createdById], references: [id])
+  createdById      Int
+  deleteAt         DateTime
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  invoice          Invoice[]
+  companies        Company[]          @relation("companyPaymentTerm")
+  customer         Customer[]
+  customerContract CustomerContract[]
+}
+
+model PriceTier {
+  id            Int      @id @default(autoincrement())
+  alternativeId String?  @unique
+  companyId     Int
+  company       Company  @relation(fields: [companyId], references: [id])
+  name          String
+  isActive      Boolean  @default(true)
+  inactiveById  Int?
+  inactiveBy    User?    @relation(fields: [inactiveById], references: [id])
+  inactiveAt    DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  itemTiers ItemTier[]
+  customer  Customer[]
+}
+
+model SaleTax {
+  id            Int      @id @default(autoincrement())
+  alternativeId String?  @unique
+  state         String?
+  companyId     Int
+  company       Company  @relation(fields: [companyId], references: [id])
+  createdBy     Int
+  user          User     @relation(fields: [createdBy], references: [id])
+  createdAt     DateTime @default(now())
+
+  jobCharges JobCharges[]
+  jobs       Job[]
+}
+
 enum serviceType {
   Ticket
   POResquest
@@ -431,7 +1181,7 @@ model ServiceTicketTasks {
   ticket    Servicetickets @relation(fields: [ticketId], references: [id])
   ticketId  Int
   jobType   JobType?       @relation(fields: [jobTypeId], references: [id])
-  jobTypeId Int
+  jobTypeId Int?
   quantity  Int            @default(1)
   price     Int
 }
@@ -441,13 +1191,13 @@ model Servicetickets {
   alternativeId     String               @default(cuid())
   createdAt         DateTime
   dueDate           DateTime?
+  customer          Customer?            @relation(fields: [customerId], references: [id])
   customerId        Int?
-  // // TODO: CUSTOMER RELATIONSHIP
   createdByUser     User                 @relation("serviceTicketUserCreatedBy", fields: [createdById], references: [id])
   createdById       Int
   note              String
+  customerContact   Contact?             @relation(fields: [customerContactId], references: [id])
   customerContactId Int?
-  // TODO: CONTACT RELATIONSHIP
   customerPO        String
   image             String
   images            Json?
@@ -466,8 +1216,8 @@ model Servicetickets {
   jobSite           Jobsite              @relation("jobsite", fields: [jobSiteId], references: [id])
   jobSiteId         Int
   isHomeOccupied    Boolean              @default(false)
+  homeOwner         HomeOwners           @relation(fields: [homeOwnerId], references: [id])
   homeOwnerId       Int
-  // TODO: homeOwner RELATIONSHIP
   homeJobLocation   Joblocation          @relation("homeJobLocation", fields: [homeJobLocationId], references: [id])
   homeJobLocationId Int
   homeJobSite       Jobsite              @relation("homejobsite", fields: [homeJobSiteId], references: [id])
@@ -475,8 +1225,8 @@ model Servicetickets {
   jobType           JobType              @relation(fields: [jobTypeId], references: [id])
   jobTypeId         Int
   tasks             ServiceTicketTasks[]
+  item              Items                @relation(fields: [itemId], references: [id])
   itemId            Int
-  // //TODO: item RELATIONSHIP
   jobCreated        Boolean              @default(false)
   source            String               @default("blueclerk")
   workType          Worktype             @relation(fields: [workTypeId], references: [id])
@@ -489,522 +1239,12 @@ model Servicetickets {
   emailHistory      Json
   lastEmailSent     DateTime
 
+  jobs Job[]
+
   @@index([itemId])
   @@index([jobCreated, status])
   @@index([jobCreated, status, type])
   @@index([id])
-}
-
-model Worktype {
-  id               Int               @id @default(autoincrement())
-  alternativeId    String            @default(cuid())
-  title            String
-  // TODO: TRIM @map("title") @before(validateAndTrim)
-  createdAt        DateTime
-  advancePayments  Advancepayment[]
-  servicetickets   Servicetickets[]
-  jobrequest       Jobrequest[]
-  invoice          Invoice[]
-  paymentcustomers Paymentcustomer[]
-}
-
-model AssignedEmployee {
-  id            Int     @id @default(autoincrement())
-  alternativeId String? @unique
-  employeeId    Int
-  // TODO: implement employee
-  // TODO: workTypes: [{ type: Schema.Types.ObjectId, ref: 'WorkType' }]
-
-  companyLocations CompanyLocation[]
-}
-
-model BouncedEmail {
-  id            Int      @id @default(autoincrement())
-  alternativeId String?  @unique
-  email         String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@index([email])
-}
-
-model CommissionHistory {
-  id                         Int       @id @default(autoincrement())
-  alternativeId              String    @unique
-  technicianIdORContractorId Int
-  technician                 User?     @relation("commissionHistoryTechnician", fields: [technicianIdORContractorId], references: [id], map: "commissionHistory_technician_fkey")
-  contractor                 Company?  @relation("commissionHistoryContractor", fields: [technicianIdORContractorId], references: [id], map: "commissionHistory_contractor_fkey")
-  type                       String
-  effectiveDate              DateTime?
-  commission                 Float?
-  addition                   Json?
-  deduction                  Json?
-  commissionType             String?
-  editedUserId               Int?
-  editedBy                   User?     @relation("commissionHistoryEditedBy", fields: [editedUserId], references: [id])
-  jobId                      Int
-  job                        Job       @relation(fields: [jobId], references: [id])
-  createdAt                  DateTime  @default(now())
-  updatedAt                  DateTime  @updatedAt
-
-  @@index([effectiveDate])
-}
-
-model CompanyInfo {
-  id           Int       @id @default(autoincrement())
-  companyName  String?
-  industryId   Int?      @unique
-  industry     Industry? @relation(fields: [industryId], references: [id])
-  logoUrl      String?
-  companyEmail String?
-  displayName  String?
-  company      Company?
-
-  @@index([companyEmail])
-}
-
-model CompanyBlockchain {
-  id           Int       @id @default(autoincrement())
-  verified     Boolean   @default(false)
-  verifiedAt   DateTime?
-  verifiedById Int?
-  verifiedBy   User?     @relation("CompanyBlockchainVerifiedBy", fields: [verifiedById], references: [id])
-  deniedAt     DateTime?
-  deniedById   Int?
-  deniedBy     User?     @relation("CompanyBlockchainDeniedBy", fields: [deniedById], references: [id])
-  company      Company?
-}
-
-model Company {
-  id                  Int               @id @default(autoincrement())
-  alternativeId       String?           @unique
-  info                CompanyInfo?      @relation(fields: [companyInfoId], references: [id])
-  companyInfoId       Int?              @unique
-  address             Json?
-  contact             Json?
-  other               Json?
-  // TODO: employees: [{ type: Schema.Types.ObjectId, ref: 'Employee' }],
-  // TODO: customers: [{ type: Schema.Types.ObjectId, ref: 'Customer' }],
-  stripeId            String?
-  paid                Boolean           @default(false)
-  type                Int               @default(0)
-  plan                Int               @default(0)
-  chargeDate          DateTime
-  trialEndDate        DateTime
-  maxTechnicians      Int               @default(0)
-  maxManagers         Int               @default(0)
-  maxOfficeAdmins     Int               @default(0)
-  maxAdmins           Int               @default(0)
-  userPermissions     Json
-  currentJobId        Int               @default(0)
-  prefix              String
-  // TODO: admin: { type: Schema.Types.ObjectId, ref: 'CompanyAdmin' },
-  qbAccessToken       String
-  qbRefreshToken      String
-  realmId             String
-  qbCompanyName       String
-  qbCompanyEmail      String
-  customersSynced     Boolean?
-  customersSyncedAt   DateTime
-  qbSync              Json
-  socketId            String
-  qbAuthorized        Boolean           @default(false)
-  qbRefeshTokenExpiry DateTime
-  currentInvoiceId    Int               @default(0)
-  emailPreferences    Json
-  invoicePrefix       String
-  currentPOId         Int               @default(0)
-  currentEstimateId   Int               @default(0)
-  itemTier            PriceTier[]
-  jobCostings         JobCosting[]
-  // TODO: paymentTerm: {type: Schema.Types.ObjectId, ref: 'PaymentTerm'},
-  balance             Int               @default(0)
-  credit              Int               @default(0)
-  commission          Int?
-  commissionType      String            @default("%")
-  // TODO: commissionTier: {type: Schema.Types.ObjectId, ref: 'JobCosting'},
-  // TODO: companyInvoices: [{ type: Schema.Types.ObjectId, ref: 'CompanyInvoice' }],
-  blockchain          CompanyBlockchain @relation(fields: [companyBlockchainId], references: [id])
-  companyBlockchainId Int               @unique
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-
-  contractorJobs                Job[]                  @relation("jobContractor")
-  companyJobs                   Job[]                  @relation("jobCompany")
-  jobTasks                      JobTask[]
-  companyCards                  CompanyCard[]
-  contractorCommissionHistories CommissionHistory[]    @relation("commissionHistoryContractor")
-  advancePayment                Advancepayment[]
-  advancepaymentvendor          Advancepaymentvendor[]
-  assignedvendor                Assignedvendor[]
-  chat                          Chat[]
-  companyadmin                  Companyadmin[]
-  companycustomer               Companycustomer[]
-  servicetickets                Servicetickets[]
-  joblocation                   Joblocation[]
-  jobrequest                    Jobrequest[]
-  invoice                       Invoice[]
-  paymentterm                   Paymentterm[]
-  emaildefaults                 EmailDefault[]
-  companyLocations              CompanyLocation[]
-  jobCharges                    JobCharges[]
-  saletaxes                     SaleTax[]
-  invoiceprefix                 Invoiceprefix[]
-  payment                       Payment[]
-  paymentvendor                 Paymentvendor[]
-  companyinvoice                Companyinvoice[]
-  companyprefix                 Companyprefix[]
-
-  @@index([plan, chargeDate])
-}
-
-model CompanyCard {
-  id              Int      @id @default(autoincrement())
-  alternativeId   String?  @unique
-  ending          String?
-  expirationMonth String?
-  expirationYear  String?
-  cardType        String?
-  name            String?
-  token           String?
-  cardStripeId    String?
-  address         String?
-  city            String?
-  state           String?
-  zipCode         String?
-  companyId       Int      @unique
-  company         Company  @relation(fields: [companyId], references: [id])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-
-model CompanyLocation {
-  id                        Int                @id @default(autoincrement())
-  alternativeId             String?            @unique
-  name                      String?
-  isActive                  Boolean            @default(true)
-  isMainLocation            Boolean            @default(true)
-  contactName               String
-  info                      Json
-  address                   Json
-  isAddressAsBillingAddress Boolean            @default(false)
-  billingAddress            Json
-  contact                   Json
-  companyId                 Int
-  company                   Company            @relation(fields: [companyId], references: [id])
-  // TODO: workTypes: [{ type: Schema.Types.ObjectId, ref: 'WorkType' }],
-  // assignedVendors: [AssignedVendorSchema],
-  assignedEmployees         AssignedEmployee[]
-  poRequestEmailSender      String
-  jobs                      Job[]
-  servicetickets            Servicetickets[]
-  jobrequest                Jobrequest[]
-  invoice                   Invoice[]
-  advancepayments           Advancepayment[]
-  paymentcustomers          Paymentcustomer[]
-
-  @@index([companyId, isActive, isMainLocation])
-  @@index([companyId, isActive, isMainLocation, id])
-}
-
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-model EmailDefault {
-  id            Int      @id @default(autoincrement())
-  alternativeId String?  @unique
-  subject       String?
-  message       String
-  companyId     Int
-  company       Company  @relation(fields: [companyId], references: [id])
-  updatedBy     Int?
-  user          User?    @relation(fields: [updatedBy], references: [id])
-  emailType     String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@index([companyId, emailType])
-}
-
-model EmailSchedule {
-  id            Int     @id @default(autoincrement())
-  alternativeId String? @unique
-  userId        Int
-  user          User    @relation(fields: [userId], references: [id])
-  type          Int     @default(0)
-  jobs          Job[]
-  pulled        Boolean @default(false)
-
-  @@index([pulled])
-}
-
-model Industry {
-  id            Int     @id @default(autoincrement())
-  alternativeId String? @unique
-  title         String
-  createdBy     Int
-  user          User    @relation(fields: [createdBy], references: [id])
-
-  companyInfo CompanyInfo[]
-  jobTypes    JobType[]
-
-  @@index([title])
-}
-
-model JobTaskJobType {
-  id                   Int       @id @default(autoincrement())
-  jobTypeId            Int?
-  jobType              JobType?  @relation(fields: [jobTypeId], references: [id])
-  isSelfFinished       Boolean?  @default(false)
-  status               Int?      @default(0)
-  charges              Float?    @default(0.0)
-  startTime            DateTime?
-  tempStartTime        DateTime?
-  endTime              DateTime?
-  timeSpent            Int?      @default(0)
-  pausedCount          Int?      @default(0)
-  timeUpdatedById      Int?
-  timeUpdatedBy        User?     @relation(fields: [timeUpdatedById], references: [id])
-  timeUpdatedAt        DateTime?
-  equipmentScanned     Boolean?  @default(false)
-  noOfEquipmentScanned Int?      @default(0)
-  quantity             Int?      @default(0)
-  price                Float?
-  completedCount       Int?
-  completedComment     String?
-  jobCostingQuantity   Int?
-  JobTask              JobTask?  @relation(fields: [jobTaskId], references: [id])
-  jobTaskId            Int?
-}
-
-model JobTask {
-  id                         Int              @id @default(autoincrement())
-  status                     Int?             @default(0)
-  employeeType               Boolean?         @default(false)
-  technicianId               Int?
-  technician                 User?            @relation(fields: [technicianId], references: [id])
-  contractorId               Int?
-  contractor                 Company?         @relation(fields: [contractorId], references: [id])
-  contractorCommissionTierId Int?
-  // TODO: ref JobCosting
-  comment                    String?
-  jobTypes                   JobTaskJobType[]
-  paid                       Boolean?         @default(false)
-  paidAt                     DateTime?
-  Job                        Job?             @relation(fields: [jobId], references: [id])
-  jobId                      Int?
-}
-
-model JobTrack {
-  id     Int      @id @default(autoincrement())
-  userId Int?
-  user   User?    @relation(fields: [userId], references: [id])
-  action String?
-  note   String?
-  date   DateTime @default(now())
-  Job    Job?     @relation(fields: [jobId], references: [id])
-  jobId  Int?
-}
-
-model JobImage {
-  id           Int      @id @default(autoincrement())
-  imageUrl     String
-  uploadedById Int
-  user         User     @relation(fields: [uploadedById], references: [id])
-  createAt     DateTime @default(now())
-  Job          Job?     @relation(fields: [jobId], references: [id])
-  jobId        Int?
-}
-
-model JobTechnicianImage {
-  id           Int      @id @default(autoincrement())
-  imageUrl     String?
-  uploadedById Int
-  user         User     @relation(fields: [uploadedById], references: [id])
-  createAt     DateTime @default(now())
-  Job          Job?     @relation(fields: [jobId], references: [id])
-  jobId        Int?
-}
-
-model Job {
-  id                 Int                  @id @default(autoincrement())
-  alternativeId      String?              @unique
-  scheduleTimeAMPM   Int?                 @default(0)
-  scheduleDate       DateTime?
-  scheduledStartTime DateTime?
-  scheduledEndTime   DateTime?
-  jobId              String?
-  parentJobId        Int?                 @unique
-  parentJob          Job?                 @relation("JobParent", fields: [parentJobId], references: [id])
-  childrenJob        Job[]                @relation("JobParent")
-  ticketId           Int?
-  // TODO: ref ServiceTicket
-  requestId          Int?
-  // TODO: ref JobRequest
-  equipmentId        Int?
-  // TODO: ref CustomerEquiment
-  technicianId       Int?
-  technician         User?                @relation(fields: [technicianId], references: [id])
-  contractorId       Int?
-  contractor         Company?             @relation("jobContractor", fields: [contractorId], references: [id])
-  customerId         Int?
-  // TODO: ref Customer
-  jobLocationId      Int?
-  // TODO: ref JobLocation
-  jobSiteId          Int?
-  // TODO: ref JobSite
-  isHomeOccupied     Boolean?             @default(false)
-  homeOwnerId        Int?
-  // TODO: ref HomeOwner
-  homeJobLocationId  Int?
-  // TODO: ref JobLocation
-  homeJobSiteId      Int?
-  // TODO: ref JobLocation
-  customerContactId  Int?
-  // TODO: ref Contact
-  customerPO         String?
-  image              String?
-  images             JobImage[]
-  technicianImages   JobTechnicianImage[]
-
-  typeId              Int?
-  type                JobType?         @relation(fields: [typeId], references: [id])
-  tasksBackup         Json?
-  tasks               JobTask[]
-  companyId           Int?
-  company             Company?         @relation("jobCompany", fields: [companyId], references: [id])
-  description         String?
-  status              Int?             @default(0)
-  track               JobTrack[]
-  comment             String?
-  createdAt           DateTime?        @default(now())
-  createdById         Int?
-  createdBy           User?            @relation("jobCreatedBy", fields: [createdById], references: [id])
-  updatedAt           DateTime?        @updatedAt
-  employeeType        Boolean?         @default(false)
-  charges             Int?             @default(0)
-  salesTaxId          Int?
-  salesTax            SaleTax?         @relation(fields: [salesTaxId], references: [id])
-  startTime           DateTime?
-  endTime             DateTime?
-  timeSpent           Int?             @default(0)
-  timeUpdatedById     Int?
-  timeUpdatedBy       User?            @relation("jobTimeUpdatedBy", fields: [timeUpdatedById], references: [id])
-  timeUpdatedAt       DateTime?
-  equipmentScanned    Boolean?         @default(false)
-  noOfEquimentScanned Int?             @default(0)
-  completeOnTime      Boolean?         @default(false)
-  commissionId        Int?
-  // TODO: ref JobCommission
-  workTypeId          Int?
-  // TODO: ref WorkType
-  companyLocationId   Int?
-  companyLocation     CompanyLocation? @relation(fields: [companyLocationId], references: [id])
-
-  commissionHistories CommissionHistory[]
-  emailSchedules      EmailSchedule[]
-
-  jobrequest     Jobrequest[]
-  invoice        Invoice[]
-  paymentvendors Paymentvendor[]
-
-  @@index([employeeType])
-  @@index([image])
-}
-
-model JobCharges {
-  id            Int      @id @default(autoincrement())
-  alternativeId String?  @unique
-  charges       Int?
-  isFixed       Boolean  @default(true)
-  jobTypeId     Int
-  jobType       JobType  @relation(fields: [jobTypeId], references: [id])
-  companyId     Int
-  company       Company  @relation(fields: [companyId], references: [id])
-  createdBy     Int
-  user          User     @relation(fields: [createdBy], references: [id])
-  createdAt     DateTime @default(now())
-  salesTaxId    Int
-  salesTax      SaleTax  @relation(fields: [salesTaxId], references: [id])
-}
-
-model JobCosting {
-  id            Int      @id @default(autoincrement())
-  alternativeId String?  @unique
-  companyId     Int
-  company       Company  @relation(fields: [companyId], references: [id])
-  name          String
-  isActive      Boolean  @default(true)
-  inactiveById  Int?
-  inactiveBy    User?    @relation(fields: [inactiveById], references: [id])
-  inactiveAt    DateTime
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
-model JobType {
-  id            Int       @id @default(autoincrement())
-  alternativeId String?   @unique
-  title         String
-  description   String?
-  sku           String?
-  industryId    Int?
-  industry      Industry? @relation(fields: [industryId], references: [id])
-  createdBy     Int?
-  user          User?     @relation(fields: [createdBy], references: [id])
-  isActive      Boolean   @default(true)
-  quickbookId   String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  jobTaskJobTypes JobTaskJobType[]
-  jobs            Job[]
-  jobCharges      JobCharges[]
-
-  servicetickets     Servicetickets[]
-  serviceTicketTasks ServiceTicketTasks[]
-
-  @@index([title], type: SpGist)
-  @@index([createdBy, quickbookId])
-  @@index([title, industryId, createdBy])
-  @@index([createdBy, industryId, isActive])
-}
-
-model PriceTier {
-  id            Int      @id @default(autoincrement())
-  alternativeId String?  @unique
-  companyId     Int
-  company       Company  @relation(fields: [companyId], references: [id])
-  name          String
-  isActive      Boolean  @default(true)
-  inactiveById  Int?
-  inactiveBy    User?    @relation(fields: [inactiveById], references: [id])
-  inactiveAt    DateTime
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
-model SaleTax {
-  id            Int      @id @default(autoincrement())
-  alternativeId String?  @unique
-  state         String?
-  companyId     Int
-  company       Company  @relation(fields: [companyId], references: [id])
-  createdBy     Int
-  user          User     @relation(fields: [createdBy], references: [id])
-  createdAt     DateTime @default(now())
-
-  jobCharges JobCharges[]
-  jobs       Job[]
 }
 
 model Session {
@@ -1016,26 +1256,69 @@ model Session {
   @@index([session])
 }
 
+model Supplier {
+  alternativeId   String
+  id              Int    @id @default(autoincrement())
+  info            Json?
+  address         Json?
+  contact         Json?
+  supplierAdminId Int
+  //TODO
+  //admin SupplierAdmin @relation(fields: [supplierAdminId], references: [id])
+
+  supplieradmin Supplieradmin[]
+}
+model Tag {
+  id            Int         @id @default(autoincrement())
+  info          Json
+  images        Json
+  jobLocationId Int
+  jobLocation   Joblocation @relation(fields: [jobLocationId], references: [id])
+  jobSiteId     Int
+  jobSite       Jobsite     @relation(fields: [jobSiteId], references: [id])
+  note          String?
+  address       String?
+  customerId    Int
+  customer      Customer    @relation(fields: [customerId], references: [id])
+  companyId     Int
+  company       Company     @relation(fields: [companyId], references: [id])
+  createdById   Int
+  createdBy     User        @relation(fields: [createdById], references: [id])
+  createdAt     DateTime    @default(now())
+}
+
 model UserAuth {
-  id                   Int      @id @default(autoincrement())
-  email                String   @unique
+  id                   Int       @id @default(autoincrement())
+  email                String    @unique
   password             String
-  resetPasswordToken   String
-  resetPasswordExpires DateTime
-  socialId             String
-  connectorType        Int      @default(0)
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+  socialId             String?
+  connectorType        Int?      @default(0)
   User                 User?
 
   @@index([email])
   @@index([socialId, connectorType])
 }
 
+model Employee {
+  id                    Int     @id @default(autoincrement())
+  companyId             Int
+  company               Company @relation(fields: [companyId], references: [id])
+  status                Int     @default(1)
+  extraPermissions      Json
+  agreed                Boolean @default(false)
+  canAccessAllLocations Boolean @default(false)
+  userId                Int?    @unique
+  user                  User?   @relation(fields: [userId], references: [id])
+}
+
 model User {
-  id               Int       @id @default(autoincrement())
-  alternativeId    String?   @unique
+  id               Int           @id @default(autoincrement())
+  alternativeId    String?       @unique
   accountType      Int?
-  auth             UserAuth? @relation(fields: [userAuthId], references: [id])
-  userAuthId       Int?      @unique
+  auth             UserAuth?     @relation(fields: [userAuthId], references: [id])
+  userAuthId       Int?          @unique
   profile          Json?
   address          Json?
   location         Json?
@@ -1043,12 +1326,14 @@ model User {
   permissions      Json?
   emailPreferences Json?
   // TODO: Contats need to be implemented
-  balance          Int       @default(0)
-  credit           Int       @default(0)
+  balance          Int           @default(0)
+  credit           Int           @default(0)
   commission       Int?
   firebaseTokens   Json
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  employee         Employee?
+  companyAdmin     Companyadmin?
 
   companyBlockchainsVerified    CompanyBlockchain[]      @relation("CompanyBlockchainVerifiedBy")
   companyBlockchainsdenied      CompanyBlockchain[]      @relation("CompanyBlockchainDeniedBy")
@@ -1083,7 +1368,36 @@ model User {
   jobChargesCreated             JobCharges[]
   saleTaxesCreated              SaleTax[]
   emailSchedules                EmailSchedule[]
+  updatedItemTiers              ItemTier[]
+  updatedItemCostings           ItemCosting[]
+  dismissedNotifications        Notification[]           @relation("notificationDismissedBy")
+  readedNotifications           Notification[]           @relation("notificationReadBy")
   createdPayment                Payment[]                @relation("paymentUserCreatedBy")
   updatedPayment                Payment[]                @relation("paymentUserupdatedBy")
   paymentemployee               Paymentemployee[]
+  inactiveByCustomer            Customer[]               @relation("customerUserinactiveBy")
+  adminCustomer                 Customer[]               @relation("customerUserAdmin")
+  contactUser                   Contact[]
+  jobrequest                    Jobrequest[]
+  contractsCreated              Contract[]               @relation("contractCreatedBy")
+  contractsFinished             Contract[]               @relation("contractFinishedBy")
+  tagsCreated                   Tag[]
+  company                       Company[]
+  Notification                  Notification[]
+}
+
+model Worktype {
+  id                Int                @id @default(autoincrement())
+  alternativeId     String             @default(cuid())
+  title             String
+  // TODO: TRIM @map("title") @before(validateAndTrim)
+  createdAt         DateTime
+  advancePayments   Advancepayment[]
+  servicetickets    Servicetickets[]
+  jobrequest        Jobrequest[]
+  invoice           Invoice[]
+  companyLocations  CompanyLocation[]
+  jobs              Job[]
+  assignedEmployees AssignedEmployee[]
+  paymentcustomers  Paymentcustomer[]
 }
