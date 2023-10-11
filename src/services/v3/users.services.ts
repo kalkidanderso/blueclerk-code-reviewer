@@ -2,13 +2,13 @@ import bcrypt from "bcrypt-nodejs";
 import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 
-import { AccountTypes, Messages, Role, Status, UserPermissions } from '@common/constants';
-import { ICompany, CompanyTypes  } from '@models/Company';
+import { AccountTypes, Messages, Role, Status, UserPermissions } from '../../common/constants';
+import { ICompany, CompanyTypes  } from '../../models/Company';
 import { Request as RequestExpress } from "express";
-import { _getProRatedAmount } from '@controllers/vendor';
-import { createStripeInvoiceItem } from '@services/stripe';
-import { NotificationTypes } from '@models/Notification';
-import { sendEmail } from '@services/aws';
+import { _getProRatedAmount } from '../../controllers/vendor';
+import { createStripeInvoiceItem } from '../../services/stripe';
+import { NotificationTypes } from '../../models/Notification';
+import { sendEmail } from '../../services/aws';
 import passwordValidator from "password-validator";
 
 const Hubspot = require('hubspot');

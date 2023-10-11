@@ -15,17 +15,7 @@
     "resolveJsonModule": true,
     "incremental": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "paths": {
-      "@controllers-v3/*": ["src/controllers/v3/*"],
-      "@models-v3/*": ["src/models/v3/*"],
-      "@types-v3/*": ["src/types/v3/*"],
-      "@services-v3/*": ["src/services/v3/*"],
-      "@common/*": ["src/common/*"],
-      "@models/*": ["src/models/*"],
-      "@services/*": ["src/services/*"],
-      "@controllers/*": ["src/controllers/*"]
-    }
+    "emitDecoratorMetadata": true
   },
   "exclude": [
     "node_modules"

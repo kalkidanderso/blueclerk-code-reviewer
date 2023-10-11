@@ -1,12 +1,12 @@
 import {Controller, Request, Post, Route, Tags, Body} from "tsoa";
 import {Prisma, PrismaClient} from '@prisma/client';
-import {Messages, Role, Status, AccountTypes} from '@common/constants';
+import {Messages, Role, Status, AccountTypes} from '../../common/constants';
 import {Request as RequestExpress} from 'express';
 
-import {IUserRegister, ILoginInput, ILoginReturn} from '@types-v3/users.types';
-import {UserServices} from '@services-v3/users.services';
-import {sendEmail, sendEmployeeEmail} from '@services/aws';
-import {CompanyTypes} from '@models/Company';
+import {IUserRegister, ILoginInput, ILoginReturn} from '../../types/v3/users.types';
+import {UserServices} from '../../services/v3/users.services';
+import {sendEmail, sendEmployeeEmail} from '../../services/aws';
+import {CompanyTypes} from '../../models/Company';
 
 interface IRes {
     status: number;
