@@ -61,7 +61,7 @@ export interface IPaymentVendor extends IPayment {
 export interface IJobExportQuery { 
     company: any; 
     status: number; 
-    endTime: { $gte: Date; $lte: Date; }; 
+    endTime: { $gte: any; $lte: any; }; 
     commission: { $ne: any; }; 
     companyLocation?: any;
     workType?: any
