@@ -1618,11 +1618,13 @@ export const exportVendorJobs =  async (req: Request, res: Response) => {
     const startDate = params.startDate as string;
     const endDate = params.endDate as string;
 
+    const startDateFormatted = moment(startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().toDate();
+    const endDateFormatted = moment(endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().toDate();
     
     const query: IJobExportQuery = {
         company: company._id,
         status: 2,
-        endTime: { $gte: moment.utc(startDate).toDate(), $lte: moment.utc(endDate).toDate() },
+        endTime: { $gte: startDateFormatted, $lte: endDateFormatted },
         commission: { $ne: null }
     }
 
