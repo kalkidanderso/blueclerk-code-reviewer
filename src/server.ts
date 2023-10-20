@@ -14,7 +14,7 @@ import routesV1 from './routes/v1'
 import routesV2 from './routes/v2'
 import { RegisterRoutes } from "./routes/v3/routes";
 import * as swaggerDocumentV3 from './routes/v3/swagger.json';
-import swaggerUi from 'swagger-ui-express'
+import swaggerUi, { serve } from 'swagger-ui-express'
 import * as swaggerDocumentV1 from './swagger_v1.json'
 import * as swaggerDocumentV2 from './swagger_v2.json'
 
@@ -380,3 +380,4 @@ const server = httpServer.listen(
 server.keepAliveTimeout = (60 * 1000) + 1000;
 server.headersTimeout = (60 * 1000) + 2000;
 // Test comment for GitLab and ClickUp task #307pke
+module.exports = app;
