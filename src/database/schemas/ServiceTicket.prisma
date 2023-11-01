@@ -1,6 +1,7 @@
 enum serviceType {
     Ticket
-    POResquest
+    PORequest
+    AllPORequest
 }
 
 model ServiceTicketTasks {
@@ -15,7 +16,7 @@ model ServiceTicketTasks {
 
 model Servicetickets {
     id                Int                  @id @default(autoincrement())
-    alternativeId     String               @default(cuid())
+    alternativeId     String               @unique
     createdAt         DateTime
     dueDate           DateTime?
     customer          Customer?            @relation(fields: [customerId], references: [id])
@@ -46,6 +47,7 @@ model Servicetickets {
     homeOwner         HomeOwners           @relation(fields: [homeOwnerId], references: [id])
     homeOwnerId       Int
     homeJobLocation   Joblocation          @relation("homeJobLocation", fields: [homeJobLocationId], references: [id])
+    bouncedEmailFlag  Boolean              @default(false)
     homeJobLocationId Int
     homeJobSite       Jobsite              @relation("homejobsite", fields: [homeJobSiteId], references: [id])
     homeJobSiteId     Int
