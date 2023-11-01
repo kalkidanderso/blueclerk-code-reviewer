@@ -15,9 +15,12 @@
     "resolveJsonModule": true,
     "incremental": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "skipLibCheck": true
   },
-  "exclude": [
-    "node_modules"
+    "exclude": [
+      "jest.config.ts",
+      "src/tests",
+      "node_modules",
   ]
 }
