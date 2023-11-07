@@ -24,10 +24,10 @@ model CompanyBlockchain {
 }
 
 model Company {
-    id                  Int                @id @default(autoincrement())
-    alternativeId       String?            @unique
-    info                CompanyInfo?       @relation(fields: [companyInfoId], references: [id])
-    companyInfoId       Int?               @unique
+    id                  Int               @id @default(autoincrement())
+    alternativeId       String?           @unique
+    info                CompanyInfo?      @relation(fields: [companyInfoId], references: [id])
+    companyInfoId       Int?              @unique
     address             Json?
     contact             Json?
     other               Json?
@@ -36,17 +36,17 @@ model Company {
     employee            User?              @relation(fields: [employeeId], references: [id])
     employeeId          Int?
     stripeId            String?
-    paid                Boolean            @default(false)
-    type                Int                @default(0)
-    plan                Int                @default(0)
+    paid                Boolean           @default(false)
+    type                Int               @default(0)
+    plan                Int               @default(0)
     chargeDate          DateTime
     trialEndDate        DateTime?
-    maxTechnicians      Int                @default(0)
-    maxManagers         Int                @default(0)
-    maxOfficeAdmins     Int                @default(0)
-    maxAdmins           Int                @default(0)
+    maxTechnicians      Int               @default(0)
+    maxManagers         Int               @default(0)
+    maxOfficeAdmins     Int               @default(0)
+    maxAdmins           Int               @default(0)
     userPermissions     Json
-    currentJobId        Int                @default(0)
+    currentJobId        Int               @default(0)
     prefix              String?
     adminId             Int?
     admin               Companyadmin?      @relation("admin", fields: [adminId], references: [id])
@@ -87,7 +87,7 @@ model Company {
     companyCards                  CompanyCard[]
     contractorCommissionHistories CommissionHistory[]    @relation("commissionHistoryContractor")
     advancePayment                Advancepayment[]
-    advancepaymentvendor          Advancepaymentvendor[]
+    advancePaymentVendor          Advancepaymentvendor[]
     assignedvendor                Assignedvendor[]
     chat                          Chat[]
     companyadmin                  Companyadmin[]
@@ -106,10 +106,12 @@ model Company {
     paymentvendor                 Paymentvendor[]
     companyinvoice                Companyinvoice[]
     companyprefix                 Companyprefix[]
+    Items                         Items[]
+    Notification                  Notification[]
     companyContracts              Contract[]             @relation("contractCompany")
     contractorContracts           Contract[]             @relation("contractContractor")
     tags                          Tag[]
     customerContract              CustomerContract[]
 
-    @@index([plan, chargeDate])
+  @@index([plan, chargeDate])
 }
