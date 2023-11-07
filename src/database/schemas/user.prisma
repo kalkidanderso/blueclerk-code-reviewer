@@ -45,7 +45,7 @@ model User {
     updatedAt                     DateTime                 @updatedAt
     employee                      Employee?
     companyAdmin                  Companyadmin?
-    
+
     companyBlockchainsVerified    CompanyBlockchain[]      @relation("CompanyBlockchainVerifiedBy")
     companyBlockchainsdenied      CompanyBlockchain[]      @relation("CompanyBlockchainDeniedBy")
     industriesCreated             Industry[]
@@ -65,7 +65,7 @@ model User {
     createdAdvancePayment         Advancepayment[]         @relation("advancePaymentUserCreatedBy")
     updatedAdvancePayment         Advancepayment[]         @relation("advancePaymentUserUpdatedBy")
     voidedAdvancePayment          Advancepayment[]         @relation("advancePaymentUserVoidedBy")
-    advancePaymentEmployee        Advancepaymentemployee[]
+    advancepaymentemployee        Advancepaymentemployee[]
     chat                          Chat[]
     createdServiceTicket          Servicetickets[]         @relation("serviceTicketUserCreatedBy")
     technicianServiceTicket       Servicetickets[]         @relation("serviceTicketUsertechnician")
@@ -90,10 +90,8 @@ model User {
     adminCustomer                 Customer[]               @relation("customerUserAdmin")
     contactUser                   Contact[]
     jobrequest                    Jobrequest[]
-    Notification                  Notification[]
     contractsCreated              Contract[]               @relation("contractCreatedBy")
     contractsFinished             Contract[]               @relation("contractFinishedBy")
     tagsCreated                   Tag[]
     company                       Company[]
 }
-
