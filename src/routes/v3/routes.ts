@@ -3,6 +3,8 @@
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { Controller, ValidationService, FieldErrors, ValidateError, TsoaRoute, HttpStatusCodeLiteral, TsoaResponse, fetchMiddlewares } from '@tsoa/runtime';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+import { AdvancePaymentController } from './../../controllers/v3/advancePayment.controller';
+// WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { JobsController } from './../../controllers/v3/jobs/jobs.controller';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { GetServiceTicketsController } from './../../controllers/v3/serviceTickets.controller';
@@ -17,6 +19,62 @@ import * as express from 'express';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
 const models: TsoaRoute.Models = {
+    "ICreateAdvancePaymentRequestBody": {
+        "dataType": "refObject",
+        "properties": {
+            "id": {"dataType":"double","required":true},
+            "type": {"dataType":"string","required":true},
+            "amount": {"dataType":"double","required":true},
+            "balance": {"dataType":"double","required":true},
+            "referenceNumber": {"dataType":"string","required":true},
+            "paymentType": {"dataType":"string","required":true},
+            "paidAt": {"dataType":"datetime"},
+            "appliedAt": {"dataType":"datetime"},
+            "note": {"dataType":"string"},
+            "createdByUser": {"dataType":"double","required":true},
+            "updatedByUser": {"dataType":"double","required":true},
+            "voidedByUser": {"dataType":"double","required":true},
+            "workType": {"dataType":"array","array":{"dataType":"double"}},
+            "companyLocation": {"dataType":"array","array":{"dataType":"double"}},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "IUpdateAdvancePaymentInput": {
+        "dataType": "refObject",
+        "properties": {
+            "id": {"dataType":"double","required":true},
+            "alternativeId": {"dataType":"string","required":true},
+            "type": {"dataType":"string","required":true},
+            "company": {"dataType":"double","required":true},
+            "amount": {"dataType":"double","required":true},
+            "balance": {"dataType":"double"},
+            "referenceNumber": {"dataType":"string"},
+            "paymentType": {"dataType":"string","required":true},
+            "paidAt": {"dataType":"datetime"},
+            "appliedAt": {"dataType":"datetime"},
+            "note": {"dataType":"string"},
+            "isVoid": {"dataType":"boolean"},
+            "voidedAt": {"dataType":"datetime"},
+            "createdByUser": {"dataType":"double","required":true},
+            "updatedByUser": {"dataType":"double","required":true},
+            "voidedByUser": {"dataType":"double","required":true},
+            "workType": {"dataType":"array","array":{"dataType":"double"}},
+            "companyLocation": {"dataType":"array","array":{"dataType":"double"}},
+            "advancePaymentId": {"dataType":"double","required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "IVoidAdvancePaymentInput": {
+        "dataType": "refObject",
+        "properties": {
+            "type": {"dataType":"string","required":true},
+            "advancePaymentId": {"dataType":"double","required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "IResJob": {
         "dataType": "refObject",
         "properties": {
@@ -184,6 +242,113 @@ export function RegisterRoutes(app: express.Router) {
     //  NOTE: If you do not see routes for all of your controllers in this file, then you might not have informed tsoa of where to look
     //      Please look into the "controllerPathGlobs" config option described in the readme: https://github.com/lukeautry/tsoa
     // ###########################################################################################################
+        app.post('/api/v3/advance-payment',
+            ...(fetchMiddlewares<RequestHandler>(AdvancePaymentController)),
+            ...(fetchMiddlewares<RequestHandler>(AdvancePaymentController.prototype.createAdvancePaymentContractor)),
+
+            function AdvancePaymentController_createAdvancePaymentContractor(request: any, response: any, next: any) {
+            const args = {
+                    body: {"in":"body","name":"body","required":true,"ref":"ICreateAdvancePaymentRequestBody"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new AdvancePaymentController();
+
+
+              const promise = controller.createAdvancePaymentContractor.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.get('/api/v3/advance-payment',
+            ...(fetchMiddlewares<RequestHandler>(AdvancePaymentController)),
+            ...(fetchMiddlewares<RequestHandler>(AdvancePaymentController.prototype.getAdvancePaymentsByContractor)),
+
+            function AdvancePaymentController_getAdvancePaymentsByContractor(request: any, response: any, next: any) {
+            const args = {
+                    type: {"in":"query","name":"type","dataType":"union","subSchemas":[{"dataType":"enum","enums":["vendor"]},{"dataType":"enum","enums":["employee"]}]},
+                    isActive: {"in":"query","name":"isActive","dataType":"union","subSchemas":[{"dataType":"enum","enums":["ALL"]},{"dataType":"enum","enums":["active"]},{"dataType":"enum","enums":["void"]}]},
+                    id: {"in":"query","name":"id","dataType":"double"},
+                    startDate: {"in":"query","name":"startDate","dataType":"string"},
+                    endDate: {"in":"query","name":"endDate","dataType":"string"},
+                    offset: {"in":"query","name":"offset","dataType":"string"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new AdvancePaymentController();
+
+
+              const promise = controller.getAdvancePaymentsByContractor.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.put('/api/v3/advance-payment',
+            ...(fetchMiddlewares<RequestHandler>(AdvancePaymentController)),
+            ...(fetchMiddlewares<RequestHandler>(AdvancePaymentController.prototype.updateAdvancePaymentContractor)),
+
+            function AdvancePaymentController_updateAdvancePaymentContractor(request: any, response: any, next: any) {
+            const args = {
+                    body: {"in":"body","name":"body","required":true,"ref":"IUpdateAdvancePaymentInput"},
+                    req: {"in":"request","name":"req","required":true,"dataType":"object"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new AdvancePaymentController();
+
+
+              const promise = controller.updateAdvancePaymentContractor.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.patch('/api/v3/advance-payment',
+            ...(fetchMiddlewares<RequestHandler>(AdvancePaymentController)),
+            ...(fetchMiddlewares<RequestHandler>(AdvancePaymentController.prototype.voidAdvancePaymentContractor)),
+
+            function AdvancePaymentController_voidAdvancePaymentContractor(request: any, response: any, next: any) {
+            const args = {
+                    body: {"in":"body","name":"body","required":true,"ref":"IVoidAdvancePaymentInput"},
+                    req: {"in":"request","name":"req","required":true,"dataType":"object"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new AdvancePaymentController();
+
+
+              const promise = controller.voidAdvancePaymentContractor.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
         app.get('/api/v3/jobs/:id',
             authenticateMiddleware([{"jwt":[]}]),
             ...(fetchMiddlewares<RequestHandler>(JobsController)),

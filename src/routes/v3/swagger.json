@@ -6,6 +6,192 @@
 		"requestBodies": {},
 		"responses": {},
 		"schemas": {
+			"ICreateAdvancePaymentRequestBody": {
+				"properties": {
+					"id": {
+						"type": "number",
+						"format": "double"
+					},
+					"type": {
+						"type": "string"
+					},
+					"amount": {
+						"type": "number",
+						"format": "double"
+					},
+					"balance": {
+						"type": "number",
+						"format": "double"
+					},
+					"referenceNumber": {
+						"type": "string"
+					},
+					"paymentType": {
+						"type": "string"
+					},
+					"paidAt": {
+						"type": "string",
+						"format": "date-time"
+					},
+					"appliedAt": {
+						"type": "string",
+						"format": "date-time"
+					},
+					"note": {
+						"type": "string"
+					},
+					"createdByUser": {
+						"type": "number",
+						"format": "double"
+					},
+					"updatedByUser": {
+						"type": "number",
+						"format": "double"
+					},
+					"voidedByUser": {
+						"type": "number",
+						"format": "double"
+					},
+					"workType": {
+						"items": {
+							"type": "number",
+							"format": "double"
+						},
+						"type": "array"
+					},
+					"companyLocation": {
+						"items": {
+							"type": "number",
+							"format": "double"
+						},
+						"type": "array"
+					}
+				},
+				"required": [
+					"id",
+					"type",
+					"amount",
+					"balance",
+					"referenceNumber",
+					"paymentType",
+					"createdByUser",
+					"updatedByUser",
+					"voidedByUser"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"IUpdateAdvancePaymentInput": {
+				"properties": {
+					"id": {
+						"type": "number",
+						"format": "double"
+					},
+					"alternativeId": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string"
+					},
+					"company": {
+						"type": "number",
+						"format": "double"
+					},
+					"amount": {
+						"type": "number",
+						"format": "double"
+					},
+					"balance": {
+						"type": "number",
+						"format": "double"
+					},
+					"referenceNumber": {
+						"type": "string"
+					},
+					"paymentType": {
+						"type": "string"
+					},
+					"paidAt": {
+						"type": "string",
+						"format": "date-time"
+					},
+					"appliedAt": {
+						"type": "string",
+						"format": "date-time"
+					},
+					"note": {
+						"type": "string"
+					},
+					"isVoid": {
+						"type": "boolean"
+					},
+					"voidedAt": {
+						"type": "string",
+						"format": "date-time"
+					},
+					"createdByUser": {
+						"type": "number",
+						"format": "double"
+					},
+					"updatedByUser": {
+						"type": "number",
+						"format": "double"
+					},
+					"voidedByUser": {
+						"type": "number",
+						"format": "double"
+					},
+					"workType": {
+						"items": {
+							"type": "number",
+							"format": "double"
+						},
+						"type": "array"
+					},
+					"companyLocation": {
+						"items": {
+							"type": "number",
+							"format": "double"
+						},
+						"type": "array"
+					},
+					"advancePaymentId": {
+						"type": "number",
+						"format": "double"
+					}
+				},
+				"required": [
+					"id",
+					"alternativeId",
+					"type",
+					"company",
+					"amount",
+					"paymentType",
+					"createdByUser",
+					"updatedByUser",
+					"voidedByUser",
+					"advancePaymentId"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"IVoidAdvancePaymentInput": {
+				"properties": {
+					"type": {
+						"type": "string"
+					},
+					"advancePaymentId": {
+						"type": "number",
+						"format": "double"
+					}
+				},
+				"required": [
+					"type",
+					"advancePaymentId"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
 			"IResJob": {
 				"properties": {
 					"id": {
@@ -508,6 +694,173 @@
 	},
 	"openapi": "3.0.0",
 	"paths": {
+		"/advance-payment": {
+			"post": {
+				"operationId": "CreateAdvancePaymentContractor",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"summary": "To record an advance payment for vendor.",
+				"tags": [
+					"Advance Payment"
+				],
+				"security": [],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ICreateAdvancePaymentRequestBody"
+							}
+						}
+					}
+				}
+			},
+			"get": {
+				"operationId": "GetAdvancePaymentsByContractor",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"summary": "Get the advance payments history for particular vendor or employee",
+				"tags": [
+					"Advance Payment"
+				],
+				"security": [],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "type",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"vendor",
+								"employee"
+							]
+						}
+					},
+					{
+						"in": "query",
+						"name": "isActive",
+						"required": false,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"ALL",
+								"active",
+								"void"
+							]
+						}
+					},
+					{
+						"in": "query",
+						"name": "id",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "startDate",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "endDate",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "offset",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			},
+			"put": {
+				"operationId": "UpdateAdvancePaymentContractor",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"summary": "To update advance payment contractor record",
+				"tags": [
+					"Advance Payment"
+				],
+				"security": [],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/IUpdateAdvancePaymentInput"
+							}
+						}
+					}
+				}
+			},
+			"patch": {
+				"operationId": "VoidAdvancePaymentContractor",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"summary": "To void advance payment contractor",
+				"tags": [
+					"Advance Payment"
+				],
+				"security": [],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/IVoidAdvancePaymentInput"
+							}
+						}
+					}
+				}
+			}
+		},
 		"/jobs/{id}": {
 			"get": {
 				"operationId": "GetJob",
