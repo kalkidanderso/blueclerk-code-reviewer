@@ -1410,3 +1410,27 @@ model User {
   tagsCreated                   Tag[]
   company                       Company[]
 }
+
+model JobReport {
+    id               String      @id @default(auto())
+    job              String      @relation(fields: [jobId], references: [id])
+    jobId            String
+    scans            Scan[]      @relation(fields: [scanIds], references: [id])
+    scanIds          String[]
+    customerName     String
+    technicianName   String
+    jobDate          DateTime
+    purchaseOrders   PurchaseOrder[] @relation(fields: [purchaseOrderIds], references: [id])
+    purchaseOrderIds String[]
+    company          String      @relation(fields: [companyId], references: [id])
+    companyId        String
+    contractor       String      @relation(fields: [contractorId], references: [id])
+    contractorId     String
+    emailHistory     EmailHistory[]
+    lastEmailSent    DateTime
+    createdAt        DateTime    @default(now())
+    invoiceCreated   Boolean
+    invoiceVoid      Boolean
+    invoice          String      @relation(fields: [invoiceId], references: [id])
+    invoiceId        String
+}
