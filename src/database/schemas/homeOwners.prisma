@@ -4,8 +4,6 @@ model HomeOwners {
     profile        Json
     info           Json
     contact        Json
-    subdivision    Joblocation      @relation(fields: [subdivisionId], references: [id])
-    subdivisionId  Int              @unique
     address        Jobsite          @relation(fields: [addressId], references: [id])
     addressId      Int              @unique
     servicetickets Servicetickets[]

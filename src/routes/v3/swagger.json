@@ -192,6 +192,222 @@
 				"type": "object",
 				"additionalProperties": false
 			},
+			"timestamp": {
+				"type": "string",
+				"format": "date-time"
+			},
+			"ICreatedJobLocation": {
+				"properties": {
+					"alternativeId": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"contacts": {
+						"properties": {
+							"email": {
+								"type": "string"
+							},
+							"phone": {
+								"type": "string"
+							},
+							"name": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"name"
+						],
+						"type": "object"
+					},
+					"location": {
+						"properties": {
+							"long": {
+								"type": "string"
+							},
+							"lat": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"long",
+							"lat"
+						],
+						"type": "object"
+					},
+					"address": {
+						"properties": {
+							"zipCode": {
+								"type": "string"
+							},
+							"state": {
+								"type": "string"
+							},
+							"city": {
+								"type": "string"
+							},
+							"unit": {
+								"type": "string"
+							},
+							"street": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"zipCode",
+							"state",
+							"city",
+							"street"
+						],
+						"type": "object"
+					},
+					"jobSites": {
+						"items": {
+							"type": "number",
+							"format": "double"
+						},
+						"type": "array"
+					},
+					"isActive": {
+						"type": "boolean"
+					},
+					"customerId": {
+						"type": "number",
+						"format": "double"
+					},
+					"companyId": {
+						"type": "number",
+						"format": "double"
+					},
+					"inactiveAt": {
+						"$ref": "#/components/schemas/timestamp"
+					},
+					"inactiveById": {
+						"type": "number",
+						"format": "double"
+					},
+					"quickbookId": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"alternativeId",
+					"name",
+					"contacts",
+					"location",
+					"address",
+					"companyId"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"IUpdateJobLocation": {
+				"properties": {
+					"alternativeId": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"contacts": {
+						"properties": {
+							"email": {
+								"type": "string"
+							},
+							"phone": {
+								"type": "string"
+							},
+							"name": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"name"
+						],
+						"type": "object"
+					},
+					"location": {
+						"properties": {
+							"long": {
+								"type": "string"
+							},
+							"lat": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"long",
+							"lat"
+						],
+						"type": "object"
+					},
+					"address": {
+						"properties": {
+							"zipCode": {
+								"type": "string"
+							},
+							"state": {
+								"type": "string"
+							},
+							"city": {
+								"type": "string"
+							},
+							"unit": {
+								"type": "string"
+							},
+							"street": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"zipCode",
+							"state",
+							"city",
+							"street"
+						],
+						"type": "object"
+					},
+					"jobSites": {
+						"items": {
+							"type": "number",
+							"format": "double"
+						},
+						"type": "array"
+					},
+					"isActive": {
+						"type": "boolean"
+					},
+					"customerId": {
+						"type": "number",
+						"format": "double"
+					},
+					"companyId": {
+						"type": "number",
+						"format": "double"
+					},
+					"inactiveAt": {
+						"$ref": "#/components/schemas/timestamp"
+					},
+					"inactiveById": {
+						"type": "number",
+						"format": "double"
+					},
+					"quickbookId": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"alternativeId",
+					"name",
+					"contacts",
+					"location",
+					"address",
+					"companyId"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
 			"IResJob": {
 				"properties": {
 					"id": {
@@ -236,10 +452,6 @@
 				],
 				"type": "object",
 				"additionalProperties": false
-			},
-			"timestamp": {
-				"type": "string",
-				"format": "date-time"
 			},
 			"ICreateServiceTicketInput": {
 				"properties": {
@@ -388,8 +600,7 @@
 					"companyLocationId",
 					"pooverriddenById",
 					"type",
-					"emailHistory",
-					"bouncedEmailFlag"
+					"emailHistory"
 				],
 				"type": "object",
 				"additionalProperties": false
@@ -545,8 +756,7 @@
 					"companyLocationId",
 					"pooverriddenById",
 					"type",
-					"emailHistory",
-					"bouncedEmailFlag"
+					"emailHistory"
 				],
 				"type": "object",
 				"additionalProperties": false
@@ -859,6 +1069,226 @@
 						}
 					}
 				}
+			}
+		},
+		"/job-location": {
+			"post": {
+				"operationId": "AddJobLocation",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"summary": "Create Job Location",
+				"tags": [
+					"JobLocation"
+				],
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ICreatedJobLocation"
+							}
+						}
+					}
+				}
+			},
+			"get": {
+				"operationId": "GetJobLocation",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"summary": "Get All and Get filter Job Location",
+				"tags": [
+					"JobLocation"
+				],
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": [
+					{
+						"description": "ID of the Job Location",
+						"in": "query",
+						"name": "id",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "customerId",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "companyId",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "isActive",
+						"required": false,
+						"schema": {}
+					}
+				]
+			}
+		},
+		"/job-location/reset-quick-book": {
+			"put": {
+				"operationId": "UpdateResetQbJobLocation",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"summary": "Update Job Location by ID",
+				"tags": [
+					"JobLocation"
+				],
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"properties": {
+									"companyId": {
+										"type": "number",
+										"format": "double"
+									}
+								},
+								"required": [
+									"companyId"
+								],
+								"type": "object"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/job-location/{id}": {
+			"put": {
+				"operationId": "UpdateJobLocation",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"summary": "Update Job Location by ID",
+				"tags": [
+					"JobLocation"
+				],
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": [
+					{
+						"description": "ID of the Job Location",
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/IUpdateJobLocation"
+							}
+						}
+					}
+				}
+			},
+			"delete": {
+				"operationId": "DeleteJobLocation",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					},
+					"404": {
+						"description": "Data Not Found"
+					}
+				},
+				"summary": "Delete Job Location by ID",
+				"tags": [
+					"JobLocation"
+				],
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": [
+					{
+						"description": "ID of the Job Location",
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					}
+				]
 			}
 		},
 		"/jobs/{id}": {
