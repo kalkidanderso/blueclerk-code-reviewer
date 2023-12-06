@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { Status } from "../../common/constants"
 import { JobReports } from "../../models/v3/jobReports"
-import moment from 'moment'; // 假设使用 moment.js 处理日期
+import moment from 'moment'; 
 
 const prisma = new PrismaClient();
 
@@ -350,9 +350,6 @@ export const sendJobReport = async (req: Request, res: Response) => {
 
         if (report) {
             const updateData = {
-                emailHistory: {
-                    // ... 更新 emailHistory 的逻辑
-                },
                 lastEmailSent: new Date()
             };
 
