@@ -234,6 +234,7 @@ model Invoice {
   updatedAt           DateTime           @updatedAt
   paymentcustomer     Paymentcustomer[]
   paymentvendors      Paymentvendor[]
+  JobReport           JobReport[]
 
   @@index([customerPO])
   @@index([vendorId])
@@ -709,6 +710,8 @@ model Company {
   contractorContracts           Contract[]             @relation("contractContractor")
   tags                          Tag[]
   customerContract              CustomerContract[]
+  jobReportsCompany             JobReport[]            @relation("jobReportCompany")
+  jobReportsContractor          JobReport[]            @relation("jobReportContractor")
   Items                         Items[]
   JobCosting                    JobCosting[]
   Notification                  Notification[]
@@ -853,6 +856,11 @@ model CustomerContract {
   inactiveBy    String?
 }
 
+model CustomerEquipment {
+  id   Int    @id @default(autoincrement())
+  // TODO COMPLETE
+  Scan Scan[]
+}
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
@@ -1134,6 +1142,8 @@ model Job {
   jobrequest     Jobrequest[]
   invoice        Invoice[]
   paymentvendors Paymentvendor[]
+  JobReport      JobReport[]
+  Scan           Scan[]
 
   @@index([employeeType])
   @@index([image])
@@ -1171,6 +1181,28 @@ model JobCosting {
   jobTasks     JobTask[]
   itemCostings ItemCosting[]
   customer     Customer[]
+}
+
+model JobReport {
+  id             Int             @id @default(autoincrement())
+  job            Job             @relation(fields: [jobId], references: [id])
+  jobId          Int
+  scans          Scan[]
+  customerName   String
+  technicianName String
+  jobDate        DateTime
+  purchaseOrders PurchaseOrder[]
+  company        Company         @relation("jobReportCompany", fields: [companyId], references: [id])
+  companyId      Int
+  contractor     Company         @relation("jobReportContractor", fields: [contractorId], references: [id])
+  contractorId   Int
+  emailHistory   Json[]
+  lastEmailSent  DateTime
+  createdAt      DateTime        @default(now())
+  invoiceCreated Boolean
+  invoiceVoid    Boolean
+  invoice        Invoice         @relation(fields: [invoiceId], references: [id])
+  invoiceId      Int
 }
 
 model JobType {
@@ -1258,6 +1290,12 @@ model PriceTier {
   customer  Customer[]
 }
 
+model PurchaseOrder {
+  id          Int        @id @default(autoincrement())
+  JobReport   JobReport? @relation(fields: [jobReportId], references: [id])
+  jobReportId Int?
+}
+
 model SaleTax {
   id            Int      @id @default(autoincrement())
   alternativeId String?  @unique
@@ -1270,6 +1308,22 @@ model SaleTax {
 
   jobCharges JobCharges[]
   jobs       Job[]
+}
+
+model Scan {
+  id          Int               @id @default(autoincrement())
+  job         Job               @relation(fields: [jobId], references: [id])
+  jobId       Int
+  equipment   CustomerEquipment @relation(fields: [equipmentId], references: [id])
+  equipmentId Int
+  tag         Tag               @relation(fields: [tagId], references: [id])
+  tagId       Int
+  user        User              @relation(fields: [userId], references: [id])
+  userId      Int
+  comment     String
+  timeOfScan  DateTime
+  JobReport   JobReport?        @relation(fields: [jobReportId], references: [id])
+  jobReportId Int?
 }
 
 model Session {
@@ -1310,6 +1364,7 @@ model Tag {
   createdById   Int
   createdBy     User        @relation(fields: [createdById], references: [id])
   createdAt     DateTime    @default(now())
+  Scan          Scan[]
 }
 
 model UserAuth {
@@ -1409,28 +1464,5 @@ model User {
   contractsFinished             Contract[]               @relation("contractFinishedBy")
   tagsCreated                   Tag[]
   company                       Company[]
-}
-
-model JobReport {
-    id               String      @id @default(auto())
-    job              String      @relation(fields: [jobId], references: [id])
-    jobId            String
-    scans            Scan[]      @relation(fields: [scanIds], references: [id])
-    scanIds          String[]
-    customerName     String
-    technicianName   String
-    jobDate          DateTime
-    purchaseOrders   PurchaseOrder[] @relation(fields: [purchaseOrderIds], references: [id])
-    purchaseOrderIds String[]
-    company          String      @relation(fields: [companyId], references: [id])
-    companyId        String
-    contractor       String      @relation(fields: [contractorId], references: [id])
-    contractorId     String
-    emailHistory     EmailHistory[]
-    lastEmailSent    DateTime
-    createdAt        DateTime    @default(now())
-    invoiceCreated   Boolean
-    invoiceVoid      Boolean
-    invoice          String      @relation(fields: [invoiceId], references: [id])
-    invoiceId        String
+  Scan                          Scan[]
 }

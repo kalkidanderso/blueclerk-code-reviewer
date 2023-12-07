@@ -1,0 +1,5 @@
+model CustomerEquipment {
+  id   Int    @id @default(autoincrement())
+  // TODO COMPLETE
+  Scan Scan[]
+}
