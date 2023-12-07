@@ -11,7 +11,7 @@ model JobReport {
   companyId      Int
   contractor     Company         @relation("jobReportContractor", fields: [contractorId], references: [id])
   contractorId   Int
-  emailHistory   Json[]
+  emailHistory   Json
   lastEmailSent  DateTime
   createdAt      DateTime        @default(now())
   invoiceCreated Boolean

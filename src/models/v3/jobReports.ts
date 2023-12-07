@@ -1,8 +1,8 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import { ICreateJobReportsInput } from "src/types/v3/jobReports";
 
 export class JobReports {
-    constructor(private readonly prisma: PrismaClient['jobReports']) {}
+    constructor(private readonly prisma: PrismaClient['jobReport']) {}
 
     async create({
         jobId,
@@ -24,19 +24,23 @@ export class JobReports {
             return await this.prisma.create({
                 data: {
                     jobId,
-                    scans: { connect: scanIds.map(id => ({ id })) },
                     customerName,
                     technicianName,
                     jobDate,
-                    purchaseOrders: { connect: purchaseOrderIds.map(id => ({ id })) },
                     companyId,
                     contractorId,
-                    emailHistory,
+                    emailHistory: emailHistory as unknown as Prisma.JsonArray,
                     lastEmailSent,
                     createdAt,
                     invoiceCreated,
                     invoiceVoid,
-                    invoice: invoiceId ? { connect: { id: invoiceId } } : undefined
+                    invoiceId,
+                    scans: {
+                        connect: scanIds.map(id => ({ id }))
+                    },
+                    purchaseOrders: {
+                        connect: purchaseOrderIds.map(id => ({ id }))
+                    }
                 }
             });
         } catch (err) {
@@ -45,7 +49,7 @@ export class JobReports {
     }
 
     // Additional methods for update, find, delete, etc. similar to HomeOwners class
-    async updateById(id: string, {
+    async updateById(id: number, {
         jobId,
         scanIds,
         customerName,
@@ -66,19 +70,23 @@ export class JobReports {
                 where: { id },
                 data: {
                     jobId,
-                    scans: { connect: scanIds.map(id => ({ id })) },
                     customerName,
                     technicianName,
                     jobDate,
-                    purchaseOrders: { connect: purchaseOrderIds.map(id => ({ id })) },
                     companyId,
                     contractorId,
-                    emailHistory,
+                    emailHistory: emailHistory as unknown as Prisma.JsonArray,
                     lastEmailSent,
                     createdAt,
                     invoiceCreated,
                     invoiceVoid,
-                    invoice: invoiceId ? { connect: { id: invoiceId } } : undefined
+                    invoiceId,
+                    scans: {
+                        connect: scanIds.map(id => ({ id }))
+                    },
+                    purchaseOrders: {
+                        connect: purchaseOrderIds.map(id => ({ id }))
+                    }
                 }
             });
         } catch (err) {
@@ -108,7 +116,7 @@ export class JobReports {
         });
     }
 
-    async findById(id: string): Promise<any> {
+    async findById(id: number): Promise<any> {
         return await this.prisma.findUnique({
             where: { id },
             select: {
@@ -130,7 +138,7 @@ export class JobReports {
         });
     }
 
-    async deleteById(id: string): Promise<any> {
+    async deleteById(id: number): Promise<any> {
     return await this.prisma.delete({
         where: { id }
     });
