@@ -346,20 +346,20 @@ model Jobrequest {
 }
 
 model Jobsite {
-  id            Int         @id @default(autoincrement())
-  alternativeId String      @default(cuid())
+  id            Int              @id @default(autoincrement())
+  alternativeId String           @default(cuid())
   name          String?
   location      Json?
-  isActive      Boolean?    @default(true)
+  isActive      Boolean?         @default(true)
   address       Json?
-  jobLocation   Joblocation @relation(fields: [locationId], references: [id])
+  jobLocation   Joblocation      @relation(fields: [locationId], references: [id])
   locationId    Int
-  customer      Customer?   @relation(fields: [customerId], references: [id])
+  customer      Customer?        @relation(fields: [customerId], references: [id])
   customerId    Int?
-  homeOwner     HomeOwners?
-
-  tickets     Servicetickets[] @relation("jobsite")
-  homeTickets Servicetickets[] @relation("homejobsite")
+  homeOwnerId   Int?
+  homeOwner     HomeOwners?      @relation("jobsiteHomeOwner", fields: [homeOwnerId], references: [id])
+  tickets       Servicetickets[] @relation("jobsite")
+  homeTickets   Servicetickets[] @relation("homejobsite")
 
   invoice Invoice[]
 
@@ -367,6 +367,7 @@ model Jobsite {
   homeJobs   Job[]
   jobs       Job[]        @relation("jobJobsite")
   tags       Tag[]
+  HomeOwners HomeOwners?
 
   @@index([isActive])
   @@index([id, isActive])
@@ -902,6 +903,7 @@ model HomeOwners {
   addressId      Int              @unique
   servicetickets Servicetickets[]
   jobs           Job[]
+  jobSites       Jobsite[]        @relation("jobsiteHomeOwner")
 }
 
 model Industry {

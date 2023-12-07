@@ -9,8 +9,8 @@ model Jobsite {
     locationId    Int
     customer      Customer?   @relation(fields: [customerId], references: [id])
     customerId    Int?
-    homeOwner     HomeOwners?
-
+    homeOwnerId   Int?
+    homeOwner     HomeOwners? @relation("jobsiteHomeOwner", fields: [homeOwnerId], references: [id])
     tickets     Servicetickets[] @relation("jobsite")
     homeTickets Servicetickets[] @relation("homejobsite")
 
