@@ -1,5 +1,5 @@
 import { Prisma, PrismaClient } from "@prisma/client";
-import { IJobLocation, ICreatedJobLocation, IUpdateModelJobLocation } from "../../types/v3/jobLocation";
+import { ICreatedJobLocation, IUpdateModelJobLocation } from "../../types/v3/jobLocation";
 import { DefaultArgs } from "@prisma/client/runtime";
 export class JobLocations {
     constructor(private readonly prisma: PrismaClient['joblocation']) {}
@@ -17,7 +17,7 @@ export class JobLocations {
         inactiveById,
         quickbookId,
     } : ICreatedJobLocation) : Promise<any> {
-        return this.prisma.create({
+        return await this.prisma.create({
             data: {
                 alternativeId,
                 name,
@@ -49,7 +49,7 @@ export class JobLocations {
         inactiveById,
         quickbookId,
     } : IUpdateModelJobLocation) : Promise<any> {
-        return this.prisma.update({
+        return await this.prisma.update({
             where: { id }, 
             data: {
                 alternativeId,
@@ -67,13 +67,13 @@ export class JobLocations {
             }
         });
     }
-    async findById({id, select} : {id: number, select?: Prisma.JoblocationSelect<DefaultArgs>}) : Promise<IJobLocation> {
+    async findById({id, select} : {id: number, select?: Prisma.JoblocationSelect<DefaultArgs>}) : Promise<any> {
         return await this.prisma.findUnique({
             where: { id },
             select: select
         })
     }
-    async update({id, data} : {id: number, data: object}) : Promise<IJobLocation> {
+    async update({id, data} : {id: number, data: object}) : Promise<any> {
         return await this.prisma.update({
             where: { id },
             data: data

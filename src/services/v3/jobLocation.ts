@@ -4,9 +4,10 @@ import { Status } from '../../common/constants';
 import { ICreatedJobLocation, IUpdateJobLocation } from "../../types/v3/jobLocation";
 
 const prisma = new PrismaClient();
-const jobLocation = new JobLocations(prisma.joblocation);
 
 export class JobLocationService {
+    private jobLocation = new JobLocations(prisma.joblocation);
+
     async createJobLocation({
         alternativeId,
         name,
@@ -26,10 +27,10 @@ export class JobLocationService {
         }
 
         if (!inputCustomerId) {
-            throw new Error("CustomerId must be provided");
+            throw new Error("CustomerId must be provided.");
         }
         
-        const newJobLocation =  await jobLocation.create({
+        const newJobLocation =  await this.jobLocation.create({
             alternativeId,
             name,
             contacts,
@@ -51,7 +52,7 @@ export class JobLocationService {
     }
 
     async updateQbJobLocation(companyId :number) : Promise<any> {
-        const data = await jobLocation.updateResetQb(companyId);
+        const data = await this.jobLocation.updateResetQb(companyId);
         return { status: Status.Success, data: data } 
     }
 
@@ -74,10 +75,10 @@ export class JobLocationService {
         }
 
         if (!inputCustomerId) {
-            throw new Error("CustomerId must be provided");
+            throw new Error("CustomerId must be provided.");
         }
         
-        const newJobLocation =  await jobLocation.updateById({
+        const newJobLocation =  await this.jobLocation.updateById({
             id,
             alternativeId,
             name,
@@ -100,7 +101,7 @@ export class JobLocationService {
     }
     
     async getLocationById(id:number): Promise<any> {
-        const foundJobLocation = await jobLocation.findById({
+        const foundJobLocation = await this.jobLocation.findById({
             id: id,
             select: {id: true, customer: true}
         });
@@ -149,12 +150,12 @@ export class JobLocationService {
                 query;
         }
 
-        const data = await jobLocation.find(query);
+        const data = await this.jobLocation.find(query);
         return data;
     }
 
     async deleteJobLocationById(id:number) : Promise<any> {
-        const data = await jobLocation.deleteById(id);
+        const data = await this.jobLocation.deleteById(id);
         return {
             status: Status.Success,
             data: data
