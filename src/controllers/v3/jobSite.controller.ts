@@ -52,7 +52,7 @@ export class JobSiteController extends Controller {
         @Request() req: RequestExpress,
         @Path() id: number,
         @Body() params: IUpdateJobSiteArgs
-    ) : Promise<string> {
+    ) : Promise<any> {
         const jobSiteService = new JobSiteService();
         return jobSiteService.updateJobSite({
             id,
@@ -69,7 +69,7 @@ export class JobSiteController extends Controller {
     public async deleteJobSite(
         @Request() req: RequestExpress,
         @Path() id: number
-    ) : Promise<string> {
+    ) : Promise<any> {
         const jobSiteService = new JobSiteService();
         return jobSiteService.deleteJobSite(id)
     }

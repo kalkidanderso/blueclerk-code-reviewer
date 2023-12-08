@@ -1,7 +1,8 @@
 import { JobSiteService } from '../../../services/v3/jobSites'
 import { JobSites } from '../../../models/v3/jobSites';
 import { PrismaClient } from "@prisma/client";
-// import { IServiceTicketInput, ICreateServiceTicketInput, IUpdateServiceTicketInput } from "../../../types/v3/jobSites"
+import { JobLocations } from '../../../models/v3/jobLocations';
+
 let myJobSiteService: JobSiteService
 let mockPrisma = {
     create: jest.fn(),
@@ -13,84 +14,148 @@ let mockPrisma = {
 
 let mockJobSiteModel: jest.Mocked<JobSites> & {
     create: any,
-    updateResetQb: any,
-    updateById: any,
+    update: any,
     findById: any,
     find: any,
     deleteById: any,
 } = new JobSites(mockPrisma as any) as any;
 
+let mockJobLocationModel: jest.Mocked<JobLocations> & {
+    create: any,
+    updateResetQb: any,
+    updateById: any,
+    findById: any,
+    find: any,
+    deleteById: any,
+} = new JobLocations(mockPrisma as any) as any;
+
+const input = {
+    alternativeId: "jobSiteServiceCreate",
+    name: "test",
+    isActive: true,
+    location: {
+        long: "test",
+        lat: "test"
+    },
+    address: "test",
+    locationId: 9999992,
+    customerId: 9999992,
+    homeOwnerId: 9999992
+}
+
 beforeAll(async()=>{
     myJobSiteService = new JobSiteService()
     myJobSiteService["jobSites"] = mockJobSiteModel;
+    myJobSiteService["jobLocations"] = mockJobLocationModel;
 })
+
 afterAll(async()=>{
     jest.clearAllMocks();
 })
-const jobSite = new JobSiteService();
-describe('JobSites', () => {
+
+describe('Create JobSites', () => {
     it('Should create job site', async () => {
-        const input = {
-            alternativeId: "jobSiteServiceCreate",
-            name: "test",
-            isActive: true,
-            location: {
-                long: "test",
-                lat: "test"
-            },
-            address: "test",
-            locationId: 9999992,
-            customerId: 9999992,
-            homeOwnerId: 9999992
-        }
-        const createJobSite = await jobSite.createJobSite(input);
+        mockJobSiteModel.create = jest.fn(() => input)
+        mockJobLocationModel.findById = jest.fn(() => ({customerId: 23}))
+        const createJobSite = await myJobSiteService.createJobSite(input);
         expect(createJobSite.alternativeId).toEqual(input.alternativeId);
         expect(createJobSite.name).toEqual(input.name);
-        expect(createJobSite.location).toEqual("{\"coordinates\":[\"test\",\"test\"]}");
         expect(createJobSite.isActive).toEqual(input.isActive);
+        expect(mockJobSiteModel.create).toHaveBeenCalled();
+        expect(mockJobLocationModel.findById).toHaveBeenCalled();
     })
+
     it('Should error missing param create job site', async () => {
-        const input = {
-            alternativeId: "jobSiteServiceCreate",
-            name: "test",
-            isActive: true,
-            location: {
-                long: "test",
-                lat: "test"
-            },
-            address: "test",
-            locationId: 0,
-            customerId: 9999992,
-            homeOwnerId: 9999992
-        }
         try {
-            await jobSite.createJobSite(input);
+            await myJobSiteService.createJobSite({
+                ...input,
+                locationId: undefined
+            });
+            fail();
         } catch (error) {
             expect(error).toBeInstanceOf(Error);
+            expect(mockJobSiteModel.create).toHaveBeenCalledTimes(0);
+            expect(error.message).toEqual("Parameters are missing: locationId")
         }
     })
-    it('Should error create job site', async () => {
-        const input = {
-            alternativeId: "jobSiteServiceCreate",
-            name: "test",
-            isActive: true,
-            location: {
-                long: "test",
-                lat: "test"
-            },
-            address: "test",
-            locationId: 999999092,
-            customerId: 9999992,
-            homeOwnerId: 9999992
-        }
+
+    it('Should error on non-existing job location', async () => {
         try {
-            await jobSite.createJobSite(input);
+            mockJobLocationModel.findById = jest.fn(() => null)
+            await myJobSiteService.createJobSite(input);
+            fail();
         } catch (error) {
             expect(error).toBeInstanceOf(Error);
+            expect(mockJobSiteModel.create).toHaveBeenCalledTimes(0);
+            expect(error.message).toEqual("Subdivision not found.")
         }
     })
+})
+
+describe('Update JobSites', () => {
+    it('Should update job site', async () => {
+        mockJobSiteModel.update = jest.fn(() => input)
+        mockJobSiteModel.findById = jest.fn(() => input)
+        mockJobLocationModel.findById = jest.fn(() => ({customerId: 23}))
+        const updatedJobSite = await myJobSiteService.updateJobSite({id:1, ...input});
+        expect(updatedJobSite.alternativeId).toEqual(input.alternativeId);
+        expect(updatedJobSite.name).toEqual(input.name);
+        expect(updatedJobSite.isActive).toEqual(input.isActive);
+        expect(mockJobSiteModel.update).toHaveBeenCalled();
+        expect(mockJobSiteModel.findById).toHaveBeenCalled();
+        expect(mockJobLocationModel.findById).toHaveBeenCalled();
+    })
+
+    it('Should error missing param create job site', async () => {
+        try {
+            await myJobSiteService.updateJobSite({
+                id: 12,
+                ...input,
+                locationId: undefined
+            });
+        } catch (error) {
+            expect(error).toBeInstanceOf(Error);
+            expect(mockJobSiteModel.update).toHaveBeenCalledTimes(0);
+            expect(error.message).toEqual("Parameters are missing: locationId")
+        }
+    })
+
+    it('Should error on non-existing job location', async () => {
+        mockJobSiteModel.findById = jest.fn(() => input)
+        try {
+            mockJobLocationModel.findById = jest.fn(() => null)
+            await myJobSiteService.updateJobSite({
+                id: 12,
+                ...input
+            });
+        } catch (error) {
+            expect(error).toBeInstanceOf(Error);
+            expect(mockJobSiteModel.update).toHaveBeenCalledTimes(0);
+            expect(error.message).toEqual("Subdivision not found.")
+        }
+    })
+
+    it('Should error on non-existing job location', async () => {
+        mockJobSiteModel.findById = jest.fn(() => null)
+        try {
+            mockJobLocationModel.findById = jest.fn(() => null)
+            await myJobSiteService.updateJobSite({
+                id: 12,
+                ...input
+            });
+        } catch (error) {
+            expect(error).toBeInstanceOf(Error);
+            expect(mockJobSiteModel.update).toHaveBeenCalledTimes(0);
+            expect(error.message).toEqual("JobSite not found.")
+        }
+    })
+})
+
+describe('Get JobSites by ID', () => {
+
     it('Should get job site input id', async () => {
-        const getJobSite = await jobSite.getJobSite({
+        mockJobSiteModel.find = jest.fn(() => [input]);
+        const getJobSite = await myJobSiteService.getJobSite({
             id:9999992,
             customerId: 9999992,
             locationId: 9999992,
@@ -103,9 +168,12 @@ describe('JobSites', () => {
             expect(jobSite.location).toBeDefined();
             expect(jobSite.isActive).toBeDefined();
         })
+        expect(mockJobSiteModel.find).toHaveBeenCalled();
     })
+
     it('Should get job site input customerId & locationId', async () => {
-        const getJobSite = await jobSite.getJobSite({
+        mockJobSiteModel.find = jest.fn(() => [input]);
+        const getJobSite = await myJobSiteService.getJobSite({
             id:null,
             customerId: 9999992,
             locationId: 9999992,
@@ -118,9 +186,12 @@ describe('JobSites', () => {
             expect(jobSite.location).toBeDefined();
             expect(jobSite.isActive).toBeDefined();
         })
+        expect(mockJobSiteModel.find).toHaveBeenCalled();
     })
+
     it('Should get job site input homeOwnerId & locationId', async () => {
-        const getJobSite = await jobSite.getJobSite({
+        mockJobSiteModel.find = jest.fn(() => [input]);
+        const getJobSite = await myJobSiteService.getJobSite({
             id:null,
             customerId: null,
             locationId: 9999992,
@@ -133,9 +204,12 @@ describe('JobSites', () => {
             expect(jobSite.location).toBeDefined();
             expect(jobSite.isActive).toBeDefined();
         })
+        expect(mockJobSiteModel.find).toHaveBeenCalled();
     })
+
     it('Should get job site input customerId', async () => {
-        const getJobSite = await jobSite.getJobSite({
+        mockJobSiteModel.find = jest.fn(() => [input]);
+        const getJobSite = await myJobSiteService.getJobSite({
             id:null,
             customerId: 9999992,
             locationId: null,
@@ -148,9 +222,12 @@ describe('JobSites', () => {
             expect(jobSite.location).toBeDefined();
             expect(jobSite.isActive).toBeDefined();
         })
+        expect(mockJobSiteModel.find).toHaveBeenCalled();
     })
+
     it('Should get job site input customerId & homeOwnerId', async () => {
-        const getJobSite = await jobSite.getJobSite({
+        mockJobSiteModel.find = jest.fn(() => [input]);
+        const getJobSite = await myJobSiteService.getJobSite({
             id:null,
             customerId: 9999992,
             locationId: null,
@@ -163,9 +240,12 @@ describe('JobSites', () => {
             expect(jobSite.location).toBeDefined();
             expect(jobSite.isActive).toBeDefined();
         })
+        expect(mockJobSiteModel.find).toHaveBeenCalled();
     })
+
     it('Should get job site input homeOwnerId', async () => {
-        const getJobSite = await jobSite.getJobSite({
+        mockJobSiteModel.find = jest.fn(() => [input]);
+        const getJobSite = await myJobSiteService.getJobSite({
             id:null,
             customerId: null,
             locationId: null,
@@ -178,9 +258,12 @@ describe('JobSites', () => {
             expect(jobSite.location).toBeDefined();
             expect(jobSite.isActive).toBeDefined();
         })
+        expect(mockJobSiteModel.find).toHaveBeenCalled();
     })
+
     it('Should get job site input homeOwnerId', async () => {
-        const getJobSite = await jobSite.getJobSite({
+        mockJobSiteModel.find = jest.fn(() => [input]);
+        const getJobSite = await myJobSiteService.getJobSite({
             id:null,
             customerId: null,
             locationId: 9999992,
@@ -193,98 +276,15 @@ describe('JobSites', () => {
             expect(jobSite.location).toBeDefined();
             expect(jobSite.isActive).toBeDefined();
         })
+        expect(mockJobSiteModel.find).toHaveBeenCalled();
     })
-    it('Should update job site by id', async () => {
-        const input = {
-            id: 9999992,
-            alternativeId: "jobSiteServiceCreate" ,
-            name: "asd",
-            isActive: true,
-            location: {
-                long: "asd",
-                lat: "asd"
-            },
-            address: "asd",
-            locationId: 9999992,
-            customerId: 9999992,
-            homeOwnerId: 9999992
-        }
-        await jobSite.updateJobSite(input);
-    })
-    it('Should error missing param update job site', async () => {
-        const input = {
-            id: 9999992,
-            alternativeId: "jobSiteServiceCreate",
-            name: "test",
-            isActive: true,
-            location: {
-                long: "test",
-                lat: "test"
-            },
-            address: "test",
-            locationId: 0,
-            customerId: 9999992,
-            homeOwnerId: 9999992
-        }
-        try {
-            await jobSite.updateJobSite(input);
-        } catch (error) {
-            expect(error).toBeInstanceOf(Error);
-        }
-    })
-    it('Should error update job site', async () => {
-        const input = {
-            id: 9999992,
-            alternativeId: "jobSiteServiceCreate",
-            name: "test",
-            isActive: true,
-            location: {
-                long: "test",
-                lat: "test"
-            },
-            address: "test",
-            locationId: 999999092,
-            customerId: 9999992,
-            homeOwnerId: 9999992
-        }
-        try {
-            await jobSite.updateJobSite(input);
-        } catch (error) {
-            expect(error).toBeInstanceOf(Error);
-        }
-    })
-    it('Should error update job site when wrong id', async () => {
-        const input = {
-            id: 999999092,
-            alternativeId: "jobSiteServiceCreate",
-            name: "test",
-            isActive: true,
-            location: {
-                long: "test",
-                lat: "test"
-            },
-            address: "test",
-            locationId: 9999992,
-            customerId: 9999992,
-            homeOwnerId: 9999992
-        }
-        try {
-            await jobSite.updateJobSite(input);
-        } catch (error) {
-            expect(error).toBeInstanceOf(Error);
-        }
-    })
+})
+
+describe('Get JobSites by ID', () => {
+
     it('Should delete job site by id', async () => {
-        const prismaC = new PrismaClient();
-        await prismaC.homeOwners.deleteMany({where:{id:9999992}});
-        await jobSite.deleteJobSite(9999992);
+        mockJobSiteModel.deleteById = jest.fn(() => {input});
+        await myJobSiteService.deleteJobSite(9999992);
+        expect(mockJobSiteModel.deleteById).toHaveBeenCalled();
     })
-    // it('Should error when delete job site id not found', async () => {
-    //     try {
-    //         await jobSite.deleteById(9999992);
-    //     } catch (error) {
-    //         expect(error).toBeInstanceOf(Error);
-    //         expect(error.message).toContain('Record to delete does not exist.');
-    //     }
-    // })
 });

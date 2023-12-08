@@ -1,15 +1,15 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { JobSites } from "../../models/v3/jobSites";
-import { ICreateJobSiteInput, IJobSite, IUpdateJobSiteInput } from "../../types/v3/jobSites";
+import { ICreateJobSiteInput, IJobSite, IUpdateJobSiteInput, IGetJobSiteFilter } from "../../types/v3/jobSites";
 import { Messages } from "../../common/constants";
-import { IJobLocation } from "../../types/v3/jobLocation";
-import { JobLocationService } from "./jobLocation";
+import { JobLocations } from "../../models/v3/jobLocations";
 
 const prisma = new PrismaClient();
 
 export class JobSiteService {
 
     private jobSites = new JobSites(prisma.jobsite);
+    private jobLocations = new JobLocations(prisma.joblocation);
 
     async getJobSite({
         id,
@@ -17,13 +17,7 @@ export class JobSiteService {
         locationId,
         homeOwnerId,
         isActive
-    } : {
-        id?: number | null,
-        customerId?: number | null,
-        locationId?: number | null,
-        homeOwnerId?: number | null,
-        isActive?: boolean | string,
-    }) : Promise<any []> {
+    } : IGetJobSiteFilter) : Promise<any []> {
         let query: Prisma.JobsiteWhereInput;
         if (id) {
             query = { id: id }
@@ -63,17 +57,10 @@ export class JobSiteService {
         locationId,
         homeOwnerId
     } : ICreateJobSiteInput) : Promise<IJobSite> {
-        const missingParams = []
-        if (!locationId) missingParams.push('locationId')
-        const isMissingParams = missingParams.length > 0;
-        const jobLocations = new JobLocationService();
-        if (isMissingParams) {
-            const message = `${Messages.MissingParams}: ${missingParams.join(', ')}`;
-            throw new Error(message);
+        if (!locationId) {
+            throw new Error(`${Messages.MissingParams}: locationId`);
         }
-        let jobLocation: IJobLocation = undefined
-        jobLocation = await jobLocations.getLocationById(locationId);
-        
+        const jobLocation = await this.jobLocations.findById({id: locationId});
         if (!jobLocation) {
             throw new Error('Subdivision not found.');
         }
@@ -82,7 +69,7 @@ export class JobSiteService {
             coordinates: [location.long ?? '', location.lat ?? '']
         });
         const addresJosn: Prisma.JsonValue = JSON.stringify(address);
-        const jobSite = await this.jobSites.create({
+        return await this.jobSites.create({
             alternativeId,
             name,
             location: locationJson,
@@ -92,8 +79,8 @@ export class JobSiteService {
             customerId,
             homeOwnerId,
         })
-        return jobSite;
     }
+
     async updateJobSite({
         id,
         alternativeId,
@@ -103,22 +90,15 @@ export class JobSiteService {
         locationId,
         isActive,
         homeOwnerId
-    } : IUpdateJobSiteInput) : Promise<string> {
-        const missingParams = []
-        if (!id) missingParams.push('id')
-        if (!locationId) missingParams.push('locationId')
-        const isMissingParams = missingParams.length > 0
-        const jobLocations = new JobLocationService();
-        if (isMissingParams) {
-            const message = `${Messages.MissingParams}: ${missingParams.join(', ')}`;
-            throw new Error(message);
+    } : IUpdateJobSiteInput) : Promise<IJobSite> {
+        if (!locationId) {
+            throw new Error(`${Messages.MissingParams}: locationId`);
         }
         const jobSite = await this.jobSites.findById(id);
         if (!jobSite) {
-            throw new Error("JobSite not found");
+            throw new Error("JobSite not found.");
         }
-        let jobLocation: IJobLocation = null
-        jobLocation = await jobLocations.getLocationById(locationId);
+        const jobLocation = await this.jobLocations.findById({id: locationId})
         if (!jobLocation) {
             throw new Error('Subdivision not found.');
         }
@@ -134,7 +114,7 @@ export class JobSiteService {
             coordinates: [location.long ?? '', location.lat ?? '']
         });
         const addresJosn: Prisma.JsonValue = JSON.stringify(address);
-        await this.jobSites.update({
+        return await this.jobSites.update({
             id,
             alternativeId,
             name,
@@ -145,9 +125,9 @@ export class JobSiteService {
             customerId,
             homeOwnerId,
         });
-        return 'Job Address has been updated successfully.';
     }
-    async deleteJobSite(id:number): Promise<any> {
+
+    async deleteJobSite(id:number): Promise<IJobSite> {
         return await this.jobSites.deleteById(id);
     }
 }

@@ -33,7 +33,15 @@ export interface IUpdateJobSiteInput {
         long: string
     },
     address: any;
-    locationId: number;
+    locationId?: number;
     customerId: number;
     homeOwnerId: number;
+}
+
+export interface IGetJobSiteFilter {
+    id?: number | null,
+    customerId?: number | null,
+    locationId?: number | null,
+    homeOwnerId?: number | null,
+    isActive?: boolean | string,
 }
