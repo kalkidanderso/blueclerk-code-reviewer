@@ -9,12 +9,11 @@ model Joblocation {
     isActive      Boolean?
     customer      Customer    @relation(fields: [customerId], references: [id])
     customerId    Int
-    homeOwner     HomeOwners?
     company       Company     @relation(fields: [companyId], references: [id])
     companyId     Int
     inactiveAt    DateTime?
-    inactiveBy    User        @relation(fields: [inactiveById], references: [id])
-    inactiveById  Int
+    inactiveBy    User?       @relation(fields: [inactiveById], references: [id])
+    inactiveById  Int?
     quickbookId   String?
     createdAt     DateTime    @default(now())
     updatedAt     DateTime    @updatedAt
