@@ -453,6 +453,207 @@
 				"type": "object",
 				"additionalProperties": false
 			},
+			"IJobSite": {
+				"properties": {
+					"id": {
+						"type": "number",
+						"format": "double"
+					},
+					"alternativeId": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"location": {},
+					"isActive": {
+						"type": "boolean"
+					},
+					"address": {},
+					"locationId": {
+						"type": "number",
+						"format": "double"
+					},
+					"customerId": {
+						"type": "number",
+						"format": "double"
+					},
+					"homeOwnerId": {
+						"type": "number",
+						"format": "double"
+					}
+				},
+				"required": [
+					"id",
+					"alternativeId",
+					"name",
+					"location",
+					"isActive",
+					"address",
+					"locationId",
+					"customerId",
+					"homeOwnerId"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"ICreateJobSiteInput": {
+				"properties": {
+					"alternativeId": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"isActive": {
+						"type": "boolean"
+					},
+					"location": {
+						"properties": {
+							"long": {
+								"type": "string"
+							},
+							"lat": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"long",
+							"lat"
+						],
+						"type": "object"
+					},
+					"address": {},
+					"locationId": {
+						"type": "number",
+						"format": "double",
+						"nullable": true
+					},
+					"customerId": {
+						"type": "number",
+						"format": "double"
+					},
+					"homeOwnerId": {
+						"type": "number",
+						"format": "double"
+					}
+				},
+				"required": [
+					"alternativeId",
+					"name",
+					"isActive",
+					"location",
+					"address",
+					"customerId",
+					"homeOwnerId"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"Pick_IUpdateJobSiteInput.Exclude_keyofIUpdateJobSiteInput.id__": {
+				"properties": {
+					"alternativeId": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"isActive": {
+						"type": "boolean"
+					},
+					"location": {
+						"properties": {
+							"long": {
+								"type": "string"
+							},
+							"lat": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"long",
+							"lat"
+						],
+						"type": "object"
+					},
+					"address": {},
+					"locationId": {
+						"type": "number",
+						"format": "double"
+					},
+					"customerId": {
+						"type": "number",
+						"format": "double"
+					},
+					"homeOwnerId": {
+						"type": "number",
+						"format": "double"
+					}
+				},
+				"required": [
+					"alternativeId",
+					"name",
+					"isActive",
+					"location",
+					"address",
+					"customerId",
+					"homeOwnerId"
+				],
+				"type": "object",
+				"description": "From T, pick a set of properties whose keys are in the union K"
+			},
+			"IUpdateJobSiteArgs": {
+				"properties": {
+					"alternativeId": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"isActive": {
+						"type": "boolean"
+					},
+					"location": {
+						"properties": {
+							"long": {
+								"type": "string"
+							},
+							"lat": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"long",
+							"lat"
+						],
+						"type": "object"
+					},
+					"address": {},
+					"locationId": {
+						"type": "number",
+						"format": "double"
+					},
+					"customerId": {
+						"type": "number",
+						"format": "double"
+					},
+					"homeOwnerId": {
+						"type": "number",
+						"format": "double"
+					}
+				},
+				"required": [
+					"alternativeId",
+					"name",
+					"isActive",
+					"location",
+					"address",
+					"customerId",
+					"homeOwnerId"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
 			"ICreateServiceTicketInput": {
 				"properties": {
 					"userId": {
@@ -600,7 +801,8 @@
 					"companyLocationId",
 					"pooverriddenById",
 					"type",
-					"emailHistory"
+					"emailHistory",
+					"bouncedEmailFlag"
 				],
 				"type": "object",
 				"additionalProperties": false
@@ -756,7 +958,8 @@
 					"companyLocationId",
 					"pooverriddenById",
 					"type",
-					"emailHistory"
+					"emailHistory",
+					"bouncedEmailFlag"
 				],
 				"type": "object",
 				"additionalProperties": false
@@ -1360,6 +1563,198 @@
 						}
 					}
 				}
+			}
+		},
+		"/job-sites": {
+			"get": {
+				"operationId": "GetJobSite",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"items": {
+										"$ref": "#/components/schemas/IJobSite"
+									},
+									"type": "array"
+								}
+							}
+						}
+					}
+				},
+				"summary": "Get All and Get filter Job Site",
+				"tags": [
+					"JobSites"
+				],
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": [
+					{
+						"description": "ID of the Job Site",
+						"in": "query",
+						"name": "id",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "customerId",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "homeOwnerId",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "locationId",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "isActive",
+						"required": false,
+						"schema": {}
+					}
+				]
+			},
+			"post": {
+				"operationId": "AddJobSite",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/IJobSite"
+								}
+							}
+						}
+					}
+				},
+				"summary": "Create Job Site",
+				"tags": [
+					"JobSites"
+				],
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ICreateJobSiteInput"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/job-sites/{id}": {
+			"put": {
+				"operationId": "UpdateJobSite",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"summary": "Update Job Site by ID",
+				"tags": [
+					"JobSites"
+				],
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": [
+					{
+						"description": "ID of the Job Site",
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/IUpdateJobSiteArgs"
+							}
+						}
+					}
+				}
+			},
+			"delete": {
+				"operationId": "DeleteJobSite",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					},
+					"404": {
+						"description": "Data Not Found"
+					}
+				},
+				"summary": "Delete Job Site by ID",
+				"tags": [
+					"JobSites"
+				],
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": [
+					{
+						"description": "ID of the Job Site",
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					}
+				]
 			}
 		},
 		"/service-tickets": {

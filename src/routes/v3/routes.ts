@@ -9,6 +9,8 @@ import { JobLocationController } from './../../controllers/v3/jobLocation.contro
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { JobsController } from './../../controllers/v3/jobs/jobs.controller';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+import { JobSiteController } from './../../controllers/v3/jobSite.controller';
+// WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { GetServiceTicketsController } from './../../controllers/v3/serviceTickets.controller';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { UsersController } from './../../controllers/v3/users.controller';
@@ -146,6 +148,57 @@ const models: TsoaRoute.Models = {
         "additionalProperties": false,
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "IJobSite": {
+        "dataType": "refObject",
+        "properties": {
+            "id": {"dataType":"double","required":true},
+            "alternativeId": {"dataType":"string","required":true},
+            "name": {"dataType":"string","required":true},
+            "location": {"dataType":"any","required":true},
+            "isActive": {"dataType":"boolean","required":true},
+            "address": {"dataType":"any","required":true},
+            "locationId": {"dataType":"double","required":true},
+            "customerId": {"dataType":"double","required":true},
+            "homeOwnerId": {"dataType":"double","required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "ICreateJobSiteInput": {
+        "dataType": "refObject",
+        "properties": {
+            "alternativeId": {"dataType":"string","required":true},
+            "name": {"dataType":"string","required":true},
+            "isActive": {"dataType":"boolean","required":true},
+            "location": {"dataType":"nestedObjectLiteral","nestedProperties":{"long":{"dataType":"string","required":true},"lat":{"dataType":"string","required":true}},"required":true},
+            "address": {"dataType":"any","required":true},
+            "locationId": {"dataType":"union","subSchemas":[{"dataType":"double"},{"dataType":"enum","enums":[null]}]},
+            "customerId": {"dataType":"double","required":true},
+            "homeOwnerId": {"dataType":"double","required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "Pick_IUpdateJobSiteInput.Exclude_keyofIUpdateJobSiteInput.id__": {
+        "dataType": "refAlias",
+        "type": {"dataType":"nestedObjectLiteral","nestedProperties":{"alternativeId":{"dataType":"string","required":true},"name":{"dataType":"string","required":true},"isActive":{"dataType":"boolean","required":true},"location":{"dataType":"nestedObjectLiteral","nestedProperties":{"long":{"dataType":"string","required":true},"lat":{"dataType":"string","required":true}},"required":true},"address":{"dataType":"any","required":true},"locationId":{"dataType":"double"},"customerId":{"dataType":"double","required":true},"homeOwnerId":{"dataType":"double","required":true}},"validators":{}},
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "IUpdateJobSiteArgs": {
+        "dataType": "refObject",
+        "properties": {
+            "alternativeId": {"dataType":"string","required":true},
+            "name": {"dataType":"string","required":true},
+            "isActive": {"dataType":"boolean","required":true},
+            "location": {"dataType":"nestedObjectLiteral","nestedProperties":{"long":{"dataType":"string","required":true},"lat":{"dataType":"string","required":true}},"required":true},
+            "address": {"dataType":"any","required":true},
+            "locationId": {"dataType":"double"},
+            "customerId": {"dataType":"double","required":true},
+            "homeOwnerId": {"dataType":"double","required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "ICreateServiceTicketInput": {
         "dataType": "refObject",
         "properties": {
@@ -177,7 +230,7 @@ const models: TsoaRoute.Models = {
             "pooverriddenById": {"dataType":"double","required":true},
             "type": {"dataType":"union","subSchemas":[{"dataType":"enum","enums":["Ticket"]},{"dataType":"enum","enums":["PORequest"]},{"dataType":"enum","enums":["AllPORequest"]}],"required":true},
             "emailHistory": {"dataType":"array","array":{"dataType":"any"},"required":true},
-            "bouncedEmailFlag": {"dataType":"boolean"},
+            "bouncedEmailFlag": {"dataType":"boolean","required":true},
         },
         "additionalProperties": false,
     },
@@ -214,7 +267,7 @@ const models: TsoaRoute.Models = {
             "pooverriddenById": {"dataType":"double","required":true},
             "type": {"dataType":"union","subSchemas":[{"dataType":"enum","enums":["Ticket"]},{"dataType":"enum","enums":["PORequest"]},{"dataType":"enum","enums":["AllPORequest"]}],"required":true},
             "emailHistory": {"dataType":"array","array":{"dataType":"any"},"required":true},
-            "bouncedEmailFlag": {"dataType":"boolean"},
+            "bouncedEmailFlag": {"dataType":"boolean","required":true},
         },
         "additionalProperties": false,
     },
@@ -576,6 +629,119 @@ export function RegisterRoutes(app: express.Router) {
 
 
               const promise = controller.addJob.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.get('/api/v3/job-sites',
+            authenticateMiddleware([{"jwt":[]}]),
+            ...(fetchMiddlewares<RequestHandler>(JobSiteController)),
+            ...(fetchMiddlewares<RequestHandler>(JobSiteController.prototype.getJobSite)),
+
+            function JobSiteController_getJobSite(request: any, response: any, next: any) {
+            const args = {
+                    req: {"in":"request","name":"req","required":true,"dataType":"object"},
+                    id: {"in":"query","name":"id","dataType":"double"},
+                    customerId: {"in":"query","name":"customerId","dataType":"double"},
+                    homeOwnerId: {"in":"query","name":"homeOwnerId","dataType":"double"},
+                    locationId: {"in":"query","name":"locationId","dataType":"double"},
+                    isActive: {"in":"query","name":"isActive","dataType":"union","subSchemas":[{"dataType":"boolean"},{"dataType":"string"}]},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new JobSiteController();
+
+
+              const promise = controller.getJobSite.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.post('/api/v3/job-sites',
+            authenticateMiddleware([{"jwt":[]}]),
+            ...(fetchMiddlewares<RequestHandler>(JobSiteController)),
+            ...(fetchMiddlewares<RequestHandler>(JobSiteController.prototype.addJobSite)),
+
+            function JobSiteController_addJobSite(request: any, response: any, next: any) {
+            const args = {
+                    req: {"in":"request","name":"req","required":true,"dataType":"object"},
+                    params: {"in":"body","name":"params","required":true,"ref":"ICreateJobSiteInput"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new JobSiteController();
+
+
+              const promise = controller.addJobSite.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.put('/api/v3/job-sites/:id',
+            authenticateMiddleware([{"jwt":[]}]),
+            ...(fetchMiddlewares<RequestHandler>(JobSiteController)),
+            ...(fetchMiddlewares<RequestHandler>(JobSiteController.prototype.updateJobSite)),
+
+            function JobSiteController_updateJobSite(request: any, response: any, next: any) {
+            const args = {
+                    req: {"in":"request","name":"req","required":true,"dataType":"object"},
+                    id: {"in":"path","name":"id","required":true,"dataType":"double"},
+                    params: {"in":"body","name":"params","required":true,"ref":"IUpdateJobSiteArgs"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new JobSiteController();
+
+
+              const promise = controller.updateJobSite.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.delete('/api/v3/job-sites/:id',
+            authenticateMiddleware([{"jwt":[]}]),
+            ...(fetchMiddlewares<RequestHandler>(JobSiteController)),
+            ...(fetchMiddlewares<RequestHandler>(JobSiteController.prototype.deleteJobSite)),
+
+            function JobSiteController_deleteJobSite(request: any, response: any, next: any) {
+            const args = {
+                    req: {"in":"request","name":"req","required":true,"dataType":"object"},
+                    id: {"in":"path","name":"id","required":true,"dataType":"double"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new JobSiteController();
+
+
+              const promise = controller.deleteJobSite.apply(controller, validatedArgs as any);
               promiseHandler(controller, promise, response, undefined, next);
             } catch (err) {
                 return next(err);

@@ -1,6 +1,7 @@
 import advancePayment from "./advancePayment";
 import serviceTicket from "./serviceTicket";
 import jobLocation from "./jobLocation";
+import jobSites from "./jobSites";
 
 const app = require("../../../server");
 import { PrismaClient } from "@prisma/client";
@@ -11,6 +12,8 @@ const cleanupDatabase = async () => {
     await prisma.emailDefault.deleteMany();
     await prisma.servicetickets.deleteMany({where:{alternativeId:"createControllerServiceTicket"}});
     await prisma.servicetickets.deleteMany({where:{alternativeId:"updateControllerServiceTicket"}});
+    await prisma.jobsite.deleteMany({where:{alternativeId:"jobSiteControllerCreate"}});
+    await prisma.jobsite.deleteMany({where:{alternativeId:"jobSiteControllerUpdate"}});
     await prisma.joblocation.deleteMany({where:{alternativeId:"createControllerJobLocation"}});
     await prisma.joblocation.deleteMany({where:{alternativeId:"updateControllerJobLocation"}});
     await prisma.companyLocation.deleteMany({where:{id:2}});
@@ -411,6 +414,8 @@ const unitTest = () => {
     serviceTicket(app),
     advancePayment(app),
     jobLocation(app)
+    jobLocation(app),
+    jobSites(app)
 }
 
 unitTest()

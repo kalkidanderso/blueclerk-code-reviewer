@@ -8,4 +8,5 @@ model HomeOwners {
     addressId      Int              @unique
     servicetickets Servicetickets[]
     jobs           Job[]
+    jobSites       Jobsite[]     @relation("jobsiteHomeOwner")
 }
