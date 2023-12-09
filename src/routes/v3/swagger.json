@@ -596,7 +596,6 @@
 					"isActive",
 					"location",
 					"address",
-					"locationId",
 					"customerId",
 					"homeOwnerId"
 				],
@@ -649,7 +648,6 @@
 					"isActive",
 					"location",
 					"address",
-					"locationId",
 					"customerId",
 					"homeOwnerId"
 				],
@@ -1684,9 +1682,7 @@
 						"description": "Ok",
 						"content": {
 							"application/json": {
-								"schema": {
-									"type": "string"
-								}
+								"schema": {}
 							}
 						}
 					}
@@ -1730,9 +1726,7 @@
 						"description": "Ok",
 						"content": {
 							"application/json": {
-								"schema": {
-									"type": "string"
-								}
+								"schema": {}
 							}
 						}
 					},
