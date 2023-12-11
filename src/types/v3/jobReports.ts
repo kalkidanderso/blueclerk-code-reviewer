@@ -5,6 +5,7 @@ export interface ICreateJobReportsInput {
     technicianName?: string;
     jobDate?: Date;
     purchaseOrderIds?: number[]; 
+    company?: string;
     companyId: number; 
     contractorId: number; 
     emailHistory?: {
@@ -26,6 +27,7 @@ export interface IFilterJobReportsInput {
     jobDateFrom?: Date; 
     jobDateTo?: Date; 
     purchaseOrderId?: number;
+    company?: string;
     companyId?: number;
     contractorId?: number;
     lastEmailSentFrom?: Date; 
