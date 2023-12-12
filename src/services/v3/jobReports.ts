@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { Company, PrismaClient } from '@prisma/client';
 import { Status, JobStatus } from "../../common/constants"
 import { JobReports } from "../../models/v3/jobReports"
 import moment from 'moment'; 
@@ -24,9 +24,9 @@ class JobReportServices {
             }
         });
     
-        // If no job is found, return null
+        // If no job is found, return error message
         if (!job) {
-            return null; // TODO THROW AN ERROR
+            return { status: Status.Error, message: 'Job not found!' }; // TODO THROW AN ERROR
         }
     
         // Delete all old reports related to this job
@@ -46,7 +46,7 @@ class JobReportServices {
         });
     
         // Return the created report
-        return jobReport; // TODO RETURN OBJECT WITH STATUS AND MESSAGE
+        return { status: Status.Success, message: 'Job report created successfully' };
     }
     
 
@@ -109,37 +109,36 @@ class JobReportServices {
     }
     
 
-    async deleteJobReportById(jobReportId: number, companyId: number): Promise<{ status: string, message: string }> {
+    async deleteJobReportById(jobReportId: number, companyId: number): Promise<{ status: number, message: string }> {
         try {
             //Perform delete operation
             const deleteResult = await jobReportsModel.deleteById(jobReportId, companyId)
     
             // Check if any reports have been deleted
             if (deleteResult.count === 0) {
-                return { status: 'Error', message: 'No report found or you do not have permission to delete this report.' };
+                return { status: Status.Error, message: 'No report found or you do not have permission to delete this report.' };
             }   // TODO CHANGE STATUS
     
-            return { status: 'Success', message: 'Job Report has been deleted successfully!' };
+            return { status: Status.Success, message: 'Job Report has been deleted successfully!' };
         } catch (err) {
             // error handling
-            return { status: 'Error', message: err.message }; // TODO CHANGE STATUS
+            return { status: Status.Error, message: err.message }; // TODO CHANGE STATUS
         }
     }
     
 
-    async sendJobReport(jobReportId: number, companyId: number, user: any): Promise<{ status: string, message: string }> {
+    async sendJobReport(jobReportId: number, companyId: number, user: any): Promise<{ status: number, message: string }> {
         try {
             // Find work report
             const report = await jobReportsModel.findById(jobReportId, companyId);
     
             // Check if the report exists
             if (!report) {
-                return { status: 'Error', message: 'Report was not found' };
+                return { status: Status.Error, message: 'Report was not found' };
             }
     
             //  Add logic for sending reports
             // For example, send an email to a customer or related person
-    
             // Update reports, for example setting the last time an email was sent
             await this.prisma.jobReport.update({
                 where: { id: report.id },
@@ -148,14 +147,14 @@ class JobReportServices {
                 }
             });
     
-            return { status: 'Success', message: 'Job Report has been sent successfully!' };
+            return { status: Status.Success, message: 'Job Report has been sent successfully!' };
         } catch (err) {
             // error handling
-            return { status: 'Error', message: err.message };
+            return { status: Status.Error, message: err.message };
         }
     }
 
-    async getJobReportEmailTemplate(jobReportId: string, companyId: string, company: Company): Promise<{ status: string, jobReport?: JobReport, emailTemplate?: any }> {
+    async getJobReportEmailTemplate(jobReportId: string, companyId: string, company: Company): Promise<{ status: number, jobReport?: JobReports, emailTemplate?: any, message?: any}> {
         try {
             const jobReport = await this.prisma.jobReport.findFirst({
                 where: {
@@ -208,11 +207,10 @@ class JobReportServices {
             });
     
             if (!jobReport) {
-                return { status: 'Error', message: "Report was not found" };
+                return { status: Status.Error, message: "Report was not found" };
             }
     
-            // 构建电子邮件模板
-            const jobTypes = jobReport.job.tasks?.flatMap(task => task.jobType?.map(jobType => `${jobType.title} (${jobType.description})`)) ?? [];
+            const jobTypes = jobReport.job.tasks?.flatMap((task: { jobType: any[]; }) => task.jobType?.map(jobType => `${jobType.title} (${jobType.description})`)) ?? [];
             const customerEmail = jobReport.job.customer?.info?.email;
             const customerName = jobReport.job.customer?.profile?.displayName;
             const companyName = company.info?.companyName;
@@ -229,12 +227,12 @@ class JobReportServices {
             };
     
             return {
-                status: 'Success',
+                status: Status.Success,
                 jobReport: jobReport,
                 emailTemplate: emailTemplate
             };
         } catch (err) {
-            return { status: 'Error', message: err.message };
+            return {status: Status.Error, message: err.message };
         }
     }
     
