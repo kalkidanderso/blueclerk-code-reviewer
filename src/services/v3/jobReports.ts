@@ -1,10 +1,10 @@
 import { PrismaClient } from '@prisma/client';
-import { Status } from "../../common/constants"
+import { Status, JobStatus } from "../../common/constants"
 import { JobReports } from "../../models/v3/jobReports"
 import moment from 'moment'; 
 
 const prisma = new PrismaClient();
-
+const jobReportsModel = new JobReports(prisma.jobReport);
 class JobReportServices {
     private prisma: PrismaClient;
 
@@ -12,61 +12,45 @@ class JobReportServices {
         this.prisma = prisma;
     }
 
-    async createJobReport(jobId: number, companyId: number, customerName: string | null, technicianName: string | null, date: Date, contractorId?: string): Promise<JobReport | null> {
+    async createJobReport(jobId: number, companyId: number, customerName: string | null, technicianName: string | null, date: Date, contractorId?: number): Promise<any> {
         // Find jobs with specific criteria
         const job = await this.prisma.job.findFirst({
             where: {
                 AND: [
                     { id: jobId },
                     { OR: [{ contractorId: companyId }, { companyId }] },
-                    { status: 'FINISHED' } 
+                    { status: JobStatus.FINISHED } 
                 ]
-            },
-            include: {
-                scans: true, 
-                purchaseOrders: true 
             }
         });
     
         // If no job is found, return null
         if (!job) {
-            return null;
+            return null; // TODO THROW AN ERROR
         }
     
         // Delete all old reports related to this job
-        await this.prisma.jobReports.deleteMany({ where: { jobId: job.id } });
+        await this.prisma.jobReport.deleteMany({ where: { jobId: job.id } });
     
         //Create a new job report
-        const jobReport = await this.prisma.jobReports.create({
-            data: {
-                job: { connect: { id: job.id } },
-                scans: { connect: job.scans.map(scan => ({ id: scan.id })) },
-                purchaseOrders: { connect: job.purchaseOrders.map(po => ({ id: po.id })) },
-                jobDate: date,
-                customerName,
-                technicianName,
-                company: { connect: { id: companyId } },
-                emailHistory: [], 
-                invoiceCreated: job.invoiceCreated || false,
-                invoiceVoid: false, 
-                invoice: job.invoice ? { connect: { id: job.invoice.id } } : undefined
-            }
+        const jobReport = await jobReportsModel.create({
+            jobId: job.id,
+            scanIds: [], //TODO
+            customerName,
+            technicianName,
+            jobDate: date,
+            purchaseOrderIds: [], //TODO
+            companyId,
+            contractorId,
+            emailHistory: [],
         });
     
-        // If contractorId is provided, update the report to include this information
-        if (contractorId) {
-            await this.prisma.jobReports.update({
-                where: { id: jobReport.id },
-                data: { contractor: { connect: { id: contractorId } } }
-            });
-        }
-    
         // Return the created report
-        return jobReport;
+        return jobReport; // TODO RETURN OBJECT WITH STATUS AND MESSAGE
     }
     
 
-    async getAllJobReports(companyId: string, queryParams: any): Promise<{ status: string, reports: JobReports[], total: number }> {
+    async getAllJobReports(companyId: string, queryParams: any): Promise<{ status: number, reports: any[], total: number }> {
         const { keyword, startDate, endDate, currentPage = 0, pageSize = 10 } = queryParams;
         let currentPageNum = parseInt(currentPage);
         let pageSizeNum = parseInt(pageSize);
@@ -98,222 +82,55 @@ class JobReportServices {
             });
         }
     
-        const totalJobReports = await this.prisma.jobReports.count({ where: whereClause });
+        const totalJobReports = await this.prisma.jobReport.count({ where: whereClause });
     
-        const jobReports = await this.prisma.jobReport.findMany({
-            where: whereClause,
-            skip: currentPageNum * pageSizeNum,
-            take: pageSizeNum,
-            orderBy: { createdAt: 'desc' },
-            include: {
-                job: {
-                    include: {
-                        customer: true,
-                        jobLocation: true,
-                        jobSite: true,
-                        tasks: {
-                            include: {
-                                technician: true,
-                                contractor: true,
-                                jobType: true,
-                            }
-                        }
-                    }
-                },
-                scans: true,
-                purchaseOrders: true,
-                company: true,
-                contractor: true,
-                invoice: true,
-                emailHistory: true,
-            }
-        });
+        const jobReports = await jobReportsModel.findWithPagination(whereClause, currentPageNum, pageSizeNum)
     
         return {
-            status: 'Success',
+            status: Status.Success,
             reports: jobReports,
             total: totalJobReports,
         };
     }
     
 
-    async getJobReportDetails(jobReportId: string, companyId: string): Promise<{ status: string, report?: any }> {
+    async getJobReportDetails(jobReportId: number, companyId: number): Promise<{ status: number, message?: any }> {
         try {
-            const report = await this.prisma.jobReports.findFirst({
-                where: {
-                    id: jobReportId,
-                    OR: [
-                        { contractorId: companyId },
-                        { companyId: companyId }
-                    ]
-                },
-                include: {
-                    job: {
-                        include: {
-                            ticket: {
-                                select: {
-                                    track: true,
-                                    jobLocation: true,
-                                    jobSite: true,
-                                    customerContactId: true,
-                                    createdBy: {
-                                        select: {
-                                            info: true,
-                                            auth: true,
-                                            profile: true,
-                                            address: true,
-                                            contactName: true
-                                        }
-                                    }
-                                }
-                            },
-                            request: {
-                                select: {
-                                    track: true,
-                                    jobLocation: true,
-                                    jobSite: true,
-                                    customerContact: true,
-                                    createdBy: {
-                                        select: {
-                                            info: true,
-                                            auth: true,
-                                            profile: true,
-                                            address: true,
-                                            contactName: true
-                                        }
-                                    }
-                                }
-                            },
-                            technician: {
-                                select: {
-                                    profile: true,
-                                    auth: true,
-                                    contact: true,
-                                    permissions: true
-                                }
-                            },
-                            tasks: {
-                                include: {
-                                    technician: true,
-                                    jobType: true,
-                                    timeUpdatedBy: {
-                                        select: {
-                                            profile: true
-                                        }
-                                    }
-                                }
-                            },
-                            customer: {
-                                select: {
-                                    info: true,
-                                    auth: true,
-                                    profile: true,
-                                    permissions: true,
-                                    address: true,
-                                    contact: true,
-                                    notes: true
-                                }
-                            },
-                            type: true,
-                            company: {
-                                select: {
-                                    info: true,
-                                    auth: true,
-                                    profile: true,
-                                    permissions: true,
-                                    address: true,
-                                    contact: true
-                                }
-                            },
-                            createdBy: {
-                                select: {
-                                    info: true,
-                                    auth: true,
-                                    profile: true,
-                                    permissions: true,
-                                    address: true,
-                                    contact: true
-                                }
-                            },
-                            homeOwner: true,
-                            jobSite: true,
-                            jobLocation: true
-                        }
-                    },
-                    scans: {
-                        include: {
-                            equipment: {
-                                include: {
-                                    brand: true,
-                                    type: true
-                                }
-                            }
-                        }
-                    },
-                    purchaseOrders: true,
-                    invoice: {
-                        include: {
-                            paymentTerm: true,
-                            customerContactId: true
-                        }
-                    }
-                }
-            });
+            const report = await jobReportsModel.findById(jobReportId, companyId);
     
             if (!report) {
-                return { status: 'Error', message: 'No report was found!' };
+                return { status: Status.Error, message: 'No report was found!' };
             }
     
-            return { status: 'Success', report: report };
+            return { status: Status.Success, message: report };
         } catch (err) {
-            return { status: 'Error', message: err.message };
+            return { status: Status.Error, message: err.message };
         }
     }
     
 
-    async deleteJobReportById(jobReportId: string, companyId: string): Promise<{ status: string, message: string }> {
+    async deleteJobReportById(jobReportId: number, companyId: number): Promise<{ status: string, message: string }> {
         try {
             //Perform delete operation
-            const deleteResult = await this.prisma.jobReports.deleteMany({
-                where: {
-                    id: jobReportId,
-                    OR: [
-                        { contractorId: companyId },
-                        { companyId: companyId }
-                    ]
-                }
-            });
+            const deleteResult = await jobReportsModel.deleteById(jobReportId, companyId)
     
             // Check if any reports have been deleted
             if (deleteResult.count === 0) {
                 return { status: 'Error', message: 'No report found or you do not have permission to delete this report.' };
-            }
+            }   // TODO CHANGE STATUS
     
             return { status: 'Success', message: 'Job Report has been deleted successfully!' };
         } catch (err) {
             // error handling
-            return { status: 'Error', message: err.message };
+            return { status: 'Error', message: err.message }; // TODO CHANGE STATUS
         }
     }
     
 
-    async sendJobReport(jobReportId: string, companyId: string, user: any): Promise<{ status: string, message: string }> {
+    async sendJobReport(jobReportId: number, companyId: number, user: any): Promise<{ status: string, message: string }> {
         try {
             // Find work report
-            const report = await this.prisma.jobReports.findFirst({
-                where: {
-                    id: jobReportId,
-                    OR: [
-                        { contractorId: companyId },
-                        { companyId: companyId }
-                    ]
-                },
-                include: {
-                    // Contains the relevant information needed and adjust it according to your needs
-                    job: true, 
-                    scans: true,
-                }
-            });
+            const report = await jobReportsModel.findById(jobReportId, companyId);
     
             // Check if the report exists
             if (!report) {
@@ -324,7 +141,7 @@ class JobReportServices {
             // For example, send an email to a customer or related person
     
             // Update reports, for example setting the last time an email was sent
-            await this.prisma.jobReports.update({
+            await this.prisma.jobReport.update({
                 where: { id: report.id },
                 data: {
                     lastEmailSent: new Date() //Set the current time as the last email sending time
@@ -340,7 +157,7 @@ class JobReportServices {
 
     async getJobReportEmailTemplate(jobReportId: string, companyId: string, company: Company): Promise<{ status: string, jobReport?: JobReport, emailTemplate?: any }> {
         try {
-            const jobReport = await this.prisma.jobReports.findFirst({
+            const jobReport = await this.prisma.jobReport.findFirst({
                 where: {
                     id: jobReportId,
                     OR: [

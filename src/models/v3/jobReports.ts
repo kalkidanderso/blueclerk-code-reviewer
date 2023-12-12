@@ -11,7 +11,6 @@ export class JobReports {
         technicianName,
         jobDate,
         purchaseOrderIds,
-        company,
         companyId,
         contractorId,
         emailHistory,
@@ -28,7 +27,6 @@ export class JobReports {
                     customerName,
                     technicianName,
                     jobDate,
-                    company,
                     companyId,
                     contractorId,
                     emailHistory: emailHistory as unknown as Prisma.JsonArray,
@@ -58,7 +56,6 @@ export class JobReports {
         technicianName,
         jobDate,
         purchaseOrderIds,
-        company,
         companyId,
         contractorId,
         emailHistory,
@@ -76,7 +73,6 @@ export class JobReports {
                     customerName,
                     technicianName,
                     jobDate,
-                    company,
                     companyId,
                     contractorId,
                     emailHistory: emailHistory as unknown as Prisma.JsonArray,
@@ -120,9 +116,12 @@ export class JobReports {
         });
     }
 
-    async findById(id: number): Promise<any> {
-        return await this.prisma.findUnique({
-            where: { id },
+    async findWithPagination(query: any, currentPageNum: number, pageSizeNum: number) {
+        return await this.prisma.findMany({
+            where: query,
+            skip: currentPageNum * pageSizeNum,
+            take: pageSizeNum,
+            orderBy: { createdAt: 'desc' },
             select: {
                 job: true,
                 scans: true,
@@ -142,9 +141,37 @@ export class JobReports {
         });
     }
 
-    async deleteById(id: number): Promise<any> {
-    return await this.prisma.delete({
-        where: { id }
+    async findById(id: number, companyId: number): Promise<any> {
+        return await this.prisma.findFirst({
+            where: { AND: [
+                { id },
+                { OR: [{ contractorId: companyId }, { companyId }] },
+            ]},
+            select: {
+                job: true,
+                scans: true,
+                customerName: true,
+                technicianName: true,
+                jobDate: true,
+                purchaseOrders: true,
+                company: true,
+                contractor: true,
+                emailHistory: true,
+                lastEmailSent: true,
+                createdAt: true,
+                invoiceCreated: true,
+                invoiceVoid: true,
+                invoice: true
+            },
+        });
+    }
+
+    async deleteById(id: number, companyId: number): Promise<any> {
+    return await this.prisma.deleteMany({
+        where: { AND: [
+            { id },
+            { OR: [{ contractorId: companyId }, { companyId }] },
+        ]},
     });
 }
 
