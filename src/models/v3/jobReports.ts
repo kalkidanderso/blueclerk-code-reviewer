@@ -165,7 +165,25 @@ export class JobReports {
             },
         });
     }
+    async deleteMany(query: any): Promise<{ count: number }> {
+        try {
+            const result = await this.prisma.deleteMany({
+                where: query,
+            });
+            return { count: result.count };
+        } catch (err) {
+            throw new Error(err.message);
+        }
+    }
 
+    async totalJobReports(): Promise<number> {
+        try {
+            return await this.prisma.count();
+        } catch (err) {
+            throw new Error(err.message);
+        }
+    }    
+    
     async deleteById(id: number, companyId: number): Promise<any> {
     return await this.prisma.deleteMany({
         where: { AND: [

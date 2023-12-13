@@ -30,7 +30,7 @@ class JobReportServices {
         }
     
         // Delete all old reports related to this job
-        await this.prisma.jobReport.deleteMany({ where: { jobId: job.id } });
+        await jobReportsModel.deleteMany({ where: { jobId: job.id } });
     
         //Create a new job report
         const jobReport = await jobReportsModel.create({
@@ -82,7 +82,7 @@ class JobReportServices {
             });
         }
     
-        const totalJobReports = await this.prisma.jobReport.count({ where: whereClause });
+        const totalJobReports = await jobReportsModel.totalJobReports({ where: whereClause: any });
     
         const jobReports = await jobReportsModel.findWithPagination(whereClause, currentPageNum, pageSizeNum)
     
@@ -156,59 +156,11 @@ class JobReportServices {
 
     async getJobReportEmailTemplate(jobReportId: string, companyId: string, company: Company): Promise<{ status: number, jobReport?: JobReports, emailTemplate?: any, message?: any}> {
         try {
-            const jobReport = await this.prisma.jobReport.findFirst({
-                where: {
-                    id: jobReportId,
-                    OR: [
-                        { contractorId: companyId },
-                        { companyId: companyId }
-                    ]
-                },
-                include: {
-                    job: {
-                        include: {
-                            ticket: true,
-                            request: true,
-                            technician: true,
-                            tasks: {
-                                include: {
-                                    technician: true,
-                                    jobType: true
-                                }
-                            },
-                            customer: true,
-                            customerContactId: true,
-                            type: true,
-                            company: true,
-                            createdBy: true,
-                            homeOwner: true,
-                            jobLocation: true,
-                            jobSite: true
-                        }
-                    },
-                    scans: {
-                        include: {
-                            equipment: {
-                                include: {
-                                    brand: true,
-                                    type: true
-                                }
-                            }
-                        }
-                    },
-                    purchaseOrders: true,
-                    invoice: {
-                        include: {
-                            paymentTerm: true,
-                            customerContactId: true
-                        }
-                    }
-                }
-            });
+            const jobReport = await jobReportsModel.findById(id, companyId);
     
             if (!jobReport) {
                 return { status: Status.Error, message: "Report was not found" };
-            }
+            }    
     
             const jobTypes = jobReport.job.tasks?.flatMap((task: { jobType: any[]; }) => task.jobType?.map(jobType => `${jobType.title} (${jobType.description})`)) ?? [];
             const customerEmail = jobReport.job.customer?.info?.email;
