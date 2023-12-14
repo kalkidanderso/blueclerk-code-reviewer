@@ -1,13 +1,9 @@
 import { Controller, Route, Get, Post, Put, Delete, Body, Query, Path, Response } from 'tsoa';
-import { Request, Response as ExpressResponse } from 'express';
-import {
-    createJobReport,
-    getAllJobReports,
-    getJobReportDetails,
-    deleteJobReportById,
-    sendJobReport,
-    getJobReportEmailTemplate
-} from '../../services/v3/jobReports';
+import JobReportServices from '../../services/v3/jobReports';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+const jobReportServices = new JobReportServices(prisma);
 
 @Route('job-reports')
 export class JobReportsController extends Controller {
@@ -15,7 +11,7 @@ export class JobReportsController extends Controller {
     @Post()
     public async create(@Body() requestBody: any): Promise<any> {
         try {
-            return await createJobReport(requestBody.jobId, requestBody.companyId, requestBody.customerName, requestBody.technicianName, new Date(requestBody.date), requestBody.contractorId);
+            return await jobReportServices.createJobReport(requestBody.jobId, requestBody.companyId, requestBody.customerName, requestBody.technicianName, new Date(requestBody.date), requestBody.contractorId);
         } catch (err) {
             this.setStatus(500);
             return { error: err.message };
@@ -25,7 +21,7 @@ export class JobReportsController extends Controller {
     @Get()
     public async getAll(@Query() query: any): Promise<any> {
         try {
-            return await getAllJobReports(query);
+            return await jobReportServices.getAllJobReports(query);
         } catch (err) {
             this.setStatus(500);
             return { error: err.message };
@@ -35,7 +31,7 @@ export class JobReportsController extends Controller {
     @Get('{jobReportId}')
     public async getDetails(@Path() jobReportId: string): Promise<any> {
         try {
-            return await getJobReportDetails(jobReportId);
+            return await jobReportServices.getJobReportDetails(jobReportId);
         } catch (err) {
             this.setStatus(500);
             return { error: err.message };
@@ -46,7 +42,7 @@ export class JobReportsController extends Controller {
     @Response(404, 'Job Report not found')
     public async delete(@Path() jobReportId: string): Promise<any> {
         try {
-            return await deleteJobReportById(jobReportId);
+            return await jobReportServices.deleteJobReportById(jobReportId);
         } catch (err) {
             this.setStatus(500);
             return { error: err.message };
@@ -56,7 +52,7 @@ export class JobReportsController extends Controller {
     @Post('send')
     public async sendReport(@Body() requestBody: any): Promise<any> {
         try {
-            return await sendJobReport(requestBody);
+            return await jobReportServices.sendJobReport(requestBody);
         } catch (err) {
             this.setStatus(500);
             return { error: err.message };
@@ -66,7 +62,7 @@ export class JobReportsController extends Controller {
     @Get('email-template/{jobReportId}')
     public async getEmailTemplate(@Path() jobReportId: string): Promise<any> {
         try {
-            return await getJobReportEmailTemplate(jobReportId);
+            return await jobReportServices.getJobReportEmailTemplate(jobReportId);
         } catch (err) {
             this.setStatus(500);
             return { error: err.message };

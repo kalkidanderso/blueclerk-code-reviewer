@@ -1,4 +1,4 @@
-import { Company, PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { Status, JobStatus } from "../../common/constants"
 import { JobReports } from "../../models/v3/jobReports"
 import moment from 'moment'; 
@@ -82,7 +82,7 @@ class JobReportServices {
             });
         }
     
-        const totalJobReports = await jobReportsModel.totalJobReports({ where: whereClause: any });
+        const totalJobReports = await jobReportsModel.totalJobReports(whereClause);
     
         const jobReports = await jobReportsModel.findWithPagination(whereClause, currentPageNum, pageSizeNum)
     
@@ -154,9 +154,10 @@ class JobReportServices {
         }
     }
 
-    async getJobReportEmailTemplate(jobReportId: string, companyId: string, company: Company): Promise<{ status: number, jobReport?: JobReports, emailTemplate?: any, message?: any}> {
+    // TODO CHANGE ANY
+    async getJobReportEmailTemplate(jobReportId: number, companyId: number, company: any): Promise<{ status: number, jobReport?: JobReports, emailTemplate?: any, message?: any}> {
         try {
-            const jobReport = await jobReportsModel.findById(id, companyId);
+            const jobReport = await jobReportsModel.findById(jobReportId, companyId);
     
             if (!jobReport) {
                 return { status: Status.Error, message: "Report was not found" };

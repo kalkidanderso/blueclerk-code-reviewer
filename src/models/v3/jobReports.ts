@@ -176,9 +176,11 @@ export class JobReports {
         }
     }
 
-    async totalJobReports(): Promise<number> {
+    async totalJobReports(query: any): Promise<number> {
         try {
-            return await this.prisma.count();
+            return await this.prisma.count({
+                where: query
+            });
         } catch (err) {
             throw new Error(err.message);
         }
