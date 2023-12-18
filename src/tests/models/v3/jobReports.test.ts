@@ -43,8 +43,8 @@ const input: ICreateJobReportsInput = {
     companyId: 10,
     contractorId: 20,
     emailHistory: [
-        { date: new Date('2023-01-02'), email: "customer@example.com" },
-        { date: new Date('2023-01-03'), email: "followup@example.com" }
+        { sentTo: "customer@example.com", sentAt: new Date('2023-01-02') },
+        { sentTo: "followup@example.com", sentAt: new Date('2023-01-03') }
     ],
     lastEmailSent: new Date('2023-01-04'),
     createdAt: new Date('2023-01-01'),
@@ -118,7 +118,7 @@ describe('JobReports tests', () => {
     //Test find report by ID
     it('find job report by id successfully', async () => {
         mockPrisma.findUnique = jest.fn().mockResolvedValue(foundJobReport);
-        const result = await jobReports.findById(1);
+        const result = await jobReports.findById(1, 1);
         expect(mockPrisma.findUnique).toHaveBeenCalled();
         expect(result).toEqual(foundJobReport);
     });
@@ -128,7 +128,7 @@ describe('JobReports tests', () => {
             throw new CustomError('id', 'P2025', 'Record not found.');
         });
         try {
-            await jobReports.findById(1);
+            await jobReports.findById(1, 1);
             fail('Test should have failed but it did not');
         } catch (error) {
             expect(mockPrisma.findUnique).toHaveBeenCalled();
@@ -140,7 +140,7 @@ describe('JobReports tests', () => {
     //Test to find the report by condition
     it('find job reports successfully', async () => {
         mockPrisma.findMany = jest.fn().mockResolvedValue([foundJobReport]);
-        const result = await jobReports.find(query);
+        const result = await jobReports.find(1);
         expect(mockPrisma.findMany).toHaveBeenCalled();
         expect(result).toEqual([foundJobReport]);
     });
@@ -150,7 +150,7 @@ describe('JobReports tests', () => {
             throw new CustomError('query', 'P2000', 'Query error');
         });
         try {
-            await jobReports.find(query);
+            await jobReports.find(1);
             fail('Test should have failed but it did not');
         } catch (error) {
             expect(mockPrisma.findMany).toHaveBeenCalled();
@@ -162,7 +162,7 @@ describe('JobReports tests', () => {
     //Test deleting report by ID
     it('delete job report by id successfully', async () => {
         mockPrisma.delete = jest.fn().mockResolvedValue(deletedJobReport);
-        const result = await jobReports.deleteById(1);
+        const result = await jobReports.deleteById(1, 1);
         expect(mockPrisma.delete).toHaveBeenCalled();
         expect(result).toEqual(deletedJobReport);
     });
@@ -172,7 +172,7 @@ describe('JobReports tests', () => {
             throw new CustomError('id', 'P2025', 'Record to delete does not exist.');
         });
         try {
-            await jobReports.deleteById(1);
+            await jobReports.deleteById(1, 1);
             fail('Test should have failed but it did not');
         } catch (error) {
             expect(mockPrisma.delete).toHaveBeenCalled();

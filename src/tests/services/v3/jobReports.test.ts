@@ -2,6 +2,7 @@ import { JobReportServices } from '../../../services/v3/jobReports';
 import { JobReports } from "../../../models/v3/jobReports";
 import { PrismaClient } from "@prisma/client";
 import { Status, JobStatus } from "../../../common/constants";
+import { model } from 'mongoose';
 
 jest.mock('@prisma/client');
 jest.mock('../../models/v3/jobReports');
@@ -13,7 +14,7 @@ describe('JobReportServices', () => {
 
     beforeEach(() => {
         mockPrisma = new PrismaClient();
-        mockJobReportsModel = new JobReports();
+        mockJobReportsModel = new JobReports(model);
         jobReportServices = new JobReportServices(mockPrisma);
     });
 
