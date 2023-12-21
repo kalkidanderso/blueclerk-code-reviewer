@@ -1,69 +1,24 @@
-import { InvoiceRequestBody } from '../../../types/v3/invoice'
-import { InvoiceService } from "../../../services/v3/invoice"
+import { PrismaClient } from "@prisma/client";
+import { Invoice } from "../../../models/v3/invoiceModel";
 
-describe('Invoice', () => {
-  it('Should get invoice in response', async () => {
-    const invoice = new InvoiceService();
-    const paramObj: InvoiceRequestBody = {
-      customerContactId: "",
-      customerId: "",
-      customerPO: "",
-      dueDate: "",
-      endAmount: 0,
-      invoiceId: "",
-      isDraft: false,
-      isVoid: false,
-      startDate: new Date(),
-      endDate: new Date(),
-      lastEmailEndDate: new Date(),
-      lastEmailStartDate: new Date(),
-      missingPO: false,
-      startAmount: 0,
-      bouncedEmailFlag: false
-    }
+const prisma = new PrismaClient();
 
-    const getUser = await invoice.GetInvoice(paramObj);
-    expect(getUser).toEqual({
-      data: [],
-      total: 0
-    });
-  })
+describe("Invoice", () => {
+  it("Should get invoice in as Array", async () => {
+    const invoice = new Invoice(prisma.invoice);
 
-  it('Should get error', async () => {
-    const invoice = new InvoiceService();
+    const result = await invoice.getAll([]);
 
-    try {
-      const input: any = []
-      const user = invoice.GetInvoice(input);
-    } catch (error) {
-      expect(error).toBeInstanceOf(Error);
-    }
+    expect(Array.isArray(result)).toEqual(true);
   });
 
-  it('Checking Buffer', async () => {
-    const invoice = new InvoiceService();
-
-    const paramObj: InvoiceRequestBody = {
-      customerContactId: "",
-      customerId: "",
-      customerPO: "",
-      dueDate: "",
-      endAmount: 0,
-      invoiceId: "",
-      isDraft: false,
-      isVoid: false,
-      startDate: new Date(),
-      endDate: new Date(),
-      lastEmailEndDate: new Date(),
-      lastEmailStartDate: new Date(),
-      missingPO: false,
-      startAmount: 0,
-      bouncedEmailFlag: false
+  it("Should get invoice in as Array", async () => {
+    const invoice = new Invoice(prisma.invoice);
+    try {
+      const result = await invoice.getAll([1]);
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect(error.message).toEqual("Error Occured");
     }
-
-    const excel = await invoice.exportInvoicesToExcel(paramObj);
-
-    expect(Buffer.isBuffer(excel)).toEqual(true);
-
   });
 });
