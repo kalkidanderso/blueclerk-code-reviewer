@@ -5,7 +5,7 @@ import jobSites from "./jobSites";
 
 const app = require("../../../server");
 import { PrismaClient } from "@prisma/client";
-import invoiceControllerTest from "./invoice.test";
+import invoiceControllerTest from "./invoice";
 const prisma = new PrismaClient();
 
 const cleanupDatabase = async () => {
