@@ -1,21 +1,39 @@
-import { JobReportServices } from '../../../services/v3/jobReports';
+import JobReportServices from "../../../services/v3/jobReports";
 import { JobReports } from "../../../models/v3/jobReports";
 import { PrismaClient } from "@prisma/client";
 import { Status, JobStatus } from "../../../common/constants";
-import { model } from 'mongoose';
+
+jest.mock('@prisma/client', () => {
+    const originalModule = jest.requireActual('@prisma/client');
+
+    return {
+        __esModule: true,
+        ...originalModule,
+        PrismaClient: jest.fn().mockImplementation(() => ({
+            job: {
+                findFirst: jest.fn(),
+                create: jest.fn(),
+                deleteMany: jest.fn(),
+            },
+        })),
+    };
+});
 
 jest.mock('@prisma/client');
 jest.mock('../../models/v3/jobReports');
 
 describe('JobReportServices', () => {
-    let jobReportServices;
-    let mockJobReportsModel;
-    let mockPrisma;
+    let jobReportServices: JobReportServices;
+    let mockJobReportsModel: JobReports;
+    let mockPrisma: PrismaClient;
 
     beforeEach(() => {
         mockPrisma = new PrismaClient();
-        mockJobReportsModel = new JobReports(model);
+        mockJobReportsModel = new JobReports(mockPrisma.jobReport);
         jobReportServices = new JobReportServices(mockPrisma);
+        mockPrisma.job.findFirst = jest.fn().mockResolvedValue(null);
+        mockJobReportsModel.create = jest.fn().mockResolvedValue({});
+        mockJobReportsModel.deleteMany = jest.fn().mockReturnValue({ count: 1 });
     });
 
     afterEach(() => {
@@ -33,6 +51,15 @@ describe('JobReportServices', () => {
             } catch (error) {
                 expect(error.message).toBe('Job not found!');
             }
+        });
+
+        it('should throw an error if no job is found', async () => {
+            mockPrisma.job.findFirst.mockResolvedValue(null);
+        });
+    
+        it('should successfully create a job report', async () => {
+            mockPrisma.job.findFirst.mockResolvedValue({ id: 1, status: JobStatus.FINISHED });
+    
         });
 
         it('should successfully create a job report', async () => {
