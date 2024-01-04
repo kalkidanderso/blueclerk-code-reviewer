@@ -555,6 +555,7 @@
 					"alternativeId": {
 						"type": "string"
 					},
+					"address": {},
 					"name": {
 						"type": "string"
 					},
@@ -576,7 +577,6 @@
 						],
 						"type": "object"
 					},
-					"address": {},
 					"locationId": {
 						"type": "number",
 						"format": "double"
@@ -592,10 +592,10 @@
 				},
 				"required": [
 					"alternativeId",
+					"address",
 					"name",
 					"isActive",
 					"location",
-					"address",
 					"customerId",
 					"homeOwnerId"
 				],
@@ -607,6 +607,7 @@
 					"alternativeId": {
 						"type": "string"
 					},
+					"address": {},
 					"name": {
 						"type": "string"
 					},
@@ -628,7 +629,6 @@
 						],
 						"type": "object"
 					},
-					"address": {},
 					"locationId": {
 						"type": "number",
 						"format": "double"
@@ -644,10 +644,10 @@
 				},
 				"required": [
 					"alternativeId",
+					"address",
 					"name",
 					"isActive",
 					"location",
-					"address",
 					"customerId",
 					"homeOwnerId"
 				],
@@ -1274,226 +1274,6 @@
 				}
 			}
 		},
-		"/job-location": {
-			"post": {
-				"operationId": "AddJobLocation",
-				"responses": {
-					"200": {
-						"description": "Ok",
-						"content": {
-							"application/json": {
-								"schema": {}
-							}
-						}
-					}
-				},
-				"summary": "Create Job Location",
-				"tags": [
-					"JobLocation"
-				],
-				"security": [
-					{
-						"jwt": []
-					}
-				],
-				"parameters": [],
-				"requestBody": {
-					"required": true,
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/ICreatedJobLocation"
-							}
-						}
-					}
-				}
-			},
-			"get": {
-				"operationId": "GetJobLocation",
-				"responses": {
-					"200": {
-						"description": "Ok",
-						"content": {
-							"application/json": {
-								"schema": {}
-							}
-						}
-					}
-				},
-				"summary": "Get All and Get filter Job Location",
-				"tags": [
-					"JobLocation"
-				],
-				"security": [
-					{
-						"jwt": []
-					}
-				],
-				"parameters": [
-					{
-						"description": "ID of the Job Location",
-						"in": "query",
-						"name": "id",
-						"required": false,
-						"schema": {
-							"format": "double",
-							"type": "number"
-						}
-					},
-					{
-						"in": "query",
-						"name": "customerId",
-						"required": false,
-						"schema": {
-							"format": "double",
-							"type": "number"
-						}
-					},
-					{
-						"in": "query",
-						"name": "companyId",
-						"required": false,
-						"schema": {
-							"format": "double",
-							"type": "number"
-						}
-					},
-					{
-						"in": "query",
-						"name": "isActive",
-						"required": false,
-						"schema": {}
-					}
-				]
-			}
-		},
-		"/job-location/reset-quick-book": {
-			"put": {
-				"operationId": "UpdateResetQbJobLocation",
-				"responses": {
-					"200": {
-						"description": "Ok",
-						"content": {
-							"application/json": {
-								"schema": {}
-							}
-						}
-					}
-				},
-				"summary": "Update Job Location by ID",
-				"tags": [
-					"JobLocation"
-				],
-				"security": [
-					{
-						"jwt": []
-					}
-				],
-				"parameters": [],
-				"requestBody": {
-					"required": true,
-					"content": {
-						"application/json": {
-							"schema": {
-								"properties": {
-									"companyId": {
-										"type": "number",
-										"format": "double"
-									}
-								},
-								"required": [
-									"companyId"
-								],
-								"type": "object"
-							}
-						}
-					}
-				}
-			}
-		},
-		"/job-location/{id}": {
-			"put": {
-				"operationId": "UpdateJobLocation",
-				"responses": {
-					"200": {
-						"description": "Ok",
-						"content": {
-							"application/json": {
-								"schema": {}
-							}
-						}
-					}
-				},
-				"summary": "Update Job Location by ID",
-				"tags": [
-					"JobLocation"
-				],
-				"security": [
-					{
-						"jwt": []
-					}
-				],
-				"parameters": [
-					{
-						"description": "ID of the Job Location",
-						"in": "path",
-						"name": "id",
-						"required": true,
-						"schema": {
-							"format": "double",
-							"type": "number"
-						}
-					}
-				],
-				"requestBody": {
-					"required": true,
-					"content": {
-						"application/json": {
-							"schema": {
-								"$ref": "#/components/schemas/IUpdateJobLocation"
-							}
-						}
-					}
-				}
-			},
-			"delete": {
-				"operationId": "DeleteJobLocation",
-				"responses": {
-					"200": {
-						"description": "Ok",
-						"content": {
-							"application/json": {
-								"schema": {}
-							}
-						}
-					},
-					"404": {
-						"description": "Data Not Found"
-					}
-				},
-				"summary": "Delete Job Location by ID",
-				"tags": [
-					"JobLocation"
-				],
-				"security": [
-					{
-						"jwt": []
-					}
-				],
-				"parameters": [
-					{
-						"description": "ID of the Job Location",
-						"in": "path",
-						"name": "id",
-						"required": true,
-						"schema": {
-							"format": "double",
-							"type": "number"
-						}
-					}
-				]
-			}
-		},
 		"/invoice": {
 			"get": {
 				"operationId": "GetInvoice",
@@ -1785,6 +1565,407 @@
 						"required": false,
 						"schema": {
 							"type": "boolean"
+						}
+					}
+				]
+			}
+		},
+		"/invoice/getInvoiceEmailTemplate": {
+			"get": {
+				"operationId": "GetInvoiceEmailTemplate",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"anyOf": [
+										{
+											"properties": {
+												"invoices": {},
+												"invoice": {},
+												"emailTemplate": {},
+												"emailType": {},
+												"message": {
+													"type": "string"
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"message",
+												"status"
+											],
+											"type": "object"
+										},
+										{
+											"properties": {
+												"message": {},
+												"invoices": {},
+												"invoice": {},
+												"emailTemplate": {
+													"properties": {
+														"message": {},
+														"subject": {},
+														"to": {
+															"type": "string"
+														},
+														"from": {
+															"type": "string"
+														}
+													},
+													"required": [
+														"message",
+														"subject",
+														"to",
+														"from"
+													],
+													"type": "object"
+												},
+												"emailType": {
+													"type": "string"
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"invoices",
+												"invoice",
+												"emailTemplate",
+												"emailType",
+												"status"
+											],
+											"type": "object"
+										}
+									]
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Invoice"
+				],
+				"security": [],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "emailType",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "invoiceIds",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "invoiceId",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/invoice/getCurrentInvoiceNumber": {
+			"get": {
+				"operationId": "GetCurrentInvoiceNumber",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"anyOf": [
+										{
+											"properties": {
+												"currentInvoiceNumber": {},
+												"invoicePrefix": {},
+												"message": {
+													"type": "string"
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"message",
+												"status"
+											],
+											"type": "object"
+										},
+										{
+											"properties": {
+												"message": {},
+												"currentInvoiceNumber": {
+													"type": "number",
+													"format": "double"
+												},
+												"invoicePrefix": {
+													"type": "string"
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"currentInvoiceNumber",
+												"invoicePrefix",
+												"status"
+											],
+											"type": "object"
+										}
+									]
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Invoice"
+				],
+				"security": [],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "companyId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/job-location": {
+			"post": {
+				"operationId": "AddJobLocation",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"summary": "Create Job Location",
+				"tags": [
+					"JobLocation"
+				],
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ICreatedJobLocation"
+							}
+						}
+					}
+				}
+			},
+			"get": {
+				"operationId": "GetJobLocation",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"summary": "Get All and Get filter Job Location",
+				"tags": [
+					"JobLocation"
+				],
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": [
+					{
+						"description": "ID of the Job Location",
+						"in": "query",
+						"name": "id",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "customerId",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "companyId",
+						"required": false,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					},
+					{
+						"in": "query",
+						"name": "isActive",
+						"required": false,
+						"schema": {}
+					}
+				]
+			}
+		},
+		"/job-location/reset-quick-book": {
+			"put": {
+				"operationId": "UpdateResetQbJobLocation",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"summary": "Update Job Location by ID",
+				"tags": [
+					"JobLocation"
+				],
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"properties": {
+									"companyId": {
+										"type": "number",
+										"format": "double"
+									}
+								},
+								"required": [
+									"companyId"
+								],
+								"type": "object"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/job-location/{id}": {
+			"put": {
+				"operationId": "UpdateJobLocation",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"summary": "Update Job Location by ID",
+				"tags": [
+					"JobLocation"
+				],
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": [
+					{
+						"description": "ID of the Job Location",
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"format": "double",
+							"type": "number"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/IUpdateJobLocation"
+							}
+						}
+					}
+				}
+			},
+			"delete": {
+				"operationId": "DeleteJobLocation",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					},
+					"404": {
+						"description": "Data Not Found"
+					}
+				},
+				"summary": "Delete Job Location by ID",
+				"tags": [
+					"JobLocation"
+				],
+				"security": [
+					{
+						"jwt": []
+					}
+				],
+				"parameters": [
+					{
+						"description": "ID of the Job Location",
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"format": "double",
+							"type": "number"
 						}
 					}
 				]

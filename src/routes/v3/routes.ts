@@ -5,9 +5,9 @@ import { Controller, ValidationService, FieldErrors, ValidateError, TsoaRoute, H
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { AdvancePaymentController } from './../../controllers/v3/advancePayment.controller';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-import { JobLocationController } from './../../controllers/v3/jobLocation.controller';
-// WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { GetInvoiceController } from './../../controllers/v3/invoice.controller';
+// WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+import { JobLocationController } from './../../controllers/v3/jobLocation.controller';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { JobsController } from './../../controllers/v3/jobs/jobs.controller';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
@@ -183,17 +183,17 @@ const models: TsoaRoute.Models = {
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "Pick_IUpdateJobSiteInput.Exclude_keyofIUpdateJobSiteInput.id__": {
         "dataType": "refAlias",
-        "type": {"dataType":"nestedObjectLiteral","nestedProperties":{"alternativeId":{"dataType":"string","required":true},"name":{"dataType":"string","required":true},"isActive":{"dataType":"boolean","required":true},"location":{"dataType":"nestedObjectLiteral","nestedProperties":{"long":{"dataType":"string","required":true},"lat":{"dataType":"string","required":true}},"required":true},"address":{"dataType":"any","required":true},"locationId":{"dataType":"double"},"customerId":{"dataType":"double","required":true},"homeOwnerId":{"dataType":"double","required":true}},"validators":{}},
+        "type": {"dataType":"nestedObjectLiteral","nestedProperties":{"alternativeId":{"dataType":"string","required":true},"address":{"dataType":"any","required":true},"name":{"dataType":"string","required":true},"isActive":{"dataType":"boolean","required":true},"location":{"dataType":"nestedObjectLiteral","nestedProperties":{"long":{"dataType":"string","required":true},"lat":{"dataType":"string","required":true}},"required":true},"locationId":{"dataType":"double"},"customerId":{"dataType":"double","required":true},"homeOwnerId":{"dataType":"double","required":true}},"validators":{}},
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "IUpdateJobSiteArgs": {
         "dataType": "refObject",
         "properties": {
             "alternativeId": {"dataType":"string","required":true},
+            "address": {"dataType":"any","required":true},
             "name": {"dataType":"string","required":true},
             "isActive": {"dataType":"boolean","required":true},
             "location": {"dataType":"nestedObjectLiteral","nestedProperties":{"long":{"dataType":"string","required":true},"lat":{"dataType":"string","required":true}},"required":true},
-            "address": {"dataType":"any","required":true},
             "locationId": {"dataType":"double"},
             "customerId": {"dataType":"double","required":true},
             "homeOwnerId": {"dataType":"double","required":true},
@@ -444,6 +444,136 @@ export function RegisterRoutes(app: express.Router) {
             }
         });
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.get('/api/v3/invoice',
+            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController)),
+            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController.prototype.getInvoice)),
+
+            function GetInvoiceController_getInvoice(request: any, response: any, next: any) {
+            const args = {
+                    invoiceId: {"in":"query","name":"invoiceId","dataType":"string"},
+                    dueDate: {"in":"query","name":"dueDate","dataType":"string"},
+                    startAmount: {"in":"query","name":"startAmount","dataType":"double"},
+                    endAmount: {"in":"query","name":"endAmount","dataType":"double"},
+                    customerPO: {"in":"query","name":"customerPO","dataType":"string"},
+                    missingPO: {"in":"query","name":"missingPO","dataType":"boolean"},
+                    customerId: {"in":"query","name":"customerId","dataType":"string"},
+                    customerContactId: {"in":"query","name":"customerContactId","dataType":"string"},
+                    isDraft: {"in":"query","name":"isDraft","dataType":"boolean"},
+                    isVoid: {"in":"query","name":"isVoid","dataType":"boolean"},
+                    startDate: {"in":"query","name":"startDate","dataType":"datetime"},
+                    endDate: {"in":"query","name":"endDate","dataType":"datetime"},
+                    lastEmailStartDate: {"in":"query","name":"lastEmailStartDate","dataType":"datetime"},
+                    lastEmailEndDate: {"in":"query","name":"lastEmailEndDate","dataType":"datetime"},
+                    bouncedEmailFlag: {"in":"query","name":"bouncedEmailFlag","dataType":"boolean"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new GetInvoiceController();
+
+
+              const promise = controller.getInvoice.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.get('/api/v3/invoice/exportInvoicesToExcel',
+            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController)),
+            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController.prototype.exportInvoicesToExcel)),
+
+            function GetInvoiceController_exportInvoicesToExcel(request: any, response: any, next: any) {
+            const args = {
+                    invoiceId: {"in":"query","name":"invoiceId","dataType":"string"},
+                    dueDate: {"in":"query","name":"dueDate","dataType":"string"},
+                    startAmount: {"in":"query","name":"startAmount","dataType":"double"},
+                    endAmount: {"in":"query","name":"endAmount","dataType":"double"},
+                    customerPO: {"in":"query","name":"customerPO","dataType":"string"},
+                    missingPO: {"in":"query","name":"missingPO","dataType":"boolean"},
+                    customerId: {"in":"query","name":"customerId","dataType":"string"},
+                    customerContactId: {"in":"query","name":"customerContactId","dataType":"string"},
+                    isDraft: {"in":"query","name":"isDraft","dataType":"boolean"},
+                    isVoid: {"in":"query","name":"isVoid","dataType":"boolean"},
+                    startDate: {"in":"query","name":"startDate","dataType":"datetime"},
+                    endDate: {"in":"query","name":"endDate","dataType":"datetime"},
+                    lastEmailStartDate: {"in":"query","name":"lastEmailStartDate","dataType":"datetime"},
+                    lastEmailEndDate: {"in":"query","name":"lastEmailEndDate","dataType":"datetime"},
+                    bouncedEmailFlag: {"in":"query","name":"bouncedEmailFlag","dataType":"boolean"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new GetInvoiceController();
+
+
+              const promise = controller.exportInvoicesToExcel.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.get('/api/v3/invoice/getInvoiceEmailTemplate',
+            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController)),
+            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController.prototype.getInvoiceEmailTemplate)),
+
+            function GetInvoiceController_getInvoiceEmailTemplate(request: any, response: any, next: any) {
+            const args = {
+                    emailType: {"in":"query","name":"emailType","required":true,"dataType":"string"},
+                    invoiceIds: {"in":"query","name":"invoiceIds","dataType":"string"},
+                    invoiceId: {"in":"query","name":"invoiceId","dataType":"string"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new GetInvoiceController();
+
+
+              const promise = controller.getInvoiceEmailTemplate.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.get('/api/v3/invoice/getCurrentInvoiceNumber',
+            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController)),
+            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController.prototype.getCurrentInvoiceNumber)),
+
+            function GetInvoiceController_getCurrentInvoiceNumber(request: any, response: any, next: any) {
+            const args = {
+                    companyId: {"in":"query","name":"companyId","required":true,"dataType":"string"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new GetInvoiceController();
+
+
+              const promise = controller.getCurrentInvoiceNumber.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
         app.post('/api/v3/job-location',
             authenticateMiddleware([{"jwt":[]}]),
             ...(fetchMiddlewares<RequestHandler>(JobLocationController)),
@@ -577,84 +707,6 @@ export function RegisterRoutes(app: express.Router) {
 
 
               const promise = controller.deleteJobLocation.apply(controller, validatedArgs as any);
-              promiseHandler(controller, promise, response, undefined, next);
-            } catch (err) {
-                return next(err);
-            }
-        });
-        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-        app.get('/api/v3/invoice',
-            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController)),
-            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController.prototype.getInvoice)),
-
-            function GetInvoiceController_getInvoice(request: any, response: any, next: any) {
-            const args = {
-                    invoiceId: {"in":"query","name":"invoiceId","dataType":"string"},
-                    dueDate: {"in":"query","name":"dueDate","dataType":"string"},
-                    startAmount: {"in":"query","name":"startAmount","dataType":"double"},
-                    endAmount: {"in":"query","name":"endAmount","dataType":"double"},
-                    customerPO: {"in":"query","name":"customerPO","dataType":"string"},
-                    missingPO: {"in":"query","name":"missingPO","dataType":"boolean"},
-                    customerId: {"in":"query","name":"customerId","dataType":"string"},
-                    customerContactId: {"in":"query","name":"customerContactId","dataType":"string"},
-                    isDraft: {"in":"query","name":"isDraft","dataType":"boolean"},
-                    isVoid: {"in":"query","name":"isVoid","dataType":"boolean"},
-                    startDate: {"in":"query","name":"startDate","dataType":"datetime"},
-                    endDate: {"in":"query","name":"endDate","dataType":"datetime"},
-                    lastEmailStartDate: {"in":"query","name":"lastEmailStartDate","dataType":"datetime"},
-                    lastEmailEndDate: {"in":"query","name":"lastEmailEndDate","dataType":"datetime"},
-                    bouncedEmailFlag: {"in":"query","name":"bouncedEmailFlag","dataType":"boolean"},
-            };
-
-            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-
-            let validatedArgs: any[] = [];
-            try {
-                validatedArgs = getValidatedArgs(args, request, response);
-
-                const controller = new GetInvoiceController();
-
-
-              const promise = controller.getInvoice.apply(controller, validatedArgs as any);
-              promiseHandler(controller, promise, response, undefined, next);
-            } catch (err) {
-                return next(err);
-            }
-        });
-        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-        app.get('/api/v3/invoice/exportInvoicesToExcel',
-            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController)),
-            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController.prototype.exportInvoicesToExcel)),
-
-            function GetInvoiceController_exportInvoicesToExcel(request: any, response: any, next: any) {
-            const args = {
-                    invoiceId: {"in":"query","name":"invoiceId","dataType":"string"},
-                    dueDate: {"in":"query","name":"dueDate","dataType":"string"},
-                    startAmount: {"in":"query","name":"startAmount","dataType":"double"},
-                    endAmount: {"in":"query","name":"endAmount","dataType":"double"},
-                    customerPO: {"in":"query","name":"customerPO","dataType":"string"},
-                    missingPO: {"in":"query","name":"missingPO","dataType":"boolean"},
-                    customerId: {"in":"query","name":"customerId","dataType":"string"},
-                    customerContactId: {"in":"query","name":"customerContactId","dataType":"string"},
-                    isDraft: {"in":"query","name":"isDraft","dataType":"boolean"},
-                    isVoid: {"in":"query","name":"isVoid","dataType":"boolean"},
-                    startDate: {"in":"query","name":"startDate","dataType":"datetime"},
-                    endDate: {"in":"query","name":"endDate","dataType":"datetime"},
-                    lastEmailStartDate: {"in":"query","name":"lastEmailStartDate","dataType":"datetime"},
-                    lastEmailEndDate: {"in":"query","name":"lastEmailEndDate","dataType":"datetime"},
-                    bouncedEmailFlag: {"in":"query","name":"bouncedEmailFlag","dataType":"boolean"},
-            };
-
-            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-
-            let validatedArgs: any[] = [];
-            try {
-                validatedArgs = getValidatedArgs(args, request, response);
-
-                const controller = new GetInvoiceController();
-
-
-              const promise = controller.exportInvoicesToExcel.apply(controller, validatedArgs as any);
               promiseHandler(controller, promise, response, undefined, next);
             } catch (err) {
                 return next(err);

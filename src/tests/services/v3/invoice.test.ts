@@ -27,7 +27,7 @@ describe('Invoice', () => {
       data: [],
       total: 0
     });
-  })
+  },5000)
 
   it('Should get error', async () => {
     const invoice = new InvoiceService();
@@ -66,4 +66,21 @@ describe('Invoice', () => {
     expect(Buffer.isBuffer(excel)).toEqual(true);
 
   });
-});
+
+  it('Should get error in invoice email template in response', async () => {
+    const invoice = new InvoiceService();
+
+    const emailTemplate = await invoice.getInvoiceEmailTemplate("INVOICES","","")
+
+    expect(emailTemplate.status).toEqual(0);
+  });
+
+  it('Should get error in current InvoiceNumber in response', async () => {
+    const invoice = new InvoiceService();
+
+    const currentInvoiceNumber = await invoice.getCurrentInvoiceNumber(0)
+
+    expect(currentInvoiceNumber.status).toEqual(0);
+  });
+
+},);
