@@ -19,19 +19,10 @@ export interface ICreateJobReportsInput {
     invoiceId?: number; 
 }
 
-export interface IFilterJobReportsInput {
-    jobId?: number;
-    scanId?: number;
-    customerName?: string;
-    technicianName?: string;
-    jobDateFrom?: Date; 
-    jobDateTo?: Date; 
-    purchaseOrderId?: number;
-    company?: string;
-    companyId?: number;
-    contractorId?: number;
-    lastEmailSentFrom?: Date; 
-    lastEmailSentTo?: Date; 
-    invoiceCreated?: boolean;
-    invoiceVoid?: boolean;
+export interface IJobReportsQueryParams {
+    keyword?: string;
+    startDate?: Date;
+    endDate?: Date;
+    currentPage?: number;
+    pageSize?: number;
 }

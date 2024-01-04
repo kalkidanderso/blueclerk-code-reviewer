@@ -17,9 +17,9 @@ let mockPrisma = {
     create: jest.fn(),
     update: jest.fn(),
     findMany: jest.fn(),
-    findUnique: jest.fn(), 
-    delete: jest.fn(),     
+    deleteMany: jest.fn(),     
     count: jest.fn(), 
+    findFirst: jest.fn()
 };
 
 let jobReports: JobReports;
@@ -55,11 +55,11 @@ const input: ICreateJobReportsInput = {
 
 const jobReportReturn = {
     jobId: input.jobId,
-    scans: input.scanIds.map(id => ({ id })),
+    scans: input?.scanIds?.map(id => ({ id })),
     customerName: input.customerName,
     technicianName: input.technicianName,
     jobDate: input.jobDate,
-    purchaseOrders: input.purchaseOrderIds.map(id => ({ id })),
+    purchaseOrders: input?.purchaseOrderIds?.map(id => ({ id })),
     companyId: input.companyId,
     contractorId: input.contractorId,
     emailHistory: input.emailHistory,
@@ -95,10 +95,10 @@ describe('JobReports tests', () => {
 
     // Creation of test update
     it('update job report successfully', async () => {
-        mockPrisma.update = jest.fn().mockResolvedValue(updatedJobReport);
+        mockPrisma.update = jest.fn().mockResolvedValue(jobReportReturn);
         const result = await jobReports.updateById(1, input);
         expect(mockPrisma.update).toHaveBeenCalled();
-        expect(result).toEqual(updatedJobReport);
+        expect(result).toEqual(jobReportReturn);
     });
 
     it('update job report with database error', async () => {
@@ -117,21 +117,21 @@ describe('JobReports tests', () => {
 
     //Test find report by ID
     it('find job report by id successfully', async () => {
-        mockPrisma.findUnique = jest.fn().mockResolvedValue(foundJobReport);
+        mockPrisma.findFirst = jest.fn().mockResolvedValue(jobReportReturn);
         const result = await jobReports.findById(1, 1);
-        expect(mockPrisma.findUnique).toHaveBeenCalled();
-        expect(result).toEqual(foundJobReport);
+        expect(mockPrisma.findFirst).toHaveBeenCalled();
+        expect(result).toEqual(jobReportReturn);
     });
 
     it('find job report by id with database error', async () => {
-        mockPrisma.findUnique = jest.fn(() => {
+        mockPrisma.findFirst = jest.fn(() => {
             throw new CustomError('id', 'P2025', 'Record not found.');
         });
         try {
             await jobReports.findById(1, 1);
             fail('Test should have failed but it did not');
         } catch (error) {
-            expect(mockPrisma.findUnique).toHaveBeenCalled();
+            expect(mockPrisma.findFirst).toHaveBeenCalled();
             expect(error).toBeInstanceOf(Error);
             expect(error.message).toContain('Record not found.');
         }
@@ -139,10 +139,10 @@ describe('JobReports tests', () => {
 
     //Test to find the report by condition
     it('find job reports successfully', async () => {
-        mockPrisma.findMany = jest.fn().mockResolvedValue([foundJobReport]);
+        mockPrisma.findMany = jest.fn().mockResolvedValue([jobReportReturn]);
         const result = await jobReports.find(1);
         expect(mockPrisma.findMany).toHaveBeenCalled();
-        expect(result).toEqual([foundJobReport]);
+        expect(result).toEqual([jobReportReturn]);
     });
 
     it('find job reports with database error', async () => {
@@ -161,21 +161,21 @@ describe('JobReports tests', () => {
 
     //Test deleting report by ID
     it('delete job report by id successfully', async () => {
-        mockPrisma.delete = jest.fn().mockResolvedValue(deletedJobReport);
+        mockPrisma.deleteMany = jest.fn().mockResolvedValue(jobReportReturn);
         const result = await jobReports.deleteById(1, 1);
-        expect(mockPrisma.delete).toHaveBeenCalled();
-        expect(result).toEqual(deletedJobReport);
+        expect(mockPrisma.deleteMany).toHaveBeenCalled();
+        expect(result).toEqual(jobReportReturn);
     });
 
     it('delete job report by id with database error', async () => {
-        mockPrisma.delete = jest.fn(() => {
+        mockPrisma.deleteMany = jest.fn(() => {
             throw new CustomError('id', 'P2025', 'Record to delete does not exist.');
         });
         try {
             await jobReports.deleteById(1, 1);
             fail('Test should have failed but it did not');
         } catch (error) {
-            expect(mockPrisma.delete).toHaveBeenCalled();
+            expect(mockPrisma.deleteMany).toHaveBeenCalled();
             expect(error).toBeInstanceOf(Error);
             expect(error.message).toContain('Record to delete does not exist.');
         }

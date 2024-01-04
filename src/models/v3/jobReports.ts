@@ -106,7 +106,7 @@ export class JobReports {
                 purchaseOrders: true,
                 company: true,
                 contractor: true,
-                emailHistory: true,
+                emailHistory: true, // TODO remove this ?
                 lastEmailSent: true,
                 createdAt: true,
                 invoiceCreated: true,
@@ -127,7 +127,7 @@ export class JobReports {
                 scans: true,
                 customerName: true,
                 technicianName: true,
-                jobDate: true,
+                jobDate: true, // TODO REMOVE THIS ?
                 purchaseOrders: true,
                 company: true,
                 contractor: true,

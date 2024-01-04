@@ -1,18 +1,17 @@
-import { PrismaClient } from '@prisma/client';
-import { Status, JobStatus } from "../../common/constants"
+import { PrismaClient } from '@prisma/client'
+import { Status, JobStatus, DefaultPageSize } from "../../common/constants"
 import { JobReports } from "../../models/v3/jobReports"
+import { ICreateJobReportsInput, IJobReportsQueryParams } from '../../types/v3/jobReports'
 import moment from 'moment'; 
 
-const prisma = new PrismaClient();
-const jobReportsModel = new JobReports(prisma.jobReport);
 class JobReportServices {
-    private prisma: PrismaClient;
+    constructor(private readonly prisma: PrismaClient) {}
 
-    constructor(prisma: PrismaClient) {
-        this.prisma = prisma;
-    }
+    private jobReportsModel = new JobReports(this.prisma.jobReport);
 
     async createJobReport(jobId: number, companyId: number, customerName: string | null, technicianName: string | null, date: Date, contractorId?: number): Promise<any> {
+        // Find old job reports
+        const oldJobReport = await this.jobReportsModel.find({where:{ jobId: jobId }});
         // Find jobs with specific criteria
         const job = await this.prisma.job.findFirst({
             where: {
@@ -23,53 +22,70 @@ class JobReportServices {
                 ]
             }
         });
-    
         // If no job is found, return error message
         if (!job) {
-            return { status: Status.Error, message: 'Job not found!' }; // TODO THROW AN ERROR
+            return { status: Status.Error, message: 'Job not found!' };
         }
-    
         // Delete all old reports related to this job
-        await jobReportsModel.deleteMany({ where: { jobId: job.id } });
-    
+        await this.jobReportsModel.deleteMany({ where: { jobId: job.id } });
+        const scans = await this.prisma.scan.findMany({
+            where: {
+                jobId: jobId
+            }
+        });
+        const purchaseOrders = await this.prisma.purchaseOrder.findMany({
+            where: {
+                jobId: jobId
+            }
+        })
         //Create a new job report
-        const jobReport = await jobReportsModel.create({
+        const jobReport: ICreateJobReportsInput = {
             jobId: job.id,
-            scanIds: [], //TODO
+            scanIds: scans.map(scan => scan.id),
             customerName,
             technicianName,
             jobDate: date,
-            purchaseOrderIds: [], //TODO
+            purchaseOrderIds: purchaseOrders.map(po => po.id),
             companyId,
             contractorId,
             emailHistory: [],
-        });
-    
+        };
+        if (oldJobReport) {
+            // Case when job is reopen from completed status
+            jobReport.invoiceId = oldJobReport.invoiceId;
+            jobReport.invoiceCreated = oldJobReport.invoiceCreated;   
+        }
         // Return the created report
-        return { status: Status.Success, message: 'Job report created successfully' };
+        return await await this.jobReportsModel.create(jobReport);
     }
-    
 
-    async getAllJobReports(companyId: string, queryParams: any): Promise<{ status: number, reports: any[], total: number }> {
-        const { keyword, startDate, endDate, currentPage = 0, pageSize = 10 } = queryParams;
-        let currentPageNum = parseInt(currentPage);
-        let pageSizeNum = parseInt(pageSize);
-    
-        let whereClause: any = {
-            OR: [
-                { contractorId: companyId },
-                { companyId: companyId }
+    async getAllJobReports(companyId: number, {
+        keyword,
+        startDate,
+        endDate,
+        currentPage = 0,
+        pageSize = DefaultPageSize
+    }: IJobReportsQueryParams): Promise<{ status: number, reports: any[], total: number }> {
+        const whereClause: { AND: any[]} = {
+            AND: [
+                {
+                    OR: [
+                        { contractorId: companyId },
+                        { companyId: companyId }
+                    ]
+                }
+                
             ]
         };
-    
+
         if (keyword) {
-            whereClause.AND = {
+            whereClause.AND.push({
                 OR: [
                     { job: { jobId: { contains: keyword, mode: 'insensitive' } } },
                     { customerName: { contains: keyword, mode: 'insensitive' } },
                     { technicianName: { contains: keyword, mode: 'insensitive' } },
                 ]
-            };
+            });
         }
     
         if (startDate && endDate) {
@@ -82,9 +98,9 @@ class JobReportServices {
             });
         }
     
-        const totalJobReports = await jobReportsModel.totalJobReports(whereClause);
+        const totalJobReports = await this.jobReportsModel.totalJobReports(whereClause);
     
-        const jobReports = await jobReportsModel.findWithPagination(whereClause, currentPageNum, pageSizeNum)
+        const jobReports = await this.jobReportsModel.findWithPagination(whereClause, currentPage, pageSize)
     
         return {
             status: Status.Success,
@@ -96,7 +112,7 @@ class JobReportServices {
 
     async getJobReportDetails(jobReportId: number, companyId: number): Promise<{ status: number, message?: any }> {
         try {
-            const report = await jobReportsModel.findById(jobReportId, companyId);
+            const report = await this.jobReportsModel.findById(jobReportId, companyId);
     
             if (!report) {
                 return { status: Status.Error, message: 'No report was found!' };
@@ -112,7 +128,7 @@ class JobReportServices {
     async deleteJobReportById(jobReportId: number, companyId: number): Promise<{ status: number, message: string }> {
         try {
             //Perform delete operation
-            const deleteResult = await jobReportsModel.deleteById(jobReportId, companyId)
+            const deleteResult = await this.jobReportsModel.deleteById(jobReportId, companyId)
     
             // Check if any reports have been deleted
             if (deleteResult.count === 0) {
@@ -130,7 +146,7 @@ class JobReportServices {
     async sendJobReport(jobReportId: number, companyId: number, user: any): Promise<{ status: number, message: string }> {
         try {
             // Find work report
-            const report = await jobReportsModel.findById(jobReportId, companyId);
+            const report = await this.jobReportsModel.findById(jobReportId, companyId);
     
             // Check if the report exists
             if (!report) {
@@ -157,7 +173,7 @@ class JobReportServices {
     // TODO CHANGE ANY
     async getJobReportEmailTemplate(jobReportId: number, companyId: number, company: any): Promise<{ status: number, jobReport?: JobReports, emailTemplate?: any, message?: any}> {
         try {
-            const jobReport = await jobReportsModel.findById(jobReportId, companyId);
+            const jobReport = await this.jobReportsModel.findById(jobReportId, companyId);
     
             if (!jobReport) {
                 return { status: Status.Error, message: "Report was not found" };

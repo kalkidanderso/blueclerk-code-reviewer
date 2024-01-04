@@ -1143,6 +1143,7 @@ model Job {
   invoice        Invoice[]
   paymentvendors Paymentvendor[]
   JobReport      JobReport[]
+  PurchaseOrder  PurchaseOrder[]
   Scan           Scan[]
 
   @@index([employeeType])
@@ -1294,6 +1295,8 @@ model PurchaseOrder {
   id          Int        @id @default(autoincrement())
   JobReport   JobReport? @relation(fields: [jobReportId], references: [id])
   jobReportId Int?
+  job         Job?       @relation(fields: [jobId], references: [id])
+  jobId       Int?
 }
 
 model SaleTax {

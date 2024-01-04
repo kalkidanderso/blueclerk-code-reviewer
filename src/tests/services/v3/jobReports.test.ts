@@ -1,39 +1,34 @@
 import JobReportServices from "../../../services/v3/jobReports";
 import { JobReports } from "../../../models/v3/jobReports";
-import { PrismaClient } from "@prisma/client";
 import { Status, JobStatus } from "../../../common/constants";
 
-jest.mock('@prisma/client', () => {
-    const originalModule = jest.requireActual('@prisma/client');
+let jobReportServices: JobReportServices
+let mockPrisma = {
+    job: {
+        findFirst: jest.fn(),
+    },
+    jobReport: {
+        update: jest.fn()
+    }
+};
 
-    return {
-        __esModule: true,
-        ...originalModule,
-        PrismaClient: jest.fn().mockImplementation(() => ({
-            job: {
-                findFirst: jest.fn(),
-                create: jest.fn(),
-                deleteMany: jest.fn(),
-            },
-        })),
-    };
-});
+let mockJobReportsModel: jest.Mocked<JobReports> & {
+    create: any,
+    updateById: any,
+    find: any,
+    findWithPagination: any,
+    findById: any,
+    deleteMany: any,
+    totalJobReports: any,
+    deleteById: any
+} = new JobReports(mockPrisma as any) as any;
 
-jest.mock('@prisma/client');
-jest.mock('../../models/v3/jobReports');
 
 describe('JobReportServices', () => {
-    let jobReportServices: JobReportServices;
-    let mockJobReportsModel: JobReports;
-    let mockPrisma: PrismaClient;
 
     beforeEach(() => {
-        mockPrisma = new PrismaClient();
-        mockJobReportsModel = new JobReports(mockPrisma.jobReport);
-        jobReportServices = new JobReportServices(mockPrisma);
-        mockPrisma.job.findFirst = jest.fn().mockResolvedValue(null);
-        mockJobReportsModel.create = jest.fn().mockResolvedValue({});
-        mockJobReportsModel.deleteMany = jest.fn().mockReturnValue({ count: 1 });
+        jobReportServices = new JobReportServices(mockPrisma as any);
+        jobReportServices["jobReportsModel"] = mockJobReportsModel;
     });
 
     afterEach(() => {
@@ -43,27 +38,19 @@ describe('JobReportServices', () => {
     
     describe('createJobReport', () => {
         it('should throw an error if no job is found', async () => {
-            mockPrisma.job.findFirst.mockResolvedValue(null);
+            mockPrisma.job.findFirst = jest.fn(() => undefined);
 
             try {
                 await jobReportServices.createJobReport(1, 1, 'Customer Name', 'Technician Name', new Date());
                 throw new Error('Test failed, should have thrown an error');
             } catch (error) {
+                expect(mockPrisma.job.findFirst).toHaveBeenCalled();
                 expect(error.message).toBe('Job not found!');
             }
         });
 
-        it('should throw an error if no job is found', async () => {
-            mockPrisma.job.findFirst.mockResolvedValue(null);
-        });
-    
         it('should successfully create a job report', async () => {
-            mockPrisma.job.findFirst.mockResolvedValue({ id: 1, status: JobStatus.FINISHED });
-    
-        });
-
-        it('should successfully create a job report', async () => {
-            mockPrisma.job.findFirst.mockResolvedValue({ id: 1, status: JobStatus.FINISHED });
+            mockPrisma.job.findFirst = jest.fn(() => ({ id: 1, status: JobStatus.FINISHED }));
             mockJobReportsModel.deleteMany.mockResolvedValue(true);
             mockJobReportsModel.create.mockResolvedValue({});
 
@@ -76,11 +63,11 @@ describe('JobReportServices', () => {
     describe('getAllJobReports', () => {
         it('should throw an error when an unexpected error occurs', async () => {
             // Setup mocks to simulate an error
-            mockJobReportsModel.findWithPagination.mockRejectedValue(new Error('Unexpected error'));
+            mockJobReportsModel.findWithPagination = jest.fn(() => (new Error('Unexpected error')));
             mockJobReportsModel.totalJobReports.mockResolvedValue(0);
     
             try {
-                await jobReportServices.getAllJobReports('company-id', {});
+                await jobReportServices.getAllJobReports(1, {});
                 throw new Error('Test failed, should have thrown an error');
             } catch (error) {
                 expect(error.message).toBe('Unexpected error');
@@ -92,7 +79,7 @@ describe('JobReportServices', () => {
             mockJobReportsModel.findWithPagination.mockResolvedValue([]);
             mockJobReportsModel.totalJobReports.mockResolvedValue(10);
     
-            const response = await jobReportServices.getAllJobReports('company-id', {});
+            const response = await jobReportServices.getAllJobReports(1, {});
             expect(response.status).toBe(Status.Success);
             expect(response.reports).toEqual([]);
             expect(response.total).toBe(10);
@@ -100,11 +87,11 @@ describe('JobReportServices', () => {
     
         it('should successfully retrieve job reports with custom filters', async () => {
             // Setup mocks for successful retrieval
-            const customFilters = { keyword: 'test', startDate: '2023-01-01', endDate: '2023-01-31', currentPage: '1', pageSize: '5' };
+            const customFilters = { keyword: 'test', startDate: new Date('2023-01-01'), endDate: new Date('2023-01-31'), currentPage: 1, pageSize: 5 };
             mockJobReportsModel.findWithPagination.mockResolvedValue([]);
             mockJobReportsModel.totalJobReports.mockResolvedValue(5);
     
-            const response = await jobReportServices.getAllJobReports('company-id', customFilters);
+            const response = await jobReportServices.getAllJobReports(1, customFilters);
             expect(response.status).toBe(Status.Success);
             expect(response.reports).toEqual([]);
             expect(response.total).toBe(5);
@@ -224,6 +211,4 @@ describe('JobReportServices', () => {
             expect(response.emailTemplate.subject).toContain(company.info.companyName);
         });
     });
-
-
 });
