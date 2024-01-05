@@ -24,7 +24,7 @@ class JobReportServices {
         });
         // If no job is found, return error message
         if (!job) {
-            return { status: Status.Error, message: 'Job not found!' };
+            throw new Error('Job not found!');
         }
         // Delete all old reports related to this job
         await this.jobReportsModel.deleteMany({ where: { jobId: job.id } });
@@ -56,7 +56,7 @@ class JobReportServices {
             jobReport.invoiceCreated = oldJobReport.invoiceCreated;   
         }
         // Return the created report
-        return await await this.jobReportsModel.create(jobReport);
+        return await this.jobReportsModel.create(jobReport);
     }
 
     async getAllJobReports(companyId: number, {
@@ -115,7 +115,7 @@ class JobReportServices {
             const report = await this.jobReportsModel.findById(jobReportId, companyId);
     
             if (!report) {
-                return { status: Status.Error, message: 'No report was found!' };
+                return { status: Status.NotFound, message: 'No report was found' };
             }
     
             return { status: Status.Success, message: report };
@@ -132,13 +132,13 @@ class JobReportServices {
     
             // Check if any reports have been deleted
             if (deleteResult.count === 0) {
-                return { status: Status.Error, message: 'No report found or you do not have permission to delete this report.' };
-            }   // TODO CHANGE STATUS
+                return { status: Status.NotFound, message: 'No report found or you do not have permission to delete this report.' };
+            }
     
             return { status: Status.Success, message: 'Job Report has been deleted successfully!' };
         } catch (err) {
             // error handling
-            return { status: Status.Error, message: err.message }; // TODO CHANGE STATUS
+            return { status: Status.Error, message: err.message };
         }
     }
     
@@ -150,7 +150,7 @@ class JobReportServices {
     
             // Check if the report exists
             if (!report) {
-                return { status: Status.Error, message: 'Report was not found' };
+                return { status: Status.NotFound, message: 'Report was not found' };
             }
     
             //  Add logic for sending reports
@@ -176,7 +176,7 @@ class JobReportServices {
             const jobReport = await this.jobReportsModel.findById(jobReportId, companyId);
     
             if (!jobReport) {
-                return { status: Status.Error, message: "Report was not found" };
+                return { status: Status.NotFound, message: "Report was not found" };
             }    
     
             const jobTypes = jobReport.job.tasks?.flatMap((task: { jobType: any[]; }) => task.jobType?.map(jobType => `${jobType.title} (${jobType.description})`)) ?? [];
