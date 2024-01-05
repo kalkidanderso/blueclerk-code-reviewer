@@ -929,7 +929,7 @@ const _getDataInvoices = async (req: Request, res: Response) => {
  *      contactEmail
  *   }
  */
-const _converInvoiceToRowExcel = (invoice: any): any => {
+export const _converInvoiceToRowExcel = (invoice: any): any => {
     const row = {
         paymentStatus: '',
         invoiceID: '',

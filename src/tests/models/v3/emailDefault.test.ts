@@ -290,7 +290,6 @@ const createDatabase = async () => {
             profile: { displayName: 'aaaa' },
             info: { displayName: 'aaaa' },
             contact: { displayName: 'aaaa' },
-            subdivisionId: 1,
             addressId: 1,
         },
     });
