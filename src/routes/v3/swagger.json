@@ -1751,6 +1751,160 @@
 				]
 			}
 		},
+		"/invoice/sendinvoice": {
+			"post": {
+				"operationId": "Sendinvoice",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"message": {
+											"type": "string"
+										},
+										"status": {
+											"type": "number",
+											"format": "double"
+										}
+									},
+									"required": [
+										"message",
+										"status"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Invoice"
+				],
+				"security": [],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"properties": {
+									"message": {
+										"type": "string"
+									},
+									"subject": {
+										"type": "string"
+									},
+									"copyToMyself": {
+										"type": "boolean"
+									},
+									"recipients": {
+										"items": {
+											"type": "string"
+										},
+										"type": "array"
+									},
+									"invoiceId": {
+										"type": "number",
+										"format": "double"
+									}
+								},
+								"required": [
+									"message",
+									"subject",
+									"copyToMyself",
+									"recipients",
+									"invoiceId"
+								],
+								"type": "object"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/invoice/sendInvoices": {
+			"post": {
+				"operationId": "SendInvoices",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"message": {
+											"type": "string"
+										},
+										"status": {
+											"type": "number",
+											"format": "double"
+										}
+									},
+									"required": [
+										"message",
+										"status"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Invoice"
+				],
+				"security": [],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"properties": {
+									"customerId": {
+										"type": "number",
+										"format": "double"
+									},
+									"message": {
+										"type": "string"
+									},
+									"subject": {
+										"type": "string"
+									},
+									"copyToMyself": {
+										"type": "boolean"
+									},
+									"recipients": {
+										"items": {
+											"type": "string"
+										},
+										"type": "array"
+									},
+									"invoiceIds": {
+										"items": {
+											"type": "number",
+											"format": "double"
+										},
+										"type": "array"
+									}
+								},
+								"required": [
+									"customerId",
+									"message",
+									"subject",
+									"copyToMyself",
+									"recipients",
+									"invoiceIds"
+								],
+								"type": "object"
+							}
+						}
+					}
+				}
+			}
+		},
 		"/job-location": {
 			"post": {
 				"operationId": "AddJobLocation",

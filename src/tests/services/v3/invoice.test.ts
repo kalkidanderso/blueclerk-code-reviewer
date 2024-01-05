@@ -83,4 +83,32 @@ describe('Invoice', () => {
     expect(currentInvoiceNumber.status).toEqual(0);
   });
 
+  it("Should get not found error in sending invoices in response", async () => {
+    const invoice = new InvoiceService();
+
+    const sendInvoice = await invoice.sendinvoice({
+      copyToMyself: false,
+      invoiceId: 999,
+      message: "",
+      recipients: [],
+      subject: "",
+    });
+
+    expect(sendInvoice?.status).toEqual(0);
+  });
+
+  it("Should get not found invoice while sending empty array in request", async () => {
+    const invoice = new InvoiceService();
+
+    const sendInvoice = await invoice.sendinvoices({
+      copyToMyself: false,
+      customerId: 0,
+      invoiceIds: [],
+      message: "",
+      recipients: [],
+      subject: "",
+    });
+
+    expect(sendInvoice?.status).toEqual(0);
+  });
 },);

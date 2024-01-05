@@ -67,4 +67,79 @@ export default function invoiceControllerTest(app: any) {
       expect(response.header["content-type"]).toMatch(/json/);
     });
   });
+
+  describe("POST /api/v3/invoice/sendinvoice", () => {
+    it("should return a 200 status code", async () => {
+      const response = await supertest(app)
+        .post("/api/v3/invoice/sendinvoice")
+        .send({
+          message: "",
+          subject: "",
+          copyToMyself: false,
+          recipients: [],
+          invoiceId: 0,
+        })
+        .set("accept", "application/json");
+
+      expect(response.status).toBe(200);
+      expect(response.header["content-type"]).toMatch(/json/);
+    });
+  });
+
+  describe("POST /api/v3/invoice/sendinvoice", () => {
+    it("should return a 422 status code", async () => {
+      const response = await supertest(app)
+        .post("/api/v3/invoice/sendinvoice")
+        .send({
+          message: "",
+          subject: "",
+          copyToMyself: false,
+          recipients: [],
+          invoiceId: "",
+        })
+        .set("accept", "application/json");
+
+      expect(response.status).toBe(422);
+      expect(response.header["content-type"]).toMatch(/json/);
+    });
+  });
+
+
+  describe("POST /api/v3/invoice/sendInvoices", () => {
+    it("should return a 200 status code", async () => {
+      const response = await supertest(app)
+        .post("/api/v3/invoice/sendInvoices")
+        .send({
+          customerId: 0,
+          message: "",
+          subject: "",
+          copyToMyself: false,
+          recipients: [],
+          invoiceIds: [],
+        })
+        .set("accept", "application/json");
+
+      expect(response.status).toBe(200);
+      expect(response.header["content-type"]).toMatch(/json/);
+    });
+  });
+
+  describe("POST /api/v3/invoice/sendInvoices", () => {
+    it("should return a 422 status code", async () => {
+      const response = await supertest(app)
+        .post("/api/v3/invoice/sendInvoices")
+        .send({
+          customerId: 0,
+          message: "string",
+          subject: "string",
+          copyToMyself: true,
+          recipients: ["string"],
+          invoiceIds: [""],
+        })
+        .set("accept", "application/json");
+
+      expect(response.status).toBe(422);
+      expect(response.header["content-type"]).toMatch(/json/);
+    });
+  });
 }

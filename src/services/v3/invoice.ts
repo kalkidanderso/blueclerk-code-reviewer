@@ -5,9 +5,11 @@ import { Invoice } from "../../models/v3/invoiceModel";
 import { InvoiceRequestBody } from "../../types/v3/invoice";
 import { _converInvoiceToRowExcel } from "../../controllers/v2/invoice";
 import { EmailTypes } from  "../../models/EmailDefault"
-import { InvoiceStatus, Messages, Status } from "../../common/constants"
+import { Messages, Status } from "../../common/constants"
 import {transformPlaceholders, _createCompanyDefaultEmail} from "../../controllers/emailDefault"
-// import { _createCompanyDefaultEmail } from "src/controllers/emailDefault";
+import { INVOICE_PDF_PATH } from "../../common/config";
+import { _generateInvoicePdf } from "../../controllers/invoice";
+import { sendInvoiceEmailToCustomer } from "../aws";
 
 const prisma = new PrismaClient();
 
@@ -455,8 +457,179 @@ export class InvoiceService {
     //     }
 
     //     let status = InvoiceStatus.UNPAID;
-    //     let paid = false;
-
-        
+    //     let paid = false;        
     // }
+
+    async sendinvoice(params:{ 
+        invoiceId:number,
+        recipients: string[],
+        copyToMyself: boolean,
+        subject:string,
+        message:string
+     }){
+        try{
+            const invoice = await prisma.invoice.findUnique({ 
+                where:{id:params.invoiceId},
+                include:{
+                    job:true,
+                    customer:true,
+                    jobLocation:true,
+                    jobSite:true,
+                    customerContact:true,
+                    paymentTerm:true,
+                    companyLocation:true
+                }}) as any;
+    
+            if(!invoice) {
+                return { status: Status.Error, message: 'Invoice not found.' };
+            }
+    
+            const { customer, paymentTerm, customerContact, companyLocation, companyId } = invoice ;
+            const filepath = `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
+            const invoicePdfs = [{invoice, filepath}];
+            const emailDefault =await prisma.emailDefault.findFirst({where:{ companyId, emailType:EmailTypes.INVOICE }});
+            const { billingAddress } = companyLocation as any; 
+            const sender_email = billingAddress?.emailSender || "" ;
+            const company = await prisma.company.findUnique({where:{id:companyId}}) as any
+            if(!company){
+                return 
+            }
+    
+            await _generateInvoicePdf( company, invoice);
+    
+            let recipientEmails: string[];
+    
+            if(params.recipients){
+                recipientEmails = params.recipients.length > 0 ? 
+                    params.recipients : [(customerContact?.email || customer?.info?.email)] 
+            }
+            if(params.copyToMyself){
+                recipientEmails.push(sender_email)
+            }
+            
+            await sendInvoiceEmailToCustomer({
+                subject: params.subject ?? emailDefault?.subject,
+                message: params.message ?? emailDefault?.message,
+                sender_email: sender_email,
+                company_name: company.info?.companyName,
+                company_email: company.info?.companyEmail,
+                company_logo: company.info?.logoUrl,
+                customer_name: customer.profile?.displayName,
+                customer_email: customerContact?.email ?? customer?.info?.email,
+                recipient_emails: recipientEmails,
+                invoice_number: invoice.invoiceId,
+                invoice_amount: invoice.total,
+                invoice_due_date: moment(invoice.dueDate).format('MMMM DD, YYYY'),
+                invoice_pdfs: invoicePdfs,
+                term_name: paymentTerm?.name,
+                term_due_days: paymentTerm?.dueDays,
+                has_cc: params.copyToMyself    
+            })
+
+            const sendingDate = new Date();
+
+            recipientEmails.forEach((email)=>{
+                invoice.emailHistory?.push({
+                    sendTo:email,
+                    sentAt:sendingDate,
+                    deliveryStatus: true
+                })
+            })
+
+            invoice.lastEmailSent = sendingDate;
+            await prisma.invoice.update({where:{id: invoice.id}, data: invoice})
+            return { status: Status.Success, message: 'Invoice has been sent successfully.' };
+        }catch(e){
+            return { status: Status.Error, message: Messages.GenericError }
+        }
+    }
+
+    async sendinvoices(params:{ 
+        invoiceIds: number[],
+        recipients: string[],
+        copyToMyself: boolean,
+        subject:string,
+        message:string,
+        customerId:number,
+     }){
+        try{
+            const invoices = await prisma.invoice.findMany({ 
+                where:{id:{in: params.invoiceIds} },
+                include:{
+                    job:true,
+                    customer:true,
+                    jobLocation:true,
+                    jobSite:true,
+                    customerContact:true,
+                    paymentTerm:true,
+                    companyLocation:true
+                }}) 
+    
+            if(!invoices?.length) {
+                return { status: Status.Error, message: 'Invoices not found.' };
+            }
+    
+            let invoicePdfs:any[] = [];
+            let totalInvoiceAmount = 0;
+            let invoiceSender = "";
+        
+            try{
+                Promise.all(invoices.map(async(invoice:any)=>{
+                    const filepath = `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
+                    const company = await prisma.company.findUnique({where:{id:invoice.companyId}}) as any;
+                    if(!company){
+                        return 
+                    }
+                    await _generateInvoicePdf(company, invoice);
+                    
+                    totalInvoiceAmount += invoice.total;
+            
+                    invoicePdfs.push({invoice,filepath});
+
+                    const companyInfo = await prisma.companyInfo.findUnique({where:{id:company.companyInfoId}})
+                    const sendingDate = new Date();
+                    
+                    invoice.emailHistory?.push({
+                        sendTo: companyInfo.companyEmail,
+                        sentAt:sendingDate,
+                        deliveryStatus: true
+                    })
+                    invoice.lastEmailSent = sendingDate;
+
+                    await prisma.invoice.update({where:{id: invoice.id}, data: invoice})
+
+                    const companyLocation = invoice.companyLocation as any;
+                    invoiceSender = companyLocation?.billingAddress?.emailSender;
+                }))
+            }catch(e){
+                return { status: Status.Error, message: Messages.GenericError };
+            }
+
+            let recipientEmails: string[];
+    
+            const currentInvoices = invoices.find((invoice)=>invoice.customerId=params.customerId) as any ;
+
+            const sender_email = currentInvoices.customer?.contact?.email || ""
+            const company = await prisma.company.findMany({where:{id:currentInvoices.companyId}}) as any;
+            if(params.copyToMyself){
+                if(currentInvoices) recipientEmails.push(currentInvoices.customer?.contact?.email)
+            }
+            const emailDefault = await prisma.emailDefault.findFirst({ where:{ company:{id:currentInvoices?.companyId}, emailType: EmailTypes.INVOICES}});
+
+            await sendInvoiceEmailToCustomer({
+                subject: params.subject ?? emailDefault?.subject,
+                message: params.message ?? emailDefault?.message,
+                sender_email: invoiceSender || sender_email,
+                company_name: company.info?.companyName,
+                company_email: company.info?.companyEmail,
+                company_logo: company.info?.logoUrl,
+                recipient_emails: params.recipients,
+                invoice_total_amount: totalInvoiceAmount,
+                invoice_pdfs: invoicePdfs,
+            });
+            return { status: Status.Success, message: 'Invoices has been sent successfully.' };
+        }catch(e){
+            return { status: Status.Error, message: Messages.GenericError }
+        }
+    }
 }

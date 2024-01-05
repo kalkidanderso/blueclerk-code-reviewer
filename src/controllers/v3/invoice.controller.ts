@@ -1,6 +1,6 @@
-import { Controller, Route, Tags, Query, Get, BodyProp,Post } from 'tsoa';
+import { Controller, Route, Tags, Query, Get, Post, Body, BodyProp } from 'tsoa';
 import * as InvoiceService from '../../services/v3/invoice'
-import * as InvoiceInterface from 'src/types/v3/invoice';
+import * as InvoiceInterface from "../../types/v3/invoice"
 
 /**
  * @tags Invoice - For creating and getting invoices
@@ -56,7 +56,6 @@ export class GetInvoiceController extends Controller {
             console.log(err);
             // throw new Error(err.message);
         }
-
     }
     /**
    * @summary get invoicein excel.
@@ -174,4 +173,32 @@ export class GetInvoiceController extends Controller {
     //         vendorId
     //     })
     // }
+    @Post("sendInvoice")
+    public async sendinvoice(
+        @Body()params:{ 
+            invoiceId:number,
+            recipients: string[],
+            copyToMyself: boolean,
+            subject:string,
+            message:string
+         }
+    ){
+        const invoiceService = new InvoiceService.InvoiceService();
+        return invoiceService.sendinvoice(params);
+    }
+
+    @Post("sendInvoices")
+    public async sendInvoices(
+        @Body()params:{ 
+            invoiceIds:number[],
+            recipients:string[],
+            copyToMyself: boolean,
+            subject:string,
+            message:string,
+            customerId:number,
+         }
+    ){
+        const invoiceService = new InvoiceService.InvoiceService();
+        return invoiceService.sendinvoices(params);
+    }
 }
