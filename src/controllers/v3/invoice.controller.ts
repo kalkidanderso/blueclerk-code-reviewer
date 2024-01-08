@@ -201,4 +201,40 @@ export class GetInvoiceController extends Controller {
         const invoiceService = new InvoiceService.InvoiceService();
         return invoiceService.sendinvoices(params);
     }
+
+    @Post("updateInvoice")
+    public async updateInvoice(
+      @Body()
+      params: {
+        invoiceId: number;
+        isDraft: boolean;
+        paymentTermId: number;
+        customerContactId: number;
+        jobLocationId: number;
+        jobSiteId: number;
+        charges?: number;
+        tax?: number;
+        issuedDate: string | Date;
+        dueDate: string | Date;
+        timeSpent?: number;
+        includePO?: boolean;
+        items?: any[];
+        shippingCost?: number;
+        note: string;
+        vendorId: string;
+      }
+    ) {
+      const invoiceService = new InvoiceService.InvoiceService();
+      return invoiceService.updateInvoice(params);
+    }
+  
+    @Get("generateInvoicePdf")
+    public async generateInvoicePdf(
+      @Query("customerId") customerId: string,
+      @Query("companyId") companyId: string,
+    ) {
+      const invoiceService = new InvoiceService.InvoiceService();
+      return invoiceService.generateInvoicePdf(customerId,companyId);
+    }
+  
 }

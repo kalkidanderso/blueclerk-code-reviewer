@@ -556,6 +556,10 @@
 						"type": "string"
 					},
 					"address": {},
+					"customerId": {
+						"type": "number",
+						"format": "double"
+					},
 					"name": {
 						"type": "string"
 					},
@@ -581,10 +585,6 @@
 						"type": "number",
 						"format": "double"
 					},
-					"customerId": {
-						"type": "number",
-						"format": "double"
-					},
 					"homeOwnerId": {
 						"type": "number",
 						"format": "double"
@@ -593,10 +593,10 @@
 				"required": [
 					"alternativeId",
 					"address",
+					"customerId",
 					"name",
 					"isActive",
 					"location",
-					"customerId",
 					"homeOwnerId"
 				],
 				"type": "object",
@@ -608,6 +608,10 @@
 						"type": "string"
 					},
 					"address": {},
+					"customerId": {
+						"type": "number",
+						"format": "double"
+					},
 					"name": {
 						"type": "string"
 					},
@@ -633,10 +637,6 @@
 						"type": "number",
 						"format": "double"
 					},
-					"customerId": {
-						"type": "number",
-						"format": "double"
-					},
 					"homeOwnerId": {
 						"type": "number",
 						"format": "double"
@@ -645,10 +645,10 @@
 				"required": [
 					"alternativeId",
 					"address",
+					"customerId",
 					"name",
 					"isActive",
 					"location",
-					"customerId",
 					"homeOwnerId"
 				],
 				"type": "object",
@@ -1751,7 +1751,7 @@
 				]
 			}
 		},
-		"/invoice/sendinvoice": {
+		"/invoice/sendInvoice": {
 			"post": {
 				"operationId": "Sendinvoice",
 				"responses": {
@@ -1903,6 +1903,178 @@
 						}
 					}
 				}
+			}
+		},
+		"/invoice/updateInvoice": {
+			"post": {
+				"operationId": "UpdateInvoice",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Invoice"
+				],
+				"security": [],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"properties": {
+									"vendorId": {
+										"type": "string"
+									},
+									"note": {
+										"type": "string"
+									},
+									"shippingCost": {
+										"type": "number",
+										"format": "double"
+									},
+									"items": {
+										"items": {},
+										"type": "array"
+									},
+									"includePO": {
+										"type": "boolean"
+									},
+									"timeSpent": {
+										"type": "number",
+										"format": "double"
+									},
+									"dueDate": {
+										"anyOf": [
+											{
+												"type": "string"
+											},
+											{
+												"type": "string",
+												"format": "date-time"
+											}
+										]
+									},
+									"issuedDate": {
+										"anyOf": [
+											{
+												"type": "string"
+											},
+											{
+												"type": "string",
+												"format": "date-time"
+											}
+										]
+									},
+									"tax": {
+										"type": "number",
+										"format": "double"
+									},
+									"charges": {
+										"type": "number",
+										"format": "double"
+									},
+									"jobSiteId": {
+										"type": "number",
+										"format": "double"
+									},
+									"jobLocationId": {
+										"type": "number",
+										"format": "double"
+									},
+									"customerContactId": {
+										"type": "number",
+										"format": "double"
+									},
+									"paymentTermId": {
+										"type": "number",
+										"format": "double"
+									},
+									"isDraft": {
+										"type": "boolean"
+									},
+									"invoiceId": {
+										"type": "number",
+										"format": "double"
+									}
+								},
+								"required": [
+									"vendorId",
+									"note",
+									"dueDate",
+									"issuedDate",
+									"jobSiteId",
+									"jobLocationId",
+									"customerContactId",
+									"paymentTermId",
+									"isDraft",
+									"invoiceId"
+								],
+								"type": "object"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/invoice/generateInvoicePdf": {
+			"get": {
+				"operationId": "GenerateInvoicePdf",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"invoiceUrl": {},
+										"message": {
+											"type": "string"
+										},
+										"status": {
+											"type": "number",
+											"format": "double"
+										}
+									},
+									"required": [
+										"invoiceUrl",
+										"message",
+										"status"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Invoice"
+				],
+				"security": [],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "customerId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "companyId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
 			}
 		},
 		"/job-location": {

@@ -1,15 +1,17 @@
 import XLSX from "xlsx-js-style";
-import { PrismaClient } from "@prisma/client";
+import { InvoiceStatus, PrismaClient } from "@prisma/client";
 import moment from "moment";
 import { Invoice } from "../../models/v3/invoiceModel";
 import { InvoiceRequestBody } from "../../types/v3/invoice";
 import { _converInvoiceToRowExcel } from "../../controllers/v2/invoice";
 import { EmailTypes } from  "../../models/EmailDefault"
-import { Messages, Status } from "../../common/constants"
+import { DefaultCommission, Messages, Status } from "../../common/constants"
 import {transformPlaceholders, _createCompanyDefaultEmail} from "../../controllers/emailDefault"
 import { INVOICE_PDF_PATH } from "../../common/config";
 import { _generateInvoicePdf } from "../../controllers/invoice";
-import { sendInvoiceEmailToCustomer } from "../aws";
+import { sendInvoiceEmailToCustomer, uploadFileInS3 } from "../aws";
+import * as helper from "../../services/helper";
+
 
 const prisma = new PrismaClient();
 
@@ -632,4 +634,351 @@ export class InvoiceService {
             return { status: Status.Error, message: Messages.GenericError }
         }
     }
+
+    async updateInvoice(params: {
+      invoiceId: number;
+      isDraft: boolean;
+      paymentTermId: number;
+      customerContactId: number;
+      jobLocationId: number;
+      jobSiteId: number;
+      charges?: number;
+      tax?: number;
+      issuedDate: string | Date;
+      dueDate: string | Date;
+      timeSpent?: number;
+      includePO?: boolean;
+      items?: any[];
+      shippingCost?: number;
+      note: string;
+      vendorId: string;
+    }) {
+      try {
+        const invoice = await prisma.invoice.findUnique({
+          where: { id: params.invoiceId },
+        });
+  
+        if (!invoice) {
+          return { status: Status.Error, message: "Invoice not found" };
+        }
+  
+        if (params.isDraft && invoice.serviceType === InvoiceStatus.UNPAID) {
+          return {
+            status: Status.Error,
+            message:
+              "Cannot update a PAID/PARTIALLY PAID invoce to become draft.",
+          };
+        }
+  
+        const customer = (await prisma.customer.findUnique({
+          where: { id: invoice.customerId },
+          include: { paymentTerm: true },
+        })) as any;
+  
+        const oldIsDraft = invoice.isDraft;
+        const oldTotalInvoice = invoice.total;
+  
+        const paymentTerm = await prisma.paymentterm.findFirst({
+          where: { id: params.paymentTermId, isActive: true },
+        });
+  
+        if (!paymentTerm) {
+          return { status: Status.Error, message: "Payment Term not found" };
+        }
+  
+        const customerContact = await prisma.contact.findUnique({
+          where: { id: params.customerContactId },
+        });
+        if (!customerContact) {
+          return {
+            status: Status.Error,
+            message: "Customer Contact not found",
+          };
+        }
+  
+        const joblocation = await prisma.joblocation.findUnique({
+          where: { id: params.jobLocationId },
+        });
+  
+        if (!joblocation) {
+          return { status: Status.Error, message: "Job Address not found" };
+        }
+  
+        const jobsite = await prisma.jobsite.findUnique({
+          where: { id: params.jobSiteId },
+        });
+  
+        if (!jobsite) {
+          return { status: Status.Error, message: "Subdivision not found" };
+        }
+  
+        if (!params.charges && !params.tax) {
+          return {
+            status: Status.Error,
+            message: "Tax Percentage or charges are required",
+          };
+        }
+  
+        const job = (await prisma.job.findUnique({
+          where: { id: invoice.jobId },
+        })) as any;
+  
+        if (!job) {
+          return {
+            status: Status.Error,
+            message: "job for this invoice is not found",
+          };
+        }
+        const issuedDate = params.issuedDate
+          ? new Date(params.issuedDate)
+          : invoice.issuedDate;
+        const dueDate =
+          params.paymentTermId && paymentTerm
+            ? new Date(params.dueDate)
+            : issuedDate;
+        let charges: number = invoice.charges;
+        let shippingCost: number = invoice.shippingCost;
+        let taxAmount: number = 0;
+        let subTotalBeforeTax: number = 0;
+        let total: number = 0;
+        let paymentApplied = invoice.paymentApplied ?? 0;
+        let balanceDue =
+          invoice.balanceDue ?? invoice.total - paymentApplied ?? invoice.total;
+        let paid = invoice.paid;
+        let status = invoice.serviceType;
+        const oldTotal = invoice.total;
+  
+        if (!params.timeSpent) {
+          return { status: Status.Error, message: "Time spent is required" };
+        }
+        invoice.timeSpent = params.timeSpent;
+  
+        let invoiceItems: any[] = [];
+        if (params.items && params.items.length > 0) {
+          let errorArr: any[] = [];
+  
+          params.items.map((item: any) => {
+            if (
+              (!item.hasOwnProperty("item") ||
+                !item.hasOwnProperty("tax") ||
+                !item.hasOwnProperty("price") ||
+                !item.hasOwnProperty("quantity") ||
+                !item.hasOwnProperty("isFixed")) &&
+              (!item.hasOwnProperty("name") ||
+                !item.hasOwnProperty("description") ||
+                !item.hasOwnProperty("tax") ||
+                !item.hasOwnProperty("price") ||
+                !item.hasOwnProperty("quantity") ||
+                !item.hasOwnProperty("isFixed"))
+            ) {
+              return errorArr.push({
+                status: Status.Error,
+                message: "Items format is invalid",
+              });
+            }
+            let obj: any = {};
+            let price = parseFloat(item.price);
+            let quantity = parseFloat(item.quantity);
+            let itemTax = 0;
+            let itemTaxAmount: number = 0;
+            let subTotal = price * quantity;
+  
+            if (item.tax > 0) {
+              itemTax = parseFloat(item.tax);
+              itemTaxAmount = (subTotal * itemTax) / 100;
+              taxAmount += itemTaxAmount;
+            }
+  
+            obj.quantity = item.quantity;
+            obj.price = Math.round(item.price * 100) / 100;
+            obj.isFixed = item.isFixed;
+            obj.tax = itemTax;
+            obj.taxAmount = Math.round(itemTaxAmount * 100) / 100;
+            obj.subTotal = Math.round(subTotal * 100) / 100;
+  
+            if (!item.item) {
+              obj.name = item.name;
+              obj.description = item.description;
+            } else {
+              obj.item = item.item;
+              obj.name = item.name || item.item?.name;
+              obj.description = item.description || item.item?.description;
+            }
+            invoiceItems.push(obj);
+  
+            subTotalBeforeTax += subTotal;
+            total += subTotal;
+          });
+          if (errorArr.length > 0) {
+            return errorArr[0];
+          }
+        }
+  
+        total += taxAmount;
+        balanceDue += total - oldTotal;
+  
+        if (balanceDue <= 0 || paymentApplied >= total) {
+          customer.credit += Math.abs(balanceDue);
+          paymentApplied = total;
+          balanceDue = 0;
+          status = InvoiceStatus.PAID;
+          paid = true;
+        } else {
+          status =
+            paymentApplied > 0
+              ? InvoiceStatus.PARTIALLY_PAID
+              : InvoiceStatus.UNPAID;
+          paid = false;
+        }
+  
+        if (job.tasksBackup?.length > 0 && customer.isCustomPrice) {
+          const customPrice = customer.customPrices?.find(
+            (cp: any) => cp.quantity === job.tasks?.length
+          );
+          total = customPrice?.price || 0;
+        }
+  
+        if (!invoice.isDraft && job) {
+          const invoiceCommission = (await prisma.invoicecommission.findFirst({
+            where: { invoiceId: invoice.id },
+          })) as any;
+  
+          if (invoiceCommission.technicians) {
+            const totalTechnician = invoiceCommission.technicians?.length;
+            for (const invoiceCommissionTechnician of invoiceCommission?.technicians) {
+              if (invoiceCommissionTechnician.contractor) {
+                const contractor = await prisma.company.findFirst({
+                  where: { id: invoiceCommissionTechnician.contractor },
+                });
+                if (contractor && contractor.commissionType != "fixed") {
+                  if (Number(total) !== Number(oldTotalInvoice)) {
+                    const getCommission = (t: any) =>
+                      ((t / totalTechnician) *
+                        (contractor.commission ??
+                          DefaultCommission.VENDOR_COMMISSION)) /
+                      100;
+                    const oldCommission = getCommission(oldTotal);
+                    let commission = getCommission(total);
+                    commission = Number(commission.toFixed(2));
+                    contractor.balance -= Number(oldCommission.toFixed(2));
+                    contractor.balance += Number(commission.toFixed(2));
+                    invoiceCommissionTechnician.commissionAmount = Number(
+                      commission.toFixed(2) || 0
+                    );
+                  }
+  
+                  await prisma.company.update({
+                    where: { id: contractor.id },
+                    data: contractor,
+                  });
+                }
+              }
+  
+              if (
+                invoiceCommissionTechnician.technician &&
+                !invoiceCommissionTechnician.contractor
+              ) {
+                const technician = await prisma.user.findUnique({
+                  where: { id: invoiceCommissionTechnician.technician },
+                });
+                if (technician) {
+                  if (Number(total) !== Number(oldTotalInvoice)) {
+                    const oldCommission =
+                      ((oldTotal / totalTechnician) *
+                        (technician.commission ??
+                          DefaultCommission.EMPLOYEE_COMMISSION)) /
+                      100;
+                    const commission =
+                      ((total / totalTechnician) *
+                        (technician.commission ??
+                          DefaultCommission.EMPLOYEE_COMMISSION)) /
+                      100;
+                    invoiceCommissionTechnician.commissionAmount = Number(
+                      commission.toFixed(2)
+                    );
+                    technician.balance -= Number(oldCommission.toFixed(2));
+                    technician.balance += Number(commission.toFixed(2));
+                  }
+  
+                  await prisma.user.update({
+                    where: { id: technician.id },
+                    data: technician,
+                  });
+                }
+              }
+            }
+          }
+        }
+  
+        if (params.charges) {
+          charges = params.charges;
+          total += charges;
+        }
+        if (params.shippingCost) {
+          shippingCost = params.shippingCost;
+          total += shippingCost;
+        }
+  
+        const updatedInvoice = await prisma.invoice.update({
+          where: { id: invoice.id },
+          data: {
+            items: invoiceItems,
+            shippingCost: helper.roundTwoDecimal(shippingCost),
+            taxAmount: helper.roundTwoDecimal(taxAmount),
+            subTotal: helper.roundTwoDecimal(subTotalBeforeTax),
+            total: helper.roundTwoDecimal(total),
+            balanceDue: helper.roundTwoDecimal(balanceDue),
+            paymentApplied: helper.roundTwoDecimal(paymentApplied),
+            serviceType: status,
+            paid,
+            charges,
+            issuedDate,
+            dueDate,
+            note: params.note,
+            isDraft: params.isDraft,
+            customerContactId: customerContact.id,
+            jobLocationId: joblocation.id || null,
+            jobSiteId: jobsite.id || null,
+            vendorId: params.vendorId,
+            paymentTermId: params.paymentTermId || null,
+          },
+        });
+  
+        return {
+          status: Status.Success,
+          message: "Invoice updated successfully",
+          invoice: updatedInvoice,
+        };
+      } catch (e) {
+        return { status: Status.Error, message: Messages.GenericError };
+      }
+    }
+
+    async generateInvoicePdf(cusId: string, invId: string) {
+      const invoiceId = parseInt(invId);
+      const customerId = parseInt(cusId);
+      const invoice = (await prisma.invoice.findFirst({
+        where: { id: invoiceId, customerId },
+        include: {
+          customer: true,
+          jobLocation: true,
+          jobSite: true,
+          customerContact: true,
+          paymentTerm: true,
+          companyLocation: true,
+          company: true,
+        },
+      })) as any;
+  
+      const filepath = `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
+  
+      await _generateInvoicePdf(invoice.company, invoice);
+      const invoiceUrl = await uploadFileInS3(filepath, "pdf");
+      return {
+        status: Status.Success,
+        message: "Invoice Successfully Generated",
+        invoiceUrl: invoiceUrl,
+      };
+    }
+  
 }
