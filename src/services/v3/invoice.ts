@@ -981,4 +981,72 @@ export class InvoiceService {
       };
     }
   
+  async updateInvoiceMessages(params: {
+    invoiceId: number;
+    showJobId?: boolean;
+    technicianMessages?: {
+      notes: {
+        id: string;
+        comment: string;
+      }[];
+      images: string[];
+    };
+  }) {
+    const invoice = (await prisma.invoice.findFirst({
+      where: { id: params.invoiceId },
+    })) as any;
+
+    if (!invoice) {
+      return { status: Status.Error, error: "Invoice not found" };
+    }
+
+    invoice.technicianMessages = {
+      notes:
+        params.technicianMessages.notes || invoice.technicianMessages.notes,
+      image:
+        params.technicianMessages.images || invoice.technicianMessages.images,
+    };
+
+    if ([true, false].includes(params.showJobId)) {
+      invoice.showJobId = params.showJobId;
+    }
+  }
+
+  async getInvoiceDetail(invoiceId: number) {
+    const invoice = await prisma.invoice.findFirst({
+      where: { id: invoiceId },
+      include: {
+        job: true,
+        paymentTerm: true,
+        customer: true,
+        jobLocation: true,
+        jobSite: true,
+        customerContact: true,
+        company: true,
+        companyLocation: true,
+        createdBy: true,
+        workType: true,
+        paymentcustomer: true,
+      },
+    });
+
+    if (!invoice) {
+      return { status: Status.Error, error: "Invoice not found" };
+    }
+    const payments = await prisma.paymentcustomer.findMany({
+      where: {
+        OR: [
+          { id: invoiceId },
+          {
+            companyLocations: {
+              some: { invoice: { some: { id: invoiceId } } },
+            },
+          },
+        ],
+      },
+    });
+
+    return { status: Status.Success, invoice, payments };
+  }
+
 }

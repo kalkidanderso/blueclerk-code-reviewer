@@ -192,6 +192,10 @@
 				"type": "object",
 				"additionalProperties": false
 			},
+			"GetResult_any.any.any_": {
+				"properties": {},
+				"type": "object"
+			},
 			"timestamp": {
 				"type": "string",
 				"format": "date-time"
@@ -2069,6 +2073,328 @@
 					{
 						"in": "query",
 						"name": "companyId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/invoice/updateInvoiceMessages": {
+			"post": {
+				"operationId": "UpdateInvoiceMessages",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										},
+										"status": {
+											"type": "number",
+											"format": "double"
+										}
+									},
+									"required": [
+										"error",
+										"status"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Invoice"
+				],
+				"security": [],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"properties": {
+									"technicianMessages": {
+										"properties": {
+											"images": {
+												"items": {
+													"type": "string"
+												},
+												"type": "array"
+											},
+											"notes": {
+												"items": {
+													"properties": {
+														"comment": {
+															"type": "string"
+														},
+														"id": {
+															"type": "string"
+														}
+													},
+													"required": [
+														"comment",
+														"id"
+													],
+													"type": "object"
+												},
+												"type": "array"
+											}
+										},
+										"required": [
+											"images",
+											"notes"
+										],
+										"type": "object"
+									},
+									"showJobId": {
+										"type": "boolean"
+									},
+									"invoiceId": {
+										"type": "number",
+										"format": "double"
+									}
+								},
+								"required": [
+									"invoiceId"
+								],
+								"type": "object"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/invoice/getInvoiceDetail": {
+			"get": {
+				"operationId": "GetInvoiceDetail",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"anyOf": [
+										{
+											"properties": {
+												"payments": {},
+												"invoice": {},
+												"error": {
+													"type": "string"
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"error",
+												"status"
+											],
+											"type": "object"
+										},
+										{
+											"properties": {
+												"error": {},
+												"payments": {
+													"items": {
+														"allOf": [
+															{
+																"$ref": "#/components/schemas/GetResult_any.any.any_"
+															},
+															{
+																"properties": {},
+																"type": "object"
+															}
+														]
+													},
+													"type": "array"
+												},
+												"invoice": {
+													"allOf": [
+														{
+															"properties": {
+																"paymentcustomer": {
+																	"items": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"type": "array"
+																},
+																"workType": {
+																	"allOf": [
+																		{
+																			"$ref": "#/components/schemas/GetResult_any.any.any_"
+																		},
+																		{
+																			"properties": {},
+																			"type": "object"
+																		}
+																	]
+																},
+																"createdBy": {
+																	"allOf": [
+																		{
+																			"$ref": "#/components/schemas/GetResult_any.any.any_"
+																		},
+																		{
+																			"properties": {},
+																			"type": "object"
+																		}
+																	]
+																},
+																"companyLocation": {
+																	"allOf": [
+																		{
+																			"$ref": "#/components/schemas/GetResult_any.any.any_"
+																		},
+																		{
+																			"properties": {},
+																			"type": "object"
+																		}
+																	]
+																},
+																"company": {
+																	"allOf": [
+																		{
+																			"$ref": "#/components/schemas/GetResult_any.any.any_"
+																		},
+																		{
+																			"properties": {},
+																			"type": "object"
+																		}
+																	]
+																},
+																"customerContact": {
+																	"allOf": [
+																		{
+																			"$ref": "#/components/schemas/GetResult_any.any.any_"
+																		},
+																		{
+																			"properties": {},
+																			"type": "object"
+																		}
+																	]
+																},
+																"jobSite": {
+																	"allOf": [
+																		{
+																			"$ref": "#/components/schemas/GetResult_any.any.any_"
+																		},
+																		{
+																			"properties": {},
+																			"type": "object"
+																		}
+																	]
+																},
+																"jobLocation": {
+																	"allOf": [
+																		{
+																			"$ref": "#/components/schemas/GetResult_any.any.any_"
+																		},
+																		{
+																			"properties": {},
+																			"type": "object"
+																		}
+																	]
+																},
+																"customer": {
+																	"allOf": [
+																		{
+																			"$ref": "#/components/schemas/GetResult_any.any.any_"
+																		},
+																		{
+																			"properties": {},
+																			"type": "object"
+																		}
+																	]
+																},
+																"paymentTerm": {
+																	"allOf": [
+																		{
+																			"$ref": "#/components/schemas/GetResult_any.any.any_"
+																		},
+																		{
+																			"properties": {},
+																			"type": "object"
+																		}
+																	]
+																},
+																"job": {
+																	"allOf": [
+																		{
+																			"$ref": "#/components/schemas/GetResult_any.any.any_"
+																		},
+																		{
+																			"properties": {},
+																			"type": "object"
+																		}
+																	]
+																}
+															},
+															"required": [
+																"paymentcustomer",
+																"workType",
+																"createdBy",
+																"companyLocation",
+																"company",
+																"customerContact",
+																"jobSite",
+																"jobLocation",
+																"customer",
+																"paymentTerm",
+																"job"
+															],
+															"type": "object"
+														},
+														{
+															"$ref": "#/components/schemas/GetResult_any.any.any_"
+														},
+														{
+															"properties": {},
+															"type": "object"
+														}
+													]
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"payments",
+												"invoice",
+												"status"
+											],
+											"type": "object"
+										}
+									]
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Invoice"
+				],
+				"security": [],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "invoiceId",
 						"required": true,
 						"schema": {
 							"type": "string"
