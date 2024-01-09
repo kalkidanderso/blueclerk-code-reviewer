@@ -262,5 +262,13 @@ export class GetInvoiceController extends Controller {
       return invoiceService.getInvoiceDetail(parseInt(invoiceId));
     }
   
-  
+  @Post("unvoidInvoice")
+  public async unvoidInvoice(
+    @BodyProp("invoiceId")
+    invoiceId: number
+  ) {
+    const invoiceService = new InvoiceService.InvoiceService();
+    return invoiceService.unvoidInvoice(invoiceId);
+  }
+
 }

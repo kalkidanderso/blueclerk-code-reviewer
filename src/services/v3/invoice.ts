@@ -1049,4 +1049,57 @@ export class InvoiceService {
     return { status: Status.Success, invoice, payments };
   }
 
+  async unvoidInvoice(invoiceId: number) {
+    let invoice = await prisma.invoice.findFirst({
+      where: { id: invoiceId },
+    });
+
+    if (!invoice) {
+      return { status: Status.Error, error: "Invoice not found" };
+    }
+
+    if (invoice.isVoid === false) {
+      return { status: Status.Error, message: "Invoice already un-voided." };
+    }
+
+    if (invoice.serviceType !== InvoiceStatus.UNPAID) {
+      return {
+        status: Status.Error,
+        message:
+          "Invoice already paid or partially paid, cannot void this invoice.",
+      };
+    }
+
+    invoice.createdAt = new Date();
+    invoice.updatedAt = new Date();
+    invoice.invoiceId = `Invoice ${invoice.invoiceId.split(" ")[1] + 1}`;
+    invoice.isVoid = false;
+    invoice = await prisma.invoice.update({
+      where: { id: invoice.id },
+      data: invoice,
+    });
+
+    const updatedInvoice = await prisma.invoice.findUnique({
+      where: { id: invoice.id },
+      include: { job: true, customer: true, jobSite: true },
+    });
+
+    if (!updatedInvoice.isDraft) {
+      if (updatedInvoice.job) {
+        updatedInvoice.customer.balance += updatedInvoice.total;
+        await prisma.customer.update({
+          where: { id: updatedInvoice.customer.id },
+          data: updatedInvoice.customer,
+        });
+      }
+    }
+
+    return {
+      status: Status.Success,
+      message: "Duplicate Job invoice created successfully.",
+      invoice,
+    };
+  }
+
+
 }
