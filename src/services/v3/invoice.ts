@@ -1152,4 +1152,89 @@ export class InvoiceService {
       invoice,
     };
   }
+
+  async getUnsyncedInvoices({
+    customerId,
+    dueDate,
+    endDate,
+    keyword,
+    startDate,
+    status,
+  }: {
+    keyword?: string;
+    customerId?: string;
+    status?: string;
+    dueDate?: string;
+    startDate?: string;
+    endDate?: string;
+  }) {
+    const andQuery: any[] = [];
+    const orQuery: any[] = [];
+    andQuery.push(
+      { isDraft: { not: true } },
+      { isVoid: { not: true } },
+      { quickbookId: null }
+    );
+
+    if (keyword) {
+      orQuery.push(
+        { invoiceId: { contains: keyword } },
+        { serviceType: { in: "PAID" } },
+        { customerPO: { contains: keyword } },
+        { vendorId: { contains: keyword } },
+        { jobId: { equals: parseInt(keyword) } },
+        { customer: { contactName: { contains: keyword } } },
+        { jobLocation: { name: { contains: keyword } } },
+        { jobLocation: { address: { string_contains: keyword } } },
+        { technicianMessages: { string_contains: keyword } }
+      );
+    }
+
+    if (customerId) {
+      andQuery.push({ customerId: customerId });
+    }
+
+    if (dueDate) {
+      andQuery.push({ dueDate: { lte: new Date(dueDate) } });
+    }
+
+    if (startDate && endDate) {
+      andQuery.push({
+        issuedDate: { gte: new Date(startDate), lte: new Date(endDate) },
+      });
+    }
+
+    if (status) {
+      andQuery.push({ serviceType: { in: JSON.parse(status) } });
+    }
+
+    const invoices = await prisma.invoice.findMany({
+      where: {
+        AND: andQuery,
+        OR: orQuery,
+      },
+      include: {
+        company: true,
+        companyLocation: true,
+        customer: true,
+        customerContact: true,
+        invoicecommission: true,
+        job: true,
+        jobLocation: true,
+        jobSite: true,
+        paymentcustomer: true,
+        paymentTerm: true,
+        workType: true,
+        paymentvendors: true,
+        createdBy: true,
+      },
+    });
+
+    return {
+      status: Status.Success,
+      total: invoices.length,
+      invoices,
+    };
+  }
+
 }

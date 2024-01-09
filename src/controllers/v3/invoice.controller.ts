@@ -1,3 +1,4 @@
+import { InvoiceStatus } from '@prisma/client';
 import { Controller, Route, Tags, Query, Get, Post, Body, BodyProp, Delete } from 'tsoa';
 import * as InvoiceService from '../../services/v3/invoice'
 import * as InvoiceInterface from "../../types/v3/invoice"
@@ -279,4 +280,31 @@ export class GetInvoiceController extends Controller {
     const invoiceService = new InvoiceService.InvoiceService();
     return invoiceService.voidInvoice(invoiceId);
   }
+
+  @Get("getUnsyncedInvoices")
+  public async getUnsyncedInvoices(
+    @Query("keyword")
+    keyword?: string,
+    @Query("customerId")
+    customerId?: string,
+    @Query("status")
+    status?: InvoiceStatus,
+    @Query("dueDate")
+    dueDate?: string,
+    @Query("startDate")
+    startDate?: string,
+    @Query("endDate")
+    endDate?: string
+  ) {
+    const invoiceService = new InvoiceService.InvoiceService();
+    return invoiceService.getUnsyncedInvoices({
+      keyword,
+      customerId,
+      status,
+      dueDate,
+      startDate,
+      endDate,
+    });
+  }
+
 }

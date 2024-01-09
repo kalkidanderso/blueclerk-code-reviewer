@@ -86,6 +86,11 @@ const models: TsoaRoute.Models = {
         "type": {"dataType":"nestedObjectLiteral","nestedProperties":{},"validators":{}},
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "InvoiceStatus": {
+        "dataType": "refAlias",
+        "type": {"dataType":"union","subSchemas":[{"dataType":"enum","enums":["UNPAID"]},{"dataType":"enum","enums":["PARTIALLY_PAID"]},{"dataType":"enum","enums":["PAID"]}],"validators":{}},
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "timestamp": {
         "dataType": "refAlias",
         "type": {"dataType":"datetime","validators":{}},
@@ -774,6 +779,36 @@ export function RegisterRoutes(app: express.Router) {
 
 
               const promise = controller.voidInvoice.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.get('/api/v3/invoice/getUnsyncedInvoices',
+            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController)),
+            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController.prototype.getUnsyncedInvoices)),
+
+            function GetInvoiceController_getUnsyncedInvoices(request: any, response: any, next: any) {
+            const args = {
+                    keyword: {"in":"query","name":"keyword","dataType":"string"},
+                    customerId: {"in":"query","name":"customerId","dataType":"string"},
+                    status: {"in":"query","name":"status","ref":"InvoiceStatus"},
+                    dueDate: {"in":"query","name":"dueDate","dataType":"string"},
+                    startDate: {"in":"query","name":"startDate","dataType":"string"},
+                    endDate: {"in":"query","name":"endDate","dataType":"string"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new GetInvoiceController();
+
+
+              const promise = controller.getUnsyncedInvoices.apply(controller, validatedArgs as any);
               promiseHandler(controller, promise, response, undefined, next);
             } catch (err) {
                 return next(err);
