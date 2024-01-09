@@ -171,14 +171,21 @@ class JobReportServices {
     }
 
     // TODO CHANGE ANY
-    async getJobReportEmailTemplate(jobReportId: number, companyId: number, company: any): Promise<{ status: number, jobReport?: JobReports, emailTemplate?: any, message?: any}> {
+    async getJobReportEmailTemplate(jobReportId: number, companyId: number): Promise<{ status: number, jobReport?: JobReports, emailTemplate?: any, message?: any}> {
         try {
             const jobReport = await this.jobReportsModel.findById(jobReportId, companyId);
-    
+            // TODO CHANGE BY REQ.COMPANY ?
+            const company = await this.prisma.company.findFirst({
+                where: { id: companyId },
+                include: {
+                    info: true
+                }
+            })
             if (!jobReport) {
                 return { status: Status.NotFound, message: "Report was not found" };
             }    
     
+            // TODO REMOVE UNUSED ?
             const jobTypes = jobReport.job.tasks?.flatMap((task: { jobType: any[]; }) => task.jobType?.map(jobType => `${jobType.title} (${jobType.description})`)) ?? [];
             const customerEmail = jobReport.job.customer?.info?.email;
             const customerName = jobReport.job.customer?.profile?.displayName;

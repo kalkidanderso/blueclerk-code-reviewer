@@ -15,6 +15,9 @@ let mockPrisma = {
     },
     purchaseOrder: {
         findMany: jest.fn()
+    },
+    company: {
+        findFirst: jest.fn()
     }
 };
 
@@ -305,16 +308,18 @@ describe('JobReportServices', () => {
 
         it('should throw an error if no job report is found', async () => {
             mockJobReportsModel.findById.mockResolvedValue(null);
-
-            const error = await jobReportServices.getJobReportEmailTemplate(validReportId, companyId, company);
+            mockPrisma.company.findFirst = jest.fn(() => company);
+            
+            const error = await jobReportServices.getJobReportEmailTemplate(validReportId, companyId);
             expect(error.message).toBe('Report was not found');
             expect(error.status).toBe(Status.NotFound);
         });
 
         it('should throw an error on unexpected error', async () => {
             mockJobReportsModel.findById = jest.fn(async () => { throw new Error("test error")});
+            mockPrisma.company.findFirst = jest.fn(() => company);
 
-            const error = await jobReportServices.getJobReportEmailTemplate(validReportId, companyId, company);
+            const error = await jobReportServices.getJobReportEmailTemplate(validReportId, companyId);
             expect(error.message).toBe('test error');
             expect(error.status).toBe(Status.Error);
             expect(mockJobReportsModel.findById).toHaveBeenCalled();
@@ -331,9 +336,11 @@ describe('JobReportServices', () => {
                 },
                 jobDate: new Date('2023-01-01'),
             };
+
+            mockPrisma.company.findFirst = jest.fn(() => company);
             mockJobReportsModel.findById.mockResolvedValue(jobReport);
 
-            const response = await jobReportServices.getJobReportEmailTemplate(validReportId, companyId, company);
+            const response = await jobReportServices.getJobReportEmailTemplate(validReportId, companyId);
 
             expect(response.status).toBe(Status.Success);
             expect(response.jobReport).toBe(jobReport);

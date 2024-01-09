@@ -2,6 +2,7 @@ import advancePayment from "./advancePayment";
 import serviceTicket from "./serviceTicket";
 import jobLocation from "./jobLocation";
 import jobSites from "./jobSites";
+import jobReport from "./jobReport";
 
 const app = require("../../../server");
 import { PrismaClient } from "@prisma/client";
@@ -424,7 +425,7 @@ afterAll(async () => {
 
 const unitTest = () => {
   serviceTicket(app), advancePayment(app), jobLocation(app);
-  jobLocation(app), jobSites(app);
+  jobLocation(app), jobSites(app), jobReport(app);
   invoiceControllerTest(app);
 };
 
