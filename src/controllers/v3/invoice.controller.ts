@@ -1,4 +1,4 @@
-import { Controller, Route, Tags, Query, Get, Post, Body, BodyProp } from 'tsoa';
+import { Controller, Route, Tags, Query, Get, Post, Body, BodyProp, Delete } from 'tsoa';
 import * as InvoiceService from '../../services/v3/invoice'
 import * as InvoiceInterface from "../../types/v3/invoice"
 
@@ -271,4 +271,12 @@ export class GetInvoiceController extends Controller {
     return invoiceService.unvoidInvoice(invoiceId);
   }
 
+  @Delete("voidInvoice")
+  public async voidInvoice(
+    @BodyProp("invoiceId")
+    invoiceId: number
+  ) {
+    const invoiceService = new InvoiceService.InvoiceService();
+    return invoiceService.voidInvoice(invoiceId);
+  }
 }

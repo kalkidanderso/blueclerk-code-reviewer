@@ -1101,5 +1101,55 @@ export class InvoiceService {
     };
   }
 
+  async voidInvoice(invoiceId: number) {
+    const invoice = await prisma.invoice.findUnique({
+      where: { id: invoiceId },
+    });
 
+    if (!invoice) {
+      return { status: Status.Error, message: "Invoice not found." };
+    }
+
+    if (invoice.isVoid) {
+      return { status: Status.Error, message: "Invoice already voided." };
+    }
+
+    if (invoice.serviceType !== InvoiceStatus.UNPAID) {
+      return {
+        status: Status.Error,
+        message:
+          "Invoice already paid or partially paid, cannot void this invoice.",
+      };
+    }
+
+    const invoicecommission = prisma.invoicecommission.findUnique({
+      where: { id: invoice.id },
+    });
+
+    if (invoicecommission) {
+      prisma.invoicecommission.delete({ where: { id: invoice.id } });
+    }
+
+    invoice.isVoid = true;
+    await prisma.invoice.update({ where: { id: invoice.id }, data: invoice });
+
+    const customer = await prisma.customer.findUnique({
+      where: { id: invoice.customerId },
+    });
+
+    if (customer) {
+      customer.balance -= invoice.total;
+      customer.balance = Math.round(customer.balance * 100) / 100;
+      await prisma.customer.update({
+        where: { id: customer.id },
+        data: customer,
+      });
+    }
+
+    return {
+      status: Status.Success,
+      message: "Invoice voided successfully",
+      invoice,
+    };
+  }
 }
