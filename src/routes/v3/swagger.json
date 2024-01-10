@@ -3041,6 +3041,534 @@
 				]
 			}
 		},
+		"/invoice/getInvoicesByCustomerId": {
+			"get": {
+				"operationId": "GetInvoicesByCustomerId",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"anyOf": [
+										{
+											"properties": {
+												"invoices": {},
+												"message": {
+													"type": "string"
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"message",
+												"status"
+											],
+											"type": "object"
+										},
+										{
+											"properties": {
+												"message": {},
+												"invoices": {
+													"items": {
+														"allOf": [
+															{
+																"properties": {
+																	"createdBy": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"paymentvendors": {
+																		"items": {
+																			"allOf": [
+																				{
+																					"$ref": "#/components/schemas/GetResult_any.any.any_"
+																				},
+																				{
+																					"properties": {},
+																					"type": "object"
+																				}
+																			]
+																		},
+																		"type": "array"
+																	},
+																	"workType": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"paymentTerm": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"paymentcustomer": {
+																		"items": {
+																			"allOf": [
+																				{
+																					"$ref": "#/components/schemas/GetResult_any.any.any_"
+																				},
+																				{
+																					"properties": {},
+																					"type": "object"
+																				}
+																			]
+																		},
+																		"type": "array"
+																	},
+																	"jobSite": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"jobLocation": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"job": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"invoicecommission": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"customerContact": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"customer": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"companyLocation": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"company": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	}
+																},
+																"required": [
+																	"createdBy",
+																	"paymentvendors",
+																	"workType",
+																	"paymentTerm",
+																	"paymentcustomer",
+																	"jobSite",
+																	"jobLocation",
+																	"job",
+																	"invoicecommission",
+																	"customerContact",
+																	"customer",
+																	"companyLocation",
+																	"company"
+																],
+																"type": "object"
+															},
+															{
+																"$ref": "#/components/schemas/GetResult_any.any.any_"
+															},
+															{
+																"properties": {},
+																"type": "object"
+															}
+														]
+													},
+													"type": "array"
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"invoices",
+												"status"
+											],
+											"type": "object"
+										}
+									]
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Invoice"
+				],
+				"security": [],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "customerId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/invoice/getInvoicesByContractor": {
+			"get": {
+				"operationId": "GetInvoicesByContractor",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"anyOf": [
+										{
+											"properties": {
+												"invoices": {},
+												"message": {
+													"type": "string"
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"message",
+												"status"
+											],
+											"type": "object"
+										},
+										{
+											"properties": {
+												"message": {},
+												"invoices": {
+													"items": {
+														"allOf": [
+															{
+																"properties": {
+																	"createdBy": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"paymentvendors": {
+																		"items": {
+																			"allOf": [
+																				{
+																					"$ref": "#/components/schemas/GetResult_any.any.any_"
+																				},
+																				{
+																					"properties": {},
+																					"type": "object"
+																				}
+																			]
+																		},
+																		"type": "array"
+																	},
+																	"workType": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"paymentTerm": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"paymentcustomer": {
+																		"items": {
+																			"allOf": [
+																				{
+																					"$ref": "#/components/schemas/GetResult_any.any.any_"
+																				},
+																				{
+																					"properties": {},
+																					"type": "object"
+																				}
+																			]
+																		},
+																		"type": "array"
+																	},
+																	"jobSite": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"jobLocation": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"job": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"invoicecommission": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"customerContact": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"customer": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"companyLocation": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"company": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	}
+																},
+																"required": [
+																	"createdBy",
+																	"paymentvendors",
+																	"workType",
+																	"paymentTerm",
+																	"paymentcustomer",
+																	"jobSite",
+																	"jobLocation",
+																	"job",
+																	"invoicecommission",
+																	"customerContact",
+																	"customer",
+																	"companyLocation",
+																	"company"
+																],
+																"type": "object"
+															},
+															{
+																"$ref": "#/components/schemas/GetResult_any.any.any_"
+															},
+															{
+																"properties": {},
+																"type": "object"
+															}
+														]
+													},
+													"type": "array"
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"invoices",
+												"status"
+											],
+											"type": "object"
+										}
+									]
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Invoice"
+				],
+				"security": [],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "type",
+						"required": true,
+						"schema": {
+							"type": "string",
+							"enum": [
+								"vendor",
+								"employee"
+							]
+						}
+					},
+					{
+						"in": "query",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "name",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "startDate",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"in": "query",
+						"name": "endDate",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
 		"/job-location": {
 			"post": {
 				"operationId": "AddJobLocation",

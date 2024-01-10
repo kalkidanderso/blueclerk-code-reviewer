@@ -1263,4 +1263,123 @@ export class InvoiceService {
     return { status: Status.Success, companyInvoice: invoice };
   }
 
+  async getInvoicesByCustomerId(customerId: string) {
+    if (!parseInt(customerId)) {
+      return { status: Status.Error, message: "Wrong Input" };
+    }
+
+    const invoices = await prisma.invoice.findMany({
+      where: { customerId: parseInt(customerId) },
+      include: {
+        company: true,
+        companyLocation: true,
+        customer: true,
+        customerContact: true,
+        invoicecommission: true,
+        job: true,
+        jobLocation: true,
+        jobSite: true,
+        paymentcustomer: true,
+        paymentTerm: true,
+        workType: true,
+        paymentvendors: true,
+        createdBy: true,
+      },
+    });
+
+    return { status: Status.Success, invoices: invoices };
+  }
+
+  async getInvoicesByContractor({
+    id,
+    type,
+    endDate,
+    name,
+    startDate,
+  }: {
+    type: string;
+    id: string;
+    name?: string;
+    startDate?: string;
+    endDate?: string;
+  }) {
+    const andQuery: any[] = [];
+    const orQuery: any[] = [];
+
+    if (startDate && endDate) {
+      andQuery.push({
+        issuedDate: { gte: new Date(startDate), lte: new Date(endDate) },
+      });
+    }
+
+    if (name) {
+      orQuery.push(
+        { note: { contains: name } },
+        { vendorId: { contains: name } },
+        { invoiceId: { contains: name } }
+      );
+    }
+
+    if (!id || !parseInt(id)) {
+      return {
+        status: Status.Error,
+        message: "Id is required",
+      };
+    }
+
+    let jobQuery;
+
+    switch (type) {
+      case "vendor":
+        jobQuery = {
+          contractor: { id: parseInt(id) },
+        };
+        break;
+      case "employee":
+        jobQuery = {
+          technician: { id: parseInt(id) },
+        };
+        break;
+      default:
+        return { status: Status.Error, message: "Type is required" };
+    }
+
+    const jobs = await prisma.job.findMany({
+      where: {
+        tasks: {
+          some: jobQuery,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (jobs.length) {
+      andQuery.push({ jobId: { in: jobs.map((job) => job.id) } });
+    }
+
+    const invoices = await prisma.invoice.findMany({
+      where: {
+        AND: andQuery,
+        OR: orQuery,
+      },
+      include: {
+        company: true,
+        companyLocation: true,
+        customer: true,
+        customerContact: true,
+        invoicecommission: true,
+        job: true,
+        jobLocation: true,
+        jobSite: true,
+        paymentcustomer: true,
+        paymentTerm: true,
+        workType: true,
+        paymentvendors: true,
+        createdBy: true,
+      },
+    });
+
+    return { status: Status.Success, invoices };
+  }
+
 }

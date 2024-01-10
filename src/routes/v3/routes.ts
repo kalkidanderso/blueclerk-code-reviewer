@@ -865,6 +865,60 @@ export function RegisterRoutes(app: express.Router) {
             }
         });
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.get('/api/v3/invoice/getInvoicesByCustomerId',
+            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController)),
+            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController.prototype.getInvoicesByCustomerId)),
+
+            function GetInvoiceController_getInvoicesByCustomerId(request: any, response: any, next: any) {
+            const args = {
+                    customerId: {"in":"query","name":"customerId","required":true,"dataType":"string"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new GetInvoiceController();
+
+
+              const promise = controller.getInvoicesByCustomerId.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.get('/api/v3/invoice/getInvoicesByContractor',
+            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController)),
+            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController.prototype.getInvoicesByContractor)),
+
+            function GetInvoiceController_getInvoicesByContractor(request: any, response: any, next: any) {
+            const args = {
+                    type: {"in":"query","name":"type","required":true,"dataType":"union","subSchemas":[{"dataType":"enum","enums":["vendor"]},{"dataType":"enum","enums":["employee"]}]},
+                    id: {"in":"query","name":"id","required":true,"dataType":"string"},
+                    name: {"in":"query","name":"name","dataType":"string"},
+                    startDate: {"in":"query","name":"startDate","dataType":"string"},
+                    endDate: {"in":"query","name":"endDate","dataType":"string"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new GetInvoiceController();
+
+
+              const promise = controller.getInvoicesByContractor.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
         app.post('/api/v3/job-location',
             authenticateMiddleware([{"jwt":[]}]),
             ...(fetchMiddlewares<RequestHandler>(JobLocationController)),

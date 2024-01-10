@@ -320,4 +320,33 @@ export class GetInvoiceController extends Controller {
     const invoiceService = new InvoiceService.InvoiceService();
     return invoiceService.getCompanyInvoiceDetails(companyInvoiceId);
   }
+
+  @Get("getInvoicesByCustomerId")
+  public async getInvoicesByCustomerId(
+    @Query("customerId") customerId: string
+  ) {
+    const invoiceService = new InvoiceService.InvoiceService();
+    return invoiceService.getInvoicesByCustomerId(customerId);
+  }
+
+  @Get("getInvoicesByContractor")
+  public async getInvoicesByContractor(
+    @Query("type") type: "vendor" | "employee",
+    @Query("id") id: string,
+    @Query("name") name?: string,
+    //Filter of start issued date
+    @Query("startDate") startDate?: string,
+    //Filter of end issued date
+    @Query("endDate") endDate?: string
+  ) {
+    const invoiceService = new InvoiceService.InvoiceService();
+    return invoiceService.getInvoicesByContractor({
+      type,
+      id,
+      name,
+      startDate,
+      endDate,
+    });
+  }
+
 }
