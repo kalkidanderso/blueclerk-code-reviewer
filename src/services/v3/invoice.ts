@@ -1237,4 +1237,30 @@ export class InvoiceService {
     };
   }
 
+  async getCompanyInvoices(compantId?: string) {
+    let andArr: any[] = [];
+    if (compantId && parseInt(compantId)) {
+      andArr = [{ companyId: parseInt(compantId) }];
+    }
+    const invoices = await prisma.companyinvoice.findMany({
+      where: { AND: andArr },
+      include: { company: true },
+    });
+
+    return { status: Status.Success, companyInvoices: invoices };
+  }
+
+  async getCompanyInvoiceDetails(companyInvoiceId: string) {
+    if (!parseInt(companyInvoiceId)) {
+      return { status: Status.Error, message: "Wrong Input" };
+    }
+
+    const invoice = await prisma.companyinvoice.findUnique({
+      where: { id: parseInt(companyInvoiceId) },
+      include: { company: true },
+    });
+
+    return { status: Status.Success, companyInvoice: invoice };
+  }
+
 }

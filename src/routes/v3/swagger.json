@@ -2874,6 +2874,173 @@
 				]
 			}
 		},
+		"/invoice/getCompanyInvoices": {
+			"get": {
+				"operationId": "GetCompanyInvoices",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"companyInvoices": {
+											"items": {
+												"allOf": [
+													{
+														"properties": {
+															"company": {
+																"allOf": [
+																	{
+																		"$ref": "#/components/schemas/GetResult_any.any.any_"
+																	},
+																	{
+																		"properties": {},
+																		"type": "object"
+																	}
+																]
+															}
+														},
+														"required": [
+															"company"
+														],
+														"type": "object"
+													},
+													{
+														"$ref": "#/components/schemas/GetResult_any.any.any_"
+													},
+													{
+														"properties": {},
+														"type": "object"
+													}
+												]
+											},
+											"type": "array"
+										},
+										"status": {
+											"type": "number",
+											"format": "double"
+										}
+									},
+									"required": [
+										"companyInvoices",
+										"status"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Invoice"
+				],
+				"security": [],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "compantId",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/invoice/getCompanyInvoiceDetails": {
+			"get": {
+				"operationId": "GetCompanyInvoiceDetails",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"anyOf": [
+										{
+											"properties": {
+												"companyInvoice": {},
+												"message": {
+													"type": "string"
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"message",
+												"status"
+											],
+											"type": "object"
+										},
+										{
+											"properties": {
+												"message": {},
+												"companyInvoice": {
+													"allOf": [
+														{
+															"properties": {
+																"company": {
+																	"allOf": [
+																		{
+																			"$ref": "#/components/schemas/GetResult_any.any.any_"
+																		},
+																		{
+																			"properties": {},
+																			"type": "object"
+																		}
+																	]
+																}
+															},
+															"required": [
+																"company"
+															],
+															"type": "object"
+														},
+														{
+															"$ref": "#/components/schemas/GetResult_any.any.any_"
+														},
+														{
+															"properties": {},
+															"type": "object"
+														}
+													]
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"companyInvoice",
+												"status"
+											],
+											"type": "object"
+										}
+									]
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Invoice"
+				],
+				"security": [],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "companyInvoiceId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
 		"/job-location": {
 			"post": {
 				"operationId": "AddJobLocation",

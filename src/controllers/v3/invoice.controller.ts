@@ -307,4 +307,17 @@ export class GetInvoiceController extends Controller {
     });
   }
 
+  @Get("getCompanyInvoices")
+  public async getCompanyInvoices(@Query("compantId") compantId?: string) {
+    const invoiceService = new InvoiceService.InvoiceService();
+    return invoiceService.getCompanyInvoices(compantId);
+  }
+
+  @Get("getCompanyInvoiceDetails")
+  public async getCompanyInvoiceDetails(
+    @Query("companyInvoiceId") companyInvoiceId: string
+  ) {
+    const invoiceService = new InvoiceService.InvoiceService();
+    return invoiceService.getCompanyInvoiceDetails(companyInvoiceId);
+  }
 }
