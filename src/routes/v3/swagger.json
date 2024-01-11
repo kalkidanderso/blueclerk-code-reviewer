@@ -1286,6 +1286,260 @@
 				}
 			}
 		},
+		"/getCommissionHistory/{beneficiaryId}": {
+			"get": {
+				"operationId": "GetCommissionHistory",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"anyOf": [
+										{
+											"properties": {
+												"history": {},
+												"message": {
+													"type": "string"
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"message",
+												"status"
+											],
+											"type": "object"
+										},
+										{
+											"properties": {
+												"message": {},
+												"history": {
+													"allOf": [
+														{
+															"$ref": "#/components/schemas/GetResult_any.any.any_"
+														},
+														{
+															"properties": {},
+															"type": "object"
+														}
+													]
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"history",
+												"status"
+											],
+											"type": "object"
+										}
+									]
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Commission"
+				],
+				"security": [],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "beneficiaryId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/getCommissionHistoryByJob/{jobId}": {
+			"get": {
+				"operationId": "GetCommissionHistoryByJob",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"anyOf": [
+										{
+											"properties": {
+												"history": {},
+												"message": {
+													"type": "string"
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"message",
+												"status"
+											],
+											"type": "object"
+										},
+										{
+											"properties": {
+												"message": {},
+												"history": {
+													"allOf": [
+														{
+															"$ref": "#/components/schemas/GetResult_any.any.any_"
+														},
+														{
+															"properties": {},
+															"type": "object"
+														}
+													]
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"history",
+												"status"
+											],
+											"type": "object"
+										}
+									]
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Commission"
+				],
+				"security": [],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "jobId",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/updateCommission": {
+			"put": {
+				"operationId": "UpdateCommission",
+				"responses": {
+					"204": {
+						"description": "No content"
+					}
+				},
+				"tags": [
+					"Commission"
+				],
+				"security": [],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"properties": {
+									"userId": {
+										"type": "number",
+										"format": "double"
+									},
+									"commissionEffectiveDate": {
+										"type": "string"
+									},
+									"commission": {
+										"type": "number",
+										"format": "double"
+									},
+									"id": {
+										"type": "number",
+										"format": "double"
+									},
+									"type": {
+										"type": "string"
+									}
+								},
+								"required": [
+									"userId",
+									"commissionEffectiveDate",
+									"id",
+									"type"
+								],
+								"type": "object"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/updateCommissionCron": {
+			"get": {
+				"operationId": "UpdateCommissionCron",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"status": {
+											"type": "number",
+											"format": "double"
+										}
+									},
+									"required": [
+										"status"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Commission"
+				],
+				"security": [],
+				"parameters": []
+			}
+		},
+		"/updateJobCommission/{id}": {
+			"put": {
+				"operationId": "UpdateJobCommission",
+				"responses": {
+					"204": {
+						"description": "No content"
+					}
+				},
+				"tags": [
+					"Commission"
+				],
+				"security": [],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
 		"/invoice": {
 			"get": {
 				"operationId": "GetInvoice",

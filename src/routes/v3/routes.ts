@@ -5,6 +5,8 @@ import { Controller, ValidationService, FieldErrors, ValidateError, TsoaRoute, H
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { AdvancePaymentController } from './../../controllers/v3/advancePayment.controller';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+import { CommissionController } from './../../controllers/v3/commission.controller';
+// WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { GetInvoiceController } from './../../controllers/v3/invoice.controller';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { JobLocationController } from './../../controllers/v3/jobLocation.controller';
@@ -448,6 +450,130 @@ export function RegisterRoutes(app: express.Router) {
 
 
               const promise = controller.voidAdvancePaymentContractor.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.get('/api/v3/getCommissionHistory/:beneficiaryId',
+            ...(fetchMiddlewares<RequestHandler>(CommissionController)),
+            ...(fetchMiddlewares<RequestHandler>(CommissionController.prototype.getCommissionHistory)),
+
+            function CommissionController_getCommissionHistory(request: any, response: any, next: any) {
+            const args = {
+                    beneficiaryId: {"in":"path","name":"beneficiaryId","required":true,"dataType":"string"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new CommissionController();
+
+
+              const promise = controller.getCommissionHistory.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.get('/api/v3/getCommissionHistoryByJob/:jobId',
+            ...(fetchMiddlewares<RequestHandler>(CommissionController)),
+            ...(fetchMiddlewares<RequestHandler>(CommissionController.prototype.getCommissionHistoryByJob)),
+
+            function CommissionController_getCommissionHistoryByJob(request: any, response: any, next: any) {
+            const args = {
+                    jobId: {"in":"path","name":"jobId","required":true,"dataType":"string"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new CommissionController();
+
+
+              const promise = controller.getCommissionHistoryByJob.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.put('/api/v3/updateCommission',
+            ...(fetchMiddlewares<RequestHandler>(CommissionController)),
+            ...(fetchMiddlewares<RequestHandler>(CommissionController.prototype.updateCommission)),
+
+            function CommissionController_updateCommission(request: any, response: any, next: any) {
+            const args = {
+                    params: {"in":"body","name":"params","required":true,"dataType":"nestedObjectLiteral","nestedProperties":{"userId":{"dataType":"double","required":true},"commissionEffectiveDate":{"dataType":"string","required":true},"commission":{"dataType":"double"},"id":{"dataType":"double","required":true},"type":{"dataType":"string","required":true}}},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new CommissionController();
+
+
+              const promise = controller.updateCommission.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.get('/api/v3/updateCommissionCron',
+            ...(fetchMiddlewares<RequestHandler>(CommissionController)),
+            ...(fetchMiddlewares<RequestHandler>(CommissionController.prototype.updateCommissionCron)),
+
+            function CommissionController_updateCommissionCron(request: any, response: any, next: any) {
+            const args = {
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new CommissionController();
+
+
+              const promise = controller.updateCommissionCron.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.put('/api/v3/updateJobCommission/:id',
+            ...(fetchMiddlewares<RequestHandler>(CommissionController)),
+            ...(fetchMiddlewares<RequestHandler>(CommissionController.prototype.updateJobCommission)),
+
+            function CommissionController_updateJobCommission(request: any, response: any, next: any) {
+            const args = {
+                    id: {"in":"path","name":"id","required":true,"dataType":"string"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new CommissionController();
+
+
+              const promise = controller.updateJobCommission.apply(controller, validatedArgs as any);
               promiseHandler(controller, promise, response, undefined, next);
             } catch (err) {
                 return next(err);
