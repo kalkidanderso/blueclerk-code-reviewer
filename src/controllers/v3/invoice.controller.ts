@@ -58,6 +58,41 @@ export class GetInvoiceController extends Controller {
             // throw new Error(err.message);
         }
     }
+
+    @Post("getInvoices")
+    public async getInvoices(
+      @Body()
+      params: {
+        pageSize?: number;
+        nextCursor?: string;
+        previousCursor?: string;
+        keyword?: string;
+        startDate?: string;
+        endDate?: string;
+        jobId?: number;
+        status?: "UNPAID" | "PARTIALLY_PAID" | "PAID";
+        customerId?: number;
+        customerContactId?: number;
+        jobLocationId?: number;
+        jobAddress?: string;
+        jobCity?: string;
+        jobState?: string;
+        jobZip?: string;
+        technicianId?: string;
+        startAmount?: number;
+        endAmount?: number;
+        lastEmailStartDate?: string;
+        lastEmailEndDate?: string;
+        isDraft?: boolean;
+        isVoid?: boolean;
+        dueDate?: string;
+        recentOnly?: boolean;
+      }
+    ) {
+      const invoiceService = new InvoiceService.InvoiceService();
+      return invoiceService.getInvoices(params);
+    }
+  
     /**
    * @summary get invoicein excel.
    */

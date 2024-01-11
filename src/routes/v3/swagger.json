@@ -567,7 +567,6 @@
 					"alternativeId": {
 						"type": "string"
 					},
-					"address": {},
 					"customerId": {
 						"type": "number",
 						"format": "double"
@@ -575,9 +574,11 @@
 					"name": {
 						"type": "string"
 					},
-					"isActive": {
-						"type": "boolean"
+					"homeOwnerId": {
+						"type": "number",
+						"format": "double"
 					},
+					"address": {},
 					"location": {
 						"properties": {
 							"long": {
@@ -593,23 +594,22 @@
 						],
 						"type": "object"
 					},
-					"locationId": {
-						"type": "number",
-						"format": "double"
+					"isActive": {
+						"type": "boolean"
 					},
-					"homeOwnerId": {
+					"locationId": {
 						"type": "number",
 						"format": "double"
 					}
 				},
 				"required": [
 					"alternativeId",
-					"address",
 					"customerId",
 					"name",
-					"isActive",
+					"homeOwnerId",
+					"address",
 					"location",
-					"homeOwnerId"
+					"isActive"
 				],
 				"type": "object",
 				"description": "From T, pick a set of properties whose keys are in the union K"
@@ -619,7 +619,6 @@
 					"alternativeId": {
 						"type": "string"
 					},
-					"address": {},
 					"customerId": {
 						"type": "number",
 						"format": "double"
@@ -627,9 +626,11 @@
 					"name": {
 						"type": "string"
 					},
-					"isActive": {
-						"type": "boolean"
+					"homeOwnerId": {
+						"type": "number",
+						"format": "double"
 					},
+					"address": {},
 					"location": {
 						"properties": {
 							"long": {
@@ -645,23 +646,22 @@
 						],
 						"type": "object"
 					},
-					"locationId": {
-						"type": "number",
-						"format": "double"
+					"isActive": {
+						"type": "boolean"
 					},
-					"homeOwnerId": {
+					"locationId": {
 						"type": "number",
 						"format": "double"
 					}
 				},
 				"required": [
 					"alternativeId",
-					"address",
 					"customerId",
 					"name",
-					"isActive",
+					"homeOwnerId",
+					"address",
 					"location",
-					"homeOwnerId"
+					"isActive"
 				],
 				"type": "object",
 				"additionalProperties": false
@@ -1432,6 +1432,305 @@
 						}
 					}
 				]
+			}
+		},
+		"/invoice/getInvoices": {
+			"post": {
+				"operationId": "GetInvoices",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"anyOf": [
+										{
+											"properties": {
+												"pagination": {},
+												"invoices": {},
+												"unsyncedInvoices": {},
+												"total": {},
+												"message": {
+													"type": "string"
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"message",
+												"status"
+											],
+											"type": "object"
+										},
+										{
+											"properties": {
+												"message": {},
+												"pagination": {
+													"properties": {
+														"pageSize": {
+															"type": "number",
+															"format": "double"
+														},
+														"previousCursor": {
+															"type": "string"
+														},
+														"nextCursor": {
+															"type": "string"
+														}
+													},
+													"required": [
+														"pageSize",
+														"previousCursor",
+														"nextCursor"
+													],
+													"type": "object"
+												},
+												"invoices": {
+													"items": {
+														"allOf": [
+															{
+																"properties": {
+																	"companyLocation": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"paymentTerm": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"customerContact": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"jobSite": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"jobLocation": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"customer": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	},
+																	"job": {
+																		"allOf": [
+																			{
+																				"$ref": "#/components/schemas/GetResult_any.any.any_"
+																			},
+																			{
+																				"properties": {},
+																				"type": "object"
+																			}
+																		]
+																	}
+																},
+																"required": [
+																	"companyLocation",
+																	"paymentTerm",
+																	"customerContact",
+																	"jobSite",
+																	"jobLocation",
+																	"customer",
+																	"job"
+																],
+																"type": "object"
+															},
+															{
+																"$ref": "#/components/schemas/GetResult_any.any.any_"
+															},
+															{
+																"properties": {},
+																"type": "object"
+															}
+														]
+													},
+													"type": "array"
+												},
+												"unsyncedInvoices": {
+													"items": {
+														"allOf": [
+															{
+																"$ref": "#/components/schemas/GetResult_any.any.any_"
+															},
+															{
+																"properties": {},
+																"type": "object"
+															}
+														]
+													},
+													"type": "array"
+												},
+												"total": {
+													"type": "number",
+													"format": "double"
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"pagination",
+												"invoices",
+												"unsyncedInvoices",
+												"total",
+												"status"
+											],
+											"type": "object"
+										}
+									]
+								}
+							}
+						}
+					}
+				},
+				"tags": [
+					"Invoice"
+				],
+				"security": [],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"properties": {
+									"recentOnly": {
+										"type": "boolean"
+									},
+									"dueDate": {
+										"type": "string"
+									},
+									"isVoid": {
+										"type": "boolean"
+									},
+									"isDraft": {
+										"type": "boolean"
+									},
+									"lastEmailEndDate": {
+										"type": "string"
+									},
+									"lastEmailStartDate": {
+										"type": "string"
+									},
+									"endAmount": {
+										"type": "number",
+										"format": "double"
+									},
+									"startAmount": {
+										"type": "number",
+										"format": "double"
+									},
+									"technicianId": {
+										"type": "string"
+									},
+									"jobZip": {
+										"type": "string"
+									},
+									"jobState": {
+										"type": "string"
+									},
+									"jobCity": {
+										"type": "string"
+									},
+									"jobAddress": {
+										"type": "string"
+									},
+									"jobLocationId": {
+										"type": "number",
+										"format": "double"
+									},
+									"customerContactId": {
+										"type": "number",
+										"format": "double"
+									},
+									"customerId": {
+										"type": "number",
+										"format": "double"
+									},
+									"status": {
+										"type": "string",
+										"enum": [
+											"UNPAID",
+											"PARTIALLY_PAID",
+											"PAID"
+										]
+									},
+									"jobId": {
+										"type": "number",
+										"format": "double"
+									},
+									"endDate": {
+										"type": "string"
+									},
+									"startDate": {
+										"type": "string"
+									},
+									"keyword": {
+										"type": "string"
+									},
+									"previousCursor": {
+										"type": "string"
+									},
+									"nextCursor": {
+										"type": "string"
+									},
+									"pageSize": {
+										"type": "number",
+										"format": "double"
+									}
+								},
+								"type": "object"
+							}
+						}
+					}
+				}
 			}
 		},
 		"/invoice/exportInvoicesToExcel": {

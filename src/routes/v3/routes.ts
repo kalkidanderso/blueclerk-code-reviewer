@@ -193,20 +193,20 @@ const models: TsoaRoute.Models = {
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "Pick_IUpdateJobSiteInput.Exclude_keyofIUpdateJobSiteInput.id__": {
         "dataType": "refAlias",
-        "type": {"dataType":"nestedObjectLiteral","nestedProperties":{"alternativeId":{"dataType":"string","required":true},"address":{"dataType":"any","required":true},"customerId":{"dataType":"double","required":true},"name":{"dataType":"string","required":true},"isActive":{"dataType":"boolean","required":true},"location":{"dataType":"nestedObjectLiteral","nestedProperties":{"long":{"dataType":"string","required":true},"lat":{"dataType":"string","required":true}},"required":true},"locationId":{"dataType":"double"},"homeOwnerId":{"dataType":"double","required":true}},"validators":{}},
+        "type": {"dataType":"nestedObjectLiteral","nestedProperties":{"alternativeId":{"dataType":"string","required":true},"customerId":{"dataType":"double","required":true},"name":{"dataType":"string","required":true},"homeOwnerId":{"dataType":"double","required":true},"address":{"dataType":"any","required":true},"location":{"dataType":"nestedObjectLiteral","nestedProperties":{"long":{"dataType":"string","required":true},"lat":{"dataType":"string","required":true}},"required":true},"isActive":{"dataType":"boolean","required":true},"locationId":{"dataType":"double"}},"validators":{}},
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "IUpdateJobSiteArgs": {
         "dataType": "refObject",
         "properties": {
             "alternativeId": {"dataType":"string","required":true},
-            "address": {"dataType":"any","required":true},
             "customerId": {"dataType":"double","required":true},
             "name": {"dataType":"string","required":true},
-            "isActive": {"dataType":"boolean","required":true},
-            "location": {"dataType":"nestedObjectLiteral","nestedProperties":{"long":{"dataType":"string","required":true},"lat":{"dataType":"string","required":true}},"required":true},
-            "locationId": {"dataType":"double"},
             "homeOwnerId": {"dataType":"double","required":true},
+            "address": {"dataType":"any","required":true},
+            "location": {"dataType":"nestedObjectLiteral","nestedProperties":{"long":{"dataType":"string","required":true},"lat":{"dataType":"string","required":true}},"required":true},
+            "isActive": {"dataType":"boolean","required":true},
+            "locationId": {"dataType":"double"},
         },
         "additionalProperties": false,
     },
@@ -487,6 +487,31 @@ export function RegisterRoutes(app: express.Router) {
 
 
               const promise = controller.getInvoice.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.post('/api/v3/invoice/getInvoices',
+            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController)),
+            ...(fetchMiddlewares<RequestHandler>(GetInvoiceController.prototype.getInvoices)),
+
+            function GetInvoiceController_getInvoices(request: any, response: any, next: any) {
+            const args = {
+                    params: {"in":"body","name":"params","required":true,"dataType":"nestedObjectLiteral","nestedProperties":{"recentOnly":{"dataType":"boolean"},"dueDate":{"dataType":"string"},"isVoid":{"dataType":"boolean"},"isDraft":{"dataType":"boolean"},"lastEmailEndDate":{"dataType":"string"},"lastEmailStartDate":{"dataType":"string"},"endAmount":{"dataType":"double"},"startAmount":{"dataType":"double"},"technicianId":{"dataType":"string"},"jobZip":{"dataType":"string"},"jobState":{"dataType":"string"},"jobCity":{"dataType":"string"},"jobAddress":{"dataType":"string"},"jobLocationId":{"dataType":"double"},"customerContactId":{"dataType":"double"},"customerId":{"dataType":"double"},"status":{"dataType":"union","subSchemas":[{"dataType":"enum","enums":["UNPAID"]},{"dataType":"enum","enums":["PARTIALLY_PAID"]},{"dataType":"enum","enums":["PAID"]}]},"jobId":{"dataType":"double"},"endDate":{"dataType":"string"},"startDate":{"dataType":"string"},"keyword":{"dataType":"string"},"previousCursor":{"dataType":"string"},"nextCursor":{"dataType":"string"},"pageSize":{"dataType":"double"}}},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new GetInvoiceController();
+
+
+              const promise = controller.getInvoices.apply(controller, validatedArgs as any);
               promiseHandler(controller, promise, response, undefined, next);
             } catch (err) {
                 return next(err);

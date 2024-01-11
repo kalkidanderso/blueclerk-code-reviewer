@@ -83,6 +83,201 @@ export class InvoiceService {
 
     }
 
+    async getInvoices({
+      customerContactId,
+      customerId,
+      dueDate,
+      endAmount,
+      endDate,
+      isDraft,
+      isVoid,
+      jobAddress,
+      jobCity,
+      jobId,
+      jobLocationId,
+      jobState,
+      jobZip,
+      keyword,
+      lastEmailEndDate,
+      lastEmailStartDate,
+      nextCursor,
+      pageSize,
+      previousCursor,
+      recentOnly,
+      startAmount,
+      startDate,
+      status,
+      technicianId,
+    }: {
+      pageSize?: number;
+      nextCursor?: string;
+      previousCursor?: string;
+      keyword?: string;
+      startDate?: string;
+      endDate?: string;
+      jobId?: number;
+      status?: "UNPAID" | "PARTIALLY_PAID" | "PAID";
+      customerId?: number;
+      customerContactId?: number;
+      jobLocationId?: number;
+      jobAddress?: string;
+      jobCity?: string;
+      jobState?: string;
+      jobZip?: string;
+      technicianId?: string;
+      startAmount?: number;
+      endAmount?: number;
+      lastEmailStartDate?: string;
+      lastEmailEndDate?: string;
+      isDraft?: boolean;
+      isVoid?: boolean;
+      dueDate?: string;
+      recentOnly?: boolean;
+    }) {
+      let andQuery = [];
+      let orQuery = [];
+  
+      if (nextCursor && previousCursor) {
+        return {
+          status: Status.Error,
+          message:
+            "Provided cursor could only be one of either nextCursor or previousCursor.",
+        };
+      }
+  
+      if (startDate && endDate) {
+        andQuery.push({
+          issuedDate: { gte: new Date(startDate), lte: new Date(endDate) },
+        });
+      } else {
+        andQuery.push({
+          issuedDate: { gte: new Date(moment().subtract(90, "days").format()) },
+        });
+      }
+  
+      if (keyword) {
+        orQuery.push(
+          { invoiceId: { contains: keyword } },
+          { customerPO: { contains: keyword } },
+          { vendorId: { contains: keyword } },
+          { jobId: { equals: parseInt(keyword) } },
+          { customer: { profile: { string_contains: keyword } } },
+          { jobLocation: { name: { contains: keyword } } },
+          { jobLocation: { address: { string_contains: keyword } } },
+          { jobSite: { address: { string_contains: keyword } } },
+          { companyLocation: { address: { string_contains: keyword } } }
+        );
+      }
+  
+      if (dueDate) {
+        andQuery.push({ dueDate: { lte: new Date(dueDate) } });
+      }
+  
+      if (status) {
+        andQuery.push({ serviceType: { equals: status } });
+      }
+  
+      if (startAmount) {
+        andQuery.push({ total: { gte: startAmount } });
+      }
+  
+      if (endAmount) {
+        andQuery.push({ total: { lte: endAmount } });
+      }
+  
+      if (customerId) {
+        andQuery.push({ customerId });
+      }
+  
+      if (customerContactId) {
+        andQuery.push({ customerContactId: customerContactId });
+      }
+  
+      if (jobLocationId) {
+        andQuery.push({ jobLocationId });
+      }
+  
+      if ([true, false].includes(isDraft)) {
+        andQuery.push({ isDraft });
+      }
+  
+      if (lastEmailStartDate && lastEmailEndDate) {
+        andQuery.push({
+          lastEmailSent: {
+            gte: new Date(lastEmailStartDate),
+            lte: new Date(lastEmailEndDate),
+          },
+        });
+      }
+  
+      if ([true, false].includes(isVoid)) {
+        andQuery.push({
+          isVoid,
+        });
+      }
+  
+      if (jobId) {
+        andQuery.push({
+          jobId,
+        });
+      }
+  
+      if (nextCursor) {
+        const cursor = JSON.parse(helper.fromCursorHash(nextCursor));
+        orQuery.push({
+          createdAt: { gte: new Date(cursor.createdAt) },
+        });
+      }
+  
+      const invoices = await prisma.invoice.findMany({
+        where: { AND: andQuery, OR: orQuery },
+        include: {
+          job: true,
+          customer: true,
+          jobLocation: true,
+          jobSite: true,
+          customerContact: true,
+          paymentTerm: true,
+          companyLocation: true,
+        },
+        take: pageSize || 30,
+      });
+  
+      const invoiceCount = await prisma.invoice.count({
+        where: { AND: andQuery, OR: orQuery },
+      });
+      let requestNextCursor = {
+        createdAt: invoices[invoices.length - 1].createdAt,
+        id: invoices[invoices.length - 1].id,
+      };
+      let requestPreviousCursor = {
+        createdAt: invoices[0].createdAt,
+        id: invoices[0].id,
+      };
+  
+      const unsyncedInvoices = await prisma.invoice.findMany({
+        where: {
+          isDraft: { not: true },
+          isVoid: { not: { not: true } },
+          quickbookId: null,
+        },
+      });
+  
+      return {
+        status: Status.Success,
+        total: invoiceCount,
+        unsyncedInvoices,
+        invoices,
+        pagination: {
+          nextCursor: helper.toCursorHash(JSON.stringify(requestNextCursor)),
+          previousCursor: helper.toCursorHash(
+            JSON.stringify(requestPreviousCursor)
+          ),
+          pageSize,
+        },
+      };
+    }
+
     async exportInvoicesToExcel(body: InvoiceRequestBody) {
         const allInvoice = await this.GetInvoice(body);
 
