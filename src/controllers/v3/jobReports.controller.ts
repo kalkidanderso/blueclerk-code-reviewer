@@ -18,10 +18,10 @@ export class JobReportsController extends Controller {
         @Request() req?: ExpressRequest
     ): Promise<any> {
         try {
-            const id = 111; // TODO req.v3.userSession.companyId
+            const id = 2; // TODO req.v3.userSession.companyId
             const formatedStartDate = startDate ? new Date(startDate) : undefined;
             const formatedEndDate = endDate ? new Date(endDate) : undefined;
-            
+
             return await jobReportServices.getAllJobReports(id, {
                 keyword,
                 startDate: formatedStartDate,
@@ -38,7 +38,7 @@ export class JobReportsController extends Controller {
     @Get('{jobReportId}')
     public async getDetails(@Path() jobReportId: number): Promise<any> {
         try {
-            const id = 111; // TODO req.v3.userSession.companyId
+            const id = 2; // TODO req.v3.userSession.companyId
             return await jobReportServices.getJobReportDetails(jobReportId, id);
         } catch (err) {
             this.setStatus(500);
@@ -50,7 +50,7 @@ export class JobReportsController extends Controller {
     @Response(404, 'Job Report not found')
     public async delete(@Path() jobReportId: number): Promise<any> {
         try {
-            const id = 111; // TODO req.v3.userSession.companyId
+            const id = 2; // TODO req.v3.userSession.companyId
             return await jobReportServices.deleteJobReportById(jobReportId, id);
         } catch (err) {
             this.setStatus(500);
@@ -61,8 +61,8 @@ export class JobReportsController extends Controller {
     @Post('send')
     public async sendReport(@Body() jobReportId: number): Promise<any> {
         try {
-            const companyId = 111; // TODO req.v3.userSession.companyId
-            const userId = 111; // TODO req.v3.userSession.companyId
+            const companyId = 2; // TODO req.v3.userSession.companyId
+            const userId = 2; // TODO req.v3.userSession.companyId
             return await jobReportServices.sendJobReport(jobReportId, companyId, userId);
         } catch (err) {
             this.setStatus(500);
@@ -73,7 +73,7 @@ export class JobReportsController extends Controller {
     @Get('email-template/{jobReportId}')
     public async getEmailTemplate(@Path() jobReportId: number): Promise<any> {
         try {
-            const id = 111; // TODO req.v3.userSession.companyId
+            const id = 2; // TODO req.v3.userSession.companyId
             return await jobReportServices.getJobReportEmailTemplate(jobReportId, id);
         } catch (err) {
             this.setStatus(500);

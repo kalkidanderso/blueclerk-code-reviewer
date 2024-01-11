@@ -87,7 +87,7 @@ class JobReportServices {
                 ]
             });
         }
-    
+        
         if (startDate && endDate) {
             if (!whereClause.AND) whereClause.AND = [];
             whereClause.AND.push({
