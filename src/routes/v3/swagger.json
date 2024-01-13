@@ -567,17 +567,6 @@
 					"alternativeId": {
 						"type": "string"
 					},
-					"customerId": {
-						"type": "number",
-						"format": "double"
-					},
-					"name": {
-						"type": "string"
-					},
-					"homeOwnerId": {
-						"type": "number",
-						"format": "double"
-					},
 					"address": {},
 					"location": {
 						"properties": {
@@ -594,6 +583,17 @@
 						],
 						"type": "object"
 					},
+					"customerId": {
+						"type": "number",
+						"format": "double"
+					},
+					"name": {
+						"type": "string"
+					},
+					"homeOwnerId": {
+						"type": "number",
+						"format": "double"
+					},
 					"isActive": {
 						"type": "boolean"
 					},
@@ -604,11 +604,11 @@
 				},
 				"required": [
 					"alternativeId",
+					"address",
+					"location",
 					"customerId",
 					"name",
 					"homeOwnerId",
-					"address",
-					"location",
 					"isActive"
 				],
 				"type": "object",
@@ -619,17 +619,6 @@
 					"alternativeId": {
 						"type": "string"
 					},
-					"customerId": {
-						"type": "number",
-						"format": "double"
-					},
-					"name": {
-						"type": "string"
-					},
-					"homeOwnerId": {
-						"type": "number",
-						"format": "double"
-					},
 					"address": {},
 					"location": {
 						"properties": {
@@ -646,6 +635,17 @@
 						],
 						"type": "object"
 					},
+					"customerId": {
+						"type": "number",
+						"format": "double"
+					},
+					"name": {
+						"type": "string"
+					},
+					"homeOwnerId": {
+						"type": "number",
+						"format": "double"
+					},
 					"isActive": {
 						"type": "boolean"
 					},
@@ -656,11 +656,11 @@
 				},
 				"required": [
 					"alternativeId",
+					"address",
+					"location",
 					"customerId",
 					"name",
 					"homeOwnerId",
-					"address",
-					"location",
 					"isActive"
 				],
 				"type": "object",
@@ -1438,8 +1438,61 @@
 			"put": {
 				"operationId": "UpdateCommission",
 				"responses": {
-					"204": {
-						"description": "No content"
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"anyOf": [
+										{
+											"properties": {
+												"employee": {},
+												"message": {
+													"type": "string"
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"message",
+												"status"
+											],
+											"type": "object"
+										},
+										{
+											"properties": {
+												"employee": {
+													"allOf": [
+														{
+															"$ref": "#/components/schemas/GetResult_any.any.any_"
+														},
+														{
+															"properties": {},
+															"type": "object"
+														}
+													]
+												},
+												"message": {
+													"type": "string"
+												},
+												"status": {
+													"type": "number",
+													"format": "double"
+												}
+											},
+											"required": [
+												"employee",
+												"message",
+												"status"
+											],
+											"type": "object"
+										}
+									]
+								}
+							}
+						}
 					}
 				},
 				"tags": [
@@ -1453,9 +1506,12 @@
 						"application/json": {
 							"schema": {
 								"properties": {
-									"userId": {
+									"jobId": {
 										"type": "number",
 										"format": "double"
+									},
+									"commissionType": {
+										"type": "string"
 									},
 									"commissionEffectiveDate": {
 										"type": "string"
@@ -1473,7 +1529,8 @@
 									}
 								},
 								"required": [
-									"userId",
+									"jobId",
+									"commissionType",
 									"commissionEffectiveDate",
 									"id",
 									"type"
@@ -1520,8 +1577,28 @@
 			"put": {
 				"operationId": "UpdateJobCommission",
 				"responses": {
-					"204": {
-						"description": "No content"
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"message": {
+											"type": "string"
+										},
+										"status": {
+											"type": "number",
+											"format": "double"
+										}
+									},
+									"required": [
+										"message",
+										"status"
+									],
+									"type": "object"
+								}
+							}
+						}
 					}
 				},
 				"tags": [
@@ -1537,7 +1614,41 @@
 							"type": "string"
 						}
 					}
-				]
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"properties": {
+									"deduction": {
+										"type": "number",
+										"format": "double"
+									},
+									"additional": {
+										"type": "number",
+										"format": "double"
+									},
+									"jobId": {
+										"type": "number",
+										"format": "double"
+									},
+									"balance": {
+										"type": "number",
+										"format": "double"
+									}
+								},
+								"required": [
+									"deduction",
+									"additional",
+									"jobId",
+									"balance"
+								],
+								"type": "object"
+							}
+						}
+					}
+				}
 			}
 		},
 		"/invoice": {

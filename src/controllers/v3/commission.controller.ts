@@ -24,11 +24,12 @@ export class CommissionController extends Controller {
       id: number;
       commission?: number;
       commissionEffectiveDate: string;
-      userId: number;
+      commissionType: string;
+      jobId: number;
     }
   ) {
-    // const commissionService = new CommissionService();
-    // return await commissionService.updateCommission(params);
+    const commissionService = new CommissionService();
+    return await commissionService.updateCommission(params);
   }
 
   @Get("/updateCommissionCron")
@@ -38,5 +39,17 @@ export class CommissionController extends Controller {
   }
 
   @Put("/updateJobCommission/{id}")
-  public async updateJobCommission(id: string) {}
+  public async updateJobCommission(
+    id: string,
+    @Body()
+    body: {
+      balance: number;
+      jobId: number;
+      additional: number;
+      deduction: number;
+    }
+  ) {
+    const commissionService = new CommissionService();
+    return await commissionService.updateJobCommission(id, body);
+  }
 }

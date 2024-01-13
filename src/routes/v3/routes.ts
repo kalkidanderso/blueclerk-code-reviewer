@@ -195,18 +195,18 @@ const models: TsoaRoute.Models = {
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "Pick_IUpdateJobSiteInput.Exclude_keyofIUpdateJobSiteInput.id__": {
         "dataType": "refAlias",
-        "type": {"dataType":"nestedObjectLiteral","nestedProperties":{"alternativeId":{"dataType":"string","required":true},"customerId":{"dataType":"double","required":true},"name":{"dataType":"string","required":true},"homeOwnerId":{"dataType":"double","required":true},"address":{"dataType":"any","required":true},"location":{"dataType":"nestedObjectLiteral","nestedProperties":{"long":{"dataType":"string","required":true},"lat":{"dataType":"string","required":true}},"required":true},"isActive":{"dataType":"boolean","required":true},"locationId":{"dataType":"double"}},"validators":{}},
+        "type": {"dataType":"nestedObjectLiteral","nestedProperties":{"alternativeId":{"dataType":"string","required":true},"address":{"dataType":"any","required":true},"location":{"dataType":"nestedObjectLiteral","nestedProperties":{"long":{"dataType":"string","required":true},"lat":{"dataType":"string","required":true}},"required":true},"customerId":{"dataType":"double","required":true},"name":{"dataType":"string","required":true},"homeOwnerId":{"dataType":"double","required":true},"isActive":{"dataType":"boolean","required":true},"locationId":{"dataType":"double"}},"validators":{}},
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "IUpdateJobSiteArgs": {
         "dataType": "refObject",
         "properties": {
             "alternativeId": {"dataType":"string","required":true},
+            "address": {"dataType":"any","required":true},
+            "location": {"dataType":"nestedObjectLiteral","nestedProperties":{"long":{"dataType":"string","required":true},"lat":{"dataType":"string","required":true}},"required":true},
             "customerId": {"dataType":"double","required":true},
             "name": {"dataType":"string","required":true},
             "homeOwnerId": {"dataType":"double","required":true},
-            "address": {"dataType":"any","required":true},
-            "location": {"dataType":"nestedObjectLiteral","nestedProperties":{"long":{"dataType":"string","required":true},"lat":{"dataType":"string","required":true}},"required":true},
             "isActive": {"dataType":"boolean","required":true},
             "locationId": {"dataType":"double"},
         },
@@ -512,7 +512,7 @@ export function RegisterRoutes(app: express.Router) {
 
             function CommissionController_updateCommission(request: any, response: any, next: any) {
             const args = {
-                    params: {"in":"body","name":"params","required":true,"dataType":"nestedObjectLiteral","nestedProperties":{"userId":{"dataType":"double","required":true},"commissionEffectiveDate":{"dataType":"string","required":true},"commission":{"dataType":"double"},"id":{"dataType":"double","required":true},"type":{"dataType":"string","required":true}}},
+                    params: {"in":"body","name":"params","required":true,"dataType":"nestedObjectLiteral","nestedProperties":{"jobId":{"dataType":"double","required":true},"commissionType":{"dataType":"string","required":true},"commissionEffectiveDate":{"dataType":"string","required":true},"commission":{"dataType":"double"},"id":{"dataType":"double","required":true},"type":{"dataType":"string","required":true}}},
             };
 
             // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
@@ -562,6 +562,7 @@ export function RegisterRoutes(app: express.Router) {
             function CommissionController_updateJobCommission(request: any, response: any, next: any) {
             const args = {
                     id: {"in":"path","name":"id","required":true,"dataType":"string"},
+                    body: {"in":"body","name":"body","required":true,"dataType":"nestedObjectLiteral","nestedProperties":{"deduction":{"dataType":"double","required":true},"additional":{"dataType":"double","required":true},"jobId":{"dataType":"double","required":true},"balance":{"dataType":"double","required":true}}},
             };
 
             // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
