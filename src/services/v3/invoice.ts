@@ -4,14 +4,16 @@ import moment from "moment";
 import { Invoice } from "../../models/v3/invoiceModel";
 import { InvoiceRequestBody } from "../../types/v3/invoice";
 import { _converInvoiceToRowExcel } from "../../controllers/v2/invoice";
-import { EmailTypes } from  "../../models/EmailDefault"
-import { DefaultCommission, Messages, Status } from "../../common/constants"
-import {transformPlaceholders, _createCompanyDefaultEmail} from "../../controllers/emailDefault"
+import { EmailTypes } from "../../models/EmailDefault";
+import { DefaultCommission, Messages, Status } from "../../common/constants";
+import {
+  transformPlaceholders,
+  _createCompanyDefaultEmail,
+} from "../../controllers/emailDefault";
 import { INVOICE_PDF_PATH } from "../../common/config";
 import { _generateInvoicePdf } from "../../controllers/invoice";
 import { sendInvoiceEmailToCustomer, uploadFileInS3 } from "../aws";
 import * as helper from "../../services/helper";
-
 
 const prisma = new PrismaClient();
 
@@ -33,48 +35,63 @@ export class InvoiceService {
         lastEmailStartDate,
         missingPO,
         startAmount,
-        startDate }: InvoiceRequestBody): Promise<any> {
-        const invoice = new Invoice(prisma.invoice);
-        const returnQuery: any[] = [];
-        if (startAmount) {
-            returnQuery.push({ total: { gte: startAmount } })
-        }
-        if (endAmount) {
-            returnQuery.push({ total: { lte: endAmount } })
-        }
-        if (invoiceId) {
-            returnQuery.push({ invoiceId })
-        }
-        if (dueDate) {
-            returnQuery.push({ dueDate })
-        }
-        if (customerPO) {
-            returnQuery.push({ customerPO })
-        }
-        if (missingPO) {
-            returnQuery.push({ OR: [{ customerPO: null }, { customerPO: "" }] })
-        }
-        if (bouncedEmailFlag) {
-            returnQuery.push({ bouncedEmailFlag: true })
-        }
-        if (customerId) {
-            returnQuery.push({ customerId })
-        }
-        if (customerContactId) {
-            returnQuery.push({ customerContactId })
-        }
-        if (startDate && endDate) {
-            const startDateMoment = moment.utc(startDate).startOf('day').format();
-            const endDateMoment = moment.utc(endDate).endOf('day').format();
-            returnQuery.push({ issuedDate: { gte: new Date(startDateMoment), lte: new Date(endDateMoment) } })
-        }
-        if (lastEmailStartDate && lastEmailEndDate) {
-            const lastEmailStartDateMoment = moment(lastEmailStartDate).startOf('day').format();
-            const lastEmailEndDateMoment = moment(lastEmailEndDate).endOf('day').format();
-            returnQuery.push({ lastEmailSent: { gte: new Date(lastEmailStartDateMoment), lte: new Date(lastEmailEndDateMoment) } });
-        }
+    startDate,
+  }: InvoiceRequestBody): Promise<any> {
+    const invoice = new Invoice(prisma.invoice);
+    const returnQuery: any[] = [];
+    if (startAmount) {
+      returnQuery.push({ total: { gte: startAmount } });
+    }
+    if (endAmount) {
+      returnQuery.push({ total: { lte: endAmount } });
+    }
+    if (invoiceId) {
+      returnQuery.push({ invoiceId });
+    }
+    if (dueDate) {
+      returnQuery.push({ dueDate });
+    }
+    if (customerPO) {
+      returnQuery.push({ customerPO });
+    }
+    if (missingPO) {
+      returnQuery.push({ OR: [{ customerPO: null }, { customerPO: "" }] });
+    }
+    if (bouncedEmailFlag) {
+      returnQuery.push({ bouncedEmailFlag: true });
+    }
+    if (customerId) {
+      returnQuery.push({ customerId });
+    }
+    if (customerContactId) {
+      returnQuery.push({ customerContactId });
+    }
+    if (startDate && endDate) {
+      const startDateMoment = moment.utc(startDate).startOf("day").format();
+      const endDateMoment = moment.utc(endDate).endOf("day").format();
+      returnQuery.push({
+        issuedDate: {
+          gte: new Date(startDateMoment),
+          lte: new Date(endDateMoment),
+        },
+      });
+    }
+    if (lastEmailStartDate && lastEmailEndDate) {
+      const lastEmailStartDateMoment = moment(lastEmailStartDate)
+        .startOf("day")
+        .format();
+      const lastEmailEndDateMoment = moment(lastEmailEndDate)
+        .endOf("day")
+        .format();
+      returnQuery.push({
+        lastEmailSent: {
+          gte: new Date(lastEmailStartDateMoment),
+          lte: new Date(lastEmailEndDateMoment),
+        },
+      });
+    }
 
-        const allInvoice = await invoice.getAll(returnQuery)
+    const allInvoice = await invoice.getAll(returnQuery);
 
         return {
             data: allInvoice,
@@ -136,147 +153,162 @@ export class InvoiceService {
     }) {
       let andQuery = [];
       let orQuery = [];
-  
-      if (nextCursor && previousCursor) {
-        return {
-          status: Status.Error,
-          message:
-            "Provided cursor could only be one of either nextCursor or previousCursor.",
-        };
+
+    if (nextCursor && previousCursor) {
+      return {
+        status: Status.Error,
+        message:
+          "Provided cursor could only be one of either nextCursor or previousCursor.",
+      };
+    }
+
+    if (
+      startDate &&
+      endDate &&
+      Number.isNaN(new Date(startDate)) &&
+      Number.isNaN(new Date(endDate))
+    ) {
+      andQuery.push({
+        issuedDate: { gte: new Date(startDate), lte: new Date(endDate) },
+      });
+    } else {
+      andQuery.push({
+        issuedDate: { gte: new Date(moment().subtract(90, "days").format()) },
+      });
+    }
+ 
+    if (keyword) {
+      orQuery.push(
+        { invoiceId: { contains: keyword } },
+        { customerPO: { contains: keyword } },
+        { vendorId: { contains: keyword } },
+        { customer: { profile: { string_contains: keyword } } },
+        { jobLocation: { name: { contains: keyword } } },
+        { jobLocation: { address: { string_contains: keyword } } },
+        { jobSite: { address: { string_contains: keyword } } },
+        { companyLocation: { address: { string_contains: keyword } } }
+      );
+      if (parseInt(keyword)) {
+        orQuery.push({ jobId: { equals: parseInt(keyword) } });
       }
-  
-      if (startDate && endDate) {
-        andQuery.push({
-          issuedDate: { gte: new Date(startDate), lte: new Date(endDate) },
-        });
-      } else {
-        andQuery.push({
-          issuedDate: { gte: new Date(moment().subtract(90, "days").format()) },
-        });
-      }
-  
-      if (keyword) {
-        orQuery.push(
-          { invoiceId: { contains: keyword } },
-          { customerPO: { contains: keyword } },
-          { vendorId: { contains: keyword } },
-          { jobId: { equals: parseInt(keyword) } },
-          { customer: { profile: { string_contains: keyword } } },
-          { jobLocation: { name: { contains: keyword } } },
-          { jobLocation: { address: { string_contains: keyword } } },
-          { jobSite: { address: { string_contains: keyword } } },
-          { companyLocation: { address: { string_contains: keyword } } }
-        );
-      }
-  
-      if (dueDate) {
-        andQuery.push({ dueDate: { lte: new Date(dueDate) } });
-      }
-  
-      if (status) {
-        andQuery.push({ serviceType: { equals: status } });
-      }
-  
-      if (startAmount) {
-        andQuery.push({ total: { gte: startAmount } });
-      }
-  
-      if (endAmount) {
-        andQuery.push({ total: { lte: endAmount } });
-      }
-  
-      if (customerId) {
-        andQuery.push({ customerId });
-      }
-  
-      if (customerContactId) {
-        andQuery.push({ customerContactId: customerContactId });
-      }
-  
-      if (jobLocationId) {
-        andQuery.push({ jobLocationId });
-      }
-  
-      if ([true, false].includes(isDraft)) {
-        andQuery.push({ isDraft });
-      }
-  
-      if (lastEmailStartDate && lastEmailEndDate) {
-        andQuery.push({
-          lastEmailSent: {
-            gte: new Date(lastEmailStartDate),
-            lte: new Date(lastEmailEndDate),
-          },
-        });
-      }
-  
-      if ([true, false].includes(isVoid)) {
-        andQuery.push({
-          isVoid,
-        });
-      }
-  
-      if (jobId) {
-        andQuery.push({
-          jobId,
-        });
-      }
-  
-      if (nextCursor) {
-        const cursor = JSON.parse(helper.fromCursorHash(nextCursor));
+    }
+
+    if (dueDate && new Date(dueDate) && Number.isNaN(new Date(dueDate))) {
+      andQuery.push({ dueDate: { lte: new Date(dueDate) } });
+    }
+
+
+    if (status) {
+      andQuery.push({ serviceType: { equals: status } });
+    }
+
+    if (startAmount) {
+      andQuery.push({ total: { gte: startAmount } });
+    }
+
+    if (endAmount) {
+      andQuery.push({ total: { lte: endAmount } });
+    }
+
+    if (customerId) {
+      andQuery.push({ customerId });
+    }
+
+    if (customerContactId) {
+      andQuery.push({ customerContactId: customerContactId });
+    }
+
+    if (jobLocationId) {
+      andQuery.push({ jobLocationId });
+    }
+
+    if ([true, false].includes(isDraft)) {
+      andQuery.push({ isDraft });
+    }
+
+    if (
+      lastEmailStartDate &&
+      Number.isNaN(new Date(lastEmailStartDate)) &&
+      lastEmailEndDate &&
+      Number.isNaN(new Date(lastEmailEndDate))
+    ) {
+      andQuery.push({
+        lastEmailSent: {
+          gte: new Date(lastEmailStartDate),
+          lte: new Date(lastEmailEndDate),
+        },
+      });
+    }
+
+    if ([true, false].includes(isVoid)) {
+      andQuery.push({
+        isVoid,
+      });
+    }
+
+    if (jobId) {
+      andQuery.push({
+        jobId,
+      });
+    }
+
+    if (nextCursor) {
+      const cursor = JSON.parse(helper.fromCursorHash(nextCursor));
+      if (new Date(cursor.createdAt)) {
         orQuery.push({
           createdAt: { gte: new Date(cursor.createdAt) },
         });
       }
-  
-      const invoices = await prisma.invoice.findMany({
-        where: { AND: andQuery, OR: orQuery },
-        include: {
-          job: true,
-          customer: true,
-          jobLocation: true,
-          jobSite: true,
-          customerContact: true,
-          paymentTerm: true,
-          companyLocation: true,
-        },
-        take: pageSize || 30,
-      });
-  
-      const invoiceCount = await prisma.invoice.count({
-        where: { AND: andQuery, OR: orQuery },
-      });
-      let requestNextCursor = {
-        createdAt: invoices[invoices.length - 1].createdAt,
-        id: invoices[invoices.length - 1].id,
-      };
-      let requestPreviousCursor = {
-        createdAt: invoices[0].createdAt,
-        id: invoices[0].id,
-      };
-  
-      const unsyncedInvoices = await prisma.invoice.findMany({
-        where: {
-          isDraft: { not: true },
-          isVoid: { not: { not: true } },
-          quickbookId: null,
-        },
-      });
-  
-      return {
-        status: Status.Success,
-        total: invoiceCount,
-        unsyncedInvoices,
-        invoices,
-        pagination: {
-          nextCursor: helper.toCursorHash(JSON.stringify(requestNextCursor)),
-          previousCursor: helper.toCursorHash(
-            JSON.stringify(requestPreviousCursor)
-          ),
-          pageSize,
-        },
-      };
     }
+
+    const invoices = await prisma.invoice.findMany({
+      where: { AND: andQuery, OR: orQuery },
+      include: {
+        job: true,
+        customer: true,
+        jobLocation: true,
+        jobSite: true,
+        customerContact: true,
+        paymentTerm: true,
+        companyLocation: true,
+      },
+      take: pageSize || 30,
+    });
+
+    const invoiceCount = await prisma.invoice.count({
+      where: { AND: andQuery, OR: orQuery },
+    });
+    let requestNextCursor = {
+      createdAt: invoices[invoices.length - 1]?.createdAt,
+      id: invoices[invoices.length - 1]?.id,
+    };
+    let requestPreviousCursor = {
+      createdAt: invoices[0]?.createdAt,
+      id: invoices[0]?.id,
+    };
+
+    const unsyncedInvoices = await prisma.invoice.findMany({
+      where: {
+        isDraft: { not: true },
+        isVoid: { not: true },
+        quickbookId: "null",
+      },
+    });
+
+    return {
+      status: Status.Success,
+      total: invoiceCount,
+      unsyncedInvoices,
+      invoices,
+      pagination: {
+        nextCursor: helper.toCursorHash(JSON.stringify(requestNextCursor)),
+        previousCursor: helper.toCursorHash(
+          JSON.stringify(requestPreviousCursor)
+        ),
+        pageSize,
+      },
+    };
+  }
 
     async exportInvoicesToExcel(body: InvoiceRequestBody) {
         const allInvoice = await this.GetInvoice(body);
@@ -290,35 +322,35 @@ export class InvoiceService {
         worksheet['!cols'] = columnWidths;
         XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: "A1" });
 
-        const cellStyles: any = {
-            PAID: {
-                font: { color: { rgb: "00B04E" } }
-            },
-            UNPAID: {
-                font: { color: { rgb: "FF0000" } }
-            },
-            PARTIALLY_PAID: {
-                font: { color: { rgb: "FA8029" } }
-            },
-        };
+    const cellStyles: any = {
+      PAID: {
+        font: { color: { rgb: "00B04E" } },
+      },
+      UNPAID: {
+        font: { color: { rgb: "FF0000" } },
+      },
+      PARTIALLY_PAID: {
+        font: { color: { rgb: "FA8029" } },
+      },
+    };
 
-        // Set the style for each cell in column A (Status) based on its value
-        for (let rowIndex = 0; rowIndex <= rows.length; rowIndex++) {
-            const cellRefStatus = XLSX.utils.encode_cell({ c: 0, r: rowIndex });
-            let cellStatus = worksheet[cellRefStatus];
-            if (cellStatus && cellStatus.v in cellStyles) {
-                const cellStyle = cellStyles[cellStatus.v];
-                if (cellStyles) {
-                    cellStatus["s"] = cellStyle;
-                }
-            }
+    // Set the style for each cell in column A (Status) based on its value
+    for (let rowIndex = 0; rowIndex <= rows.length; rowIndex++) {
+      const cellRefStatus = XLSX.utils.encode_cell({ c: 0, r: rowIndex });
+      let cellStatus = worksheet[cellRefStatus];
+      if (cellStatus && cellStatus.v in cellStyles) {
+        const cellStyle = cellStyles[cellStatus.v];
+        if (cellStyles) {
+          cellStatus["s"] = cellStyle;
         }
-
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-        const buf = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
-
-        return buf;
+      }
     }
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+    const buf = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+
+    return buf;
+  }
 
     async getInvoiceEmailTemplate(emailType:string,invoiceIds:string,invoiceId:string){
         const invoiceModel = new Invoice(prisma.invoice);
@@ -1165,6 +1197,10 @@ export class InvoiceService {
         },
       })) as any;
   
+      if(!invoice){
+        return {status:Status.Error,message:"invoice not found"}
+      }
+
       const filepath = `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
   
       await _generateInvoicePdf(invoice.company, invoice);
@@ -1363,73 +1399,77 @@ export class InvoiceService {
     startDate?: string;
     endDate?: string;
   }) {
-    const andQuery: any[] = [];
-    const orQuery: any[] = [];
-    andQuery.push(
-      { isDraft: { not: true } },
-      { isVoid: { not: true } },
-      { quickbookId: null }
-    );
-
-    if (keyword) {
-      orQuery.push(
-        { invoiceId: { contains: keyword } },
-        { serviceType: { in: "PAID" } },
-        { customerPO: { contains: keyword } },
-        { vendorId: { contains: keyword } },
-        { jobId: { equals: parseInt(keyword) } },
-        { customer: { contactName: { contains: keyword } } },
-        { jobLocation: { name: { contains: keyword } } },
-        { jobLocation: { address: { string_contains: keyword } } },
-        { technicianMessages: { string_contains: keyword } }
+    try {
+      const andQuery: any[] = [];
+      const orQuery: any[] = [];
+      andQuery.push(
+        { isDraft: { not: true } },
+        { isVoid: { not: true } },
+        { quickbookId: "null" }
       );
-    }
 
-    if (customerId) {
-      andQuery.push({ customerId: customerId });
-    }
+      if (keyword) {
+        orQuery.push(
+          { invoiceId: { contains: keyword } },
+          { serviceType: { in: "PAID" } },
+          { customerPO: { contains: keyword } },
+          { vendorId: { contains: keyword } },
+          { jobId: { equals: parseInt(keyword) } },
+          { customer: { contactName: { contains: keyword } } },
+          { jobLocation: { name: { contains: keyword } } },
+          { jobLocation: { address: { string_contains: keyword } } },
+          { technicianMessages: { string_contains: keyword } }
+        );
+      }
 
-    if (dueDate) {
-      andQuery.push({ dueDate: { lte: new Date(dueDate) } });
-    }
+      if (customerId) {
+        andQuery.push({ customerId: customerId });
+      }
 
-    if (startDate && endDate) {
-      andQuery.push({
-        issuedDate: { gte: new Date(startDate), lte: new Date(endDate) },
+      if (dueDate) {
+        andQuery.push({ dueDate: { lte: new Date(dueDate) } });
+      }
+
+      if (startDate && endDate) {
+        andQuery.push({
+          issuedDate: { gte: new Date(startDate), lte: new Date(endDate) },
+        });
+      }
+
+      if (status) {
+        andQuery.push({ serviceType: { in: JSON.parse(status) } });
+      }
+
+      const invoices = await prisma.invoice.findMany({
+        where: {
+          AND: andQuery,
+          OR: orQuery,
+        },
+        include: {
+          company: true,
+          companyLocation: true,
+          customer: true,
+          customerContact: true,
+          invoicecommission: true,
+          job: true,
+          jobLocation: true,
+          jobSite: true,
+          paymentcustomer: true,
+          paymentTerm: true,
+          workType: true,
+          paymentvendors: true,
+          createdBy: true,
+        },
       });
+
+      return {
+        status: Status.Success,
+        total: invoices.length,
+        invoices,
+      };
+    } catch (e) {
+      console.log(e);
     }
-
-    if (status) {
-      andQuery.push({ serviceType: { in: JSON.parse(status) } });
-    }
-
-    const invoices = await prisma.invoice.findMany({
-      where: {
-        AND: andQuery,
-        OR: orQuery,
-      },
-      include: {
-        company: true,
-        companyLocation: true,
-        customer: true,
-        customerContact: true,
-        invoicecommission: true,
-        job: true,
-        jobLocation: true,
-        jobSite: true,
-        paymentcustomer: true,
-        paymentTerm: true,
-        workType: true,
-        paymentvendors: true,
-        createdBy: true,
-      },
-    });
-
-    return {
-      status: Status.Success,
-      total: invoices.length,
-      invoices,
-    };
   }
 
   async getCompanyInvoices(compantId?: string) {
@@ -1576,5 +1616,4 @@ export class InvoiceService {
 
     return { status: Status.Success, invoices };
   }
-
 }
