@@ -6,6 +6,7 @@ import jobSites from "./jobSites";
 const app = require("../../../server");
 import { PrismaClient } from "@prisma/client";
 import invoiceControllerTest from "./invoice";
+import comissionControllerTest from "./comission";
 const prisma = new PrismaClient();
 
 const cleanupDatabase = async () => {
@@ -426,6 +427,7 @@ const unitTest = () => {
   serviceTicket(app), advancePayment(app), jobLocation(app);
   jobLocation(app), jobSites(app);
   invoiceControllerTest(app);
+  comissionControllerTest(app)
 };
 
 unitTest();
