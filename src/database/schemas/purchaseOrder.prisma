@@ -1,0 +1,7 @@
+model PurchaseOrder {
+  id          Int        @id @default(autoincrement())
+  JobReport   JobReport? @relation(fields: [jobReportId], references: [id])
+  jobReportId Int?
+  job         Job?       @relation(fields: [jobId], references: [id])
+  jobId       Int?      
+}

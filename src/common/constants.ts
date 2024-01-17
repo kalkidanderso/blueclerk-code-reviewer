@@ -46,6 +46,7 @@ export const Messages = {
     TaskNotFound: 'Task/job type not found in this Job.',
     InvalidAMPM: 'ScheduleTimeAMPM has to be 0 (none), 1 (AM), 2 (PM) or 3 (Both AM and PM)',
     EmptyString: 'Must not be empty',
+    ReportNotFound: 'Job report not found'
 }
 
 export const enum Role {

@@ -2,6 +2,7 @@ import advancePayment from "./advancePayment";
 import serviceTicket from "./serviceTicket";
 import jobLocation from "./jobLocation";
 import jobSites from "./jobSites";
+import jobReport from "./jobReport";
 
 const app = require("../../../server");
 import { PrismaClient } from "@prisma/client";
@@ -9,6 +10,9 @@ import invoiceControllerTest from "./invoice";
 const prisma = new PrismaClient();
 
 const cleanupDatabase = async () => {
+  await prisma.jobReport.deleteMany();
+  await prisma.invoice.deleteMany();
+  await prisma.job.deleteMany();
   await prisma.servicetickets.deleteMany({ where: { id: 2 } });
   await prisma.emailDefault.deleteMany();
   await prisma.servicetickets.deleteMany({
@@ -29,6 +33,7 @@ const cleanupDatabase = async () => {
   await prisma.joblocation.deleteMany({
     where: { alternativeId: "updateControllerJobLocation" },
   });
+
   await prisma.companyLocation.deleteMany({ where: { id: 2 } });
   await prisma.items.deleteMany({ where: { id: 2 } });
   await prisma.jobType.deleteMany({ where: { id: 2 } });
@@ -411,6 +416,77 @@ const createDatabase = async () => {
       lastEmailSent: new Date("2023-10-17T04:47:55.602"),
     },
   });
+  await prisma.job.create({
+    data: {
+      id: 2
+    }
+  });
+  await prisma.invoice.create({
+    data: {
+      id: 2,
+      alternativeId: 'whatever',
+      invoiceId: '2',
+      invoiceType: 0,
+      purchaseOrderId: 2,
+      issuedDate: new Date("2023-10-15T07:43:53.219"),
+      dueDate: new Date("2023-10-15T07:43:53.219"),
+      paymentTermId: 2,
+      note: 'hello',
+      customerPO: 'hello',
+      customerContactId: 2,
+      vendorId: '2',
+      customerId: 2,
+      jobLocationId: 2,
+      jobSiteId: 2,
+      companyId: 2,
+      tax: 2,
+      taxPercentage: 2,
+      createdById: 2,
+      balanceDue: 2,
+      emailHistory: '[]',
+      lastEmailSent: new Date("2023-10-15T07:43:53.219"),
+      quickbookId: '2',
+      workTypeId: 2,
+      companyLocationId: 2,
+      technicianMessages: '[]',
+      createdAt: new Date("2023-10-15T07:43:53.219"),
+      updatedAt: new Date("2023-10-15T07:43:53.219"),
+    }
+  })
+  await prisma.jobReport.create({
+    data: {
+      id: 2,
+      jobId: 2,
+      customerName: 'test customer',
+      technicianName: 'test technician',
+      jobDate: new Date("2023-10-15T07:43:53.219"),
+      companyId: 2,
+      contractorId: 2,
+      emailHistory: [],
+      lastEmailSent: new Date("2023-10-15T07:43:53.219"),
+      createdAt: new Date("2023-10-15T07:43:53.219"),
+      invoiceCreated: false,
+      invoiceVoid: false,
+      invoiceId: 2
+    },
+  });
+  await prisma.jobReport.create({
+    data: {
+      id: 3,
+      jobId: 2,
+      customerName: 'customer',
+      technicianName: 'technician',
+      jobDate: new Date("2024-10-15T07:43:53.219"),
+      companyId: 2,
+      contractorId: 2,
+      emailHistory: [],
+      lastEmailSent: new Date("2024-10-15T07:43:53.219"),
+      createdAt: new Date("2024-10-15T07:43:53.219"),
+      invoiceCreated: false,
+      invoiceVoid: false,
+      invoiceId: 2
+    },
+  });
 };
 
 beforeAll(async () => {
@@ -424,7 +500,7 @@ afterAll(async () => {
 
 const unitTest = () => {
   serviceTicket(app), advancePayment(app), jobLocation(app);
-  jobLocation(app), jobSites(app);
+  jobLocation(app), jobSites(app), jobReport(app);
   invoiceControllerTest(app);
 };
 

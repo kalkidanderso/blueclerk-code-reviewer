@@ -9,6 +9,8 @@ import { GetInvoiceController } from './../../controllers/v3/invoice.controller'
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { JobLocationController } from './../../controllers/v3/jobLocation.controller';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+import { JobReportsController } from './../../controllers/v3/jobReports.controller';
+// WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { JobsController } from './../../controllers/v3/jobs/jobs.controller';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { JobSiteController } from './../../controllers/v3/jobSite.controller';
@@ -707,6 +709,136 @@ export function RegisterRoutes(app: express.Router) {
 
 
               const promise = controller.deleteJobLocation.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.get('/api/v3/job-reports',
+            ...(fetchMiddlewares<RequestHandler>(JobReportsController)),
+            ...(fetchMiddlewares<RequestHandler>(JobReportsController.prototype.getAll)),
+
+            function JobReportsController_getAll(request: any, response: any, next: any) {
+            const args = {
+                    keyword: {"in":"query","name":"keyword","dataType":"string"},
+                    startDate: {"in":"query","name":"startDate","dataType":"string"},
+                    endDate: {"in":"query","name":"endDate","dataType":"string"},
+                    currentPage: {"in":"query","name":"currentPage","dataType":"double"},
+                    pageSize: {"in":"query","name":"pageSize","dataType":"double"},
+                    req: {"in":"request","name":"req","dataType":"object"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new JobReportsController();
+
+
+              const promise = controller.getAll.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.get('/api/v3/job-reports/:jobReportId',
+            ...(fetchMiddlewares<RequestHandler>(JobReportsController)),
+            ...(fetchMiddlewares<RequestHandler>(JobReportsController.prototype.getDetails)),
+
+            function JobReportsController_getDetails(request: any, response: any, next: any) {
+            const args = {
+                    jobReportId: {"in":"path","name":"jobReportId","required":true,"dataType":"double"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new JobReportsController();
+
+
+              const promise = controller.getDetails.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.delete('/api/v3/job-reports/:jobReportId',
+            ...(fetchMiddlewares<RequestHandler>(JobReportsController)),
+            ...(fetchMiddlewares<RequestHandler>(JobReportsController.prototype.delete)),
+
+            function JobReportsController_delete(request: any, response: any, next: any) {
+            const args = {
+                    jobReportId: {"in":"path","name":"jobReportId","required":true,"dataType":"double"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new JobReportsController();
+
+
+              const promise = controller.delete.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.post('/api/v3/job-reports/send',
+            ...(fetchMiddlewares<RequestHandler>(JobReportsController)),
+            ...(fetchMiddlewares<RequestHandler>(JobReportsController.prototype.sendReport)),
+
+            function JobReportsController_sendReport(request: any, response: any, next: any) {
+            const args = {
+                    jobReportId: {"in":"body","name":"jobReportId","required":true,"dataType":"double"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new JobReportsController();
+
+
+              const promise = controller.sendReport.apply(controller, validatedArgs as any);
+              promiseHandler(controller, promise, response, undefined, next);
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        app.get('/api/v3/job-reports/email-template/:jobReportId',
+            ...(fetchMiddlewares<RequestHandler>(JobReportsController)),
+            ...(fetchMiddlewares<RequestHandler>(JobReportsController.prototype.getEmailTemplate)),
+
+            function JobReportsController_getEmailTemplate(request: any, response: any, next: any) {
+            const args = {
+                    jobReportId: {"in":"path","name":"jobReportId","required":true,"dataType":"double"},
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, request, response);
+
+                const controller = new JobReportsController();
+
+
+              const promise = controller.getEmailTemplate.apply(controller, validatedArgs as any);
               promiseHandler(controller, promise, response, undefined, next);
             } catch (err) {
                 return next(err);
