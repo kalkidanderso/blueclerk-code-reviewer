@@ -1,6 +1,6 @@
 import JobReportServices from "../../../services/v3/jobReports";
 import { JobReports } from "../../../models/v3/jobReports";
-import { Status, JobStatus, DefaultPageSize } from "../../../common/constants";
+import { Status, JobStatus, DefaultPageSize, Messages } from "../../../common/constants";
 
 let jobReportServices: JobReportServices
 let mockPrisma = {
@@ -201,7 +201,7 @@ describe('JobReportServices', () => {
 
             try {
                 const error = await jobReportServices.getJobReportDetails(1, 1);
-                expect(error.message).toBe('No report was found');
+                expect(error.message).toBe(Messages.ReportNotFound);
                 expect(error.status).toBe(Status.NotFound);
             } catch (error) {
                 throw new Error('should not have failed: ' + error.message);
@@ -237,7 +237,7 @@ describe('JobReportServices', () => {
             mockJobReportsModel.deleteById = jest.fn(() => ({ count: 0 }));
 
             const error = await jobReportServices.deleteJobReportById(1, 1);
-            expect(error.message).toBe('No report found or you do not have permission to delete this report.');
+            expect(error.message).toBe(Messages.ReportNotFound);
             expect(error.status).toBe(Status.NotFound);
             expect(mockJobReportsModel.deleteById).toHaveBeenCalledWith(1, 1);
         });
@@ -272,7 +272,7 @@ describe('JobReportServices', () => {
             mockJobReportsModel.findById.mockResolvedValue(null);
 
             const error = await jobReportServices.sendJobReport(jobReportId, companyId, user);
-            expect(error.message).toBe('Report was not found');
+            expect(error.message).toBe(Messages.ReportNotFound);
             expect(error.status).toBe(Status.NotFound);
         });
 
@@ -311,7 +311,7 @@ describe('JobReportServices', () => {
             mockPrisma.company.findFirst = jest.fn(() => company);
             
             const error = await jobReportServices.getJobReportEmailTemplate(validReportId, companyId);
-            expect(error.message).toBe('Report was not found');
+            expect(error.message).toBe(Messages.ReportNotFound);
             expect(error.status).toBe(Status.NotFound);
         });
 

@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-import { Status, JobStatus, DefaultPageSize } from "../../common/constants"
+import { Status, JobStatus, DefaultPageSize, Messages } from "../../common/constants"
 import { JobReports } from "../../models/v3/jobReports"
 import { ICreateJobReportsInput, IJobReportsQueryParams } from '../../types/v3/jobReports'
 import moment from 'moment'; 
@@ -115,7 +115,7 @@ class JobReportServices {
             const report = await this.jobReportsModel.findById(jobReportId, companyId);
     
             if (!report) {
-                return { status: Status.NotFound, message: 'No report was found' };
+                return { status: Status.NotFound, message: Messages.ReportNotFound };
             }
     
             return { status: Status.Success, message: report };
@@ -132,7 +132,7 @@ class JobReportServices {
     
             // Check if any reports have been deleted
             if (deleteResult.count === 0) {
-                return { status: Status.NotFound, message: 'No report found or you do not have permission to delete this report.' };
+                return { status: Status.NotFound, message: Messages.ReportNotFound };
             }
     
             return { status: Status.Success, message: 'Job Report has been deleted successfully!' };
@@ -150,7 +150,7 @@ class JobReportServices {
     
             // Check if the report exists
             if (!report) {
-                return { status: Status.NotFound, message: 'Report was not found' };
+                return { status: Status.NotFound, message: Messages.ReportNotFound };
             }
     
             //  Add logic for sending reports
@@ -182,7 +182,7 @@ class JobReportServices {
                 }
             })
             if (!jobReport) {
-                return { status: Status.NotFound, message: "Report was not found" };
+                return { status: Status.NotFound, message: Messages.ReportNotFound };
             }    
     
             // TODO REMOVE UNUSED ?
