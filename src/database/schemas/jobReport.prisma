@@ -1,0 +1,21 @@
+model JobReport {
+  id             Int             @id @default(autoincrement())
+  job            Job             @relation(fields: [jobId], references: [id])
+  jobId          Int
+  scans          Scan[]
+  customerName   String
+  technicianName String
+  jobDate        DateTime
+  purchaseOrders PurchaseOrder[]
+  company        Company         @relation("jobReportCompany", fields: [companyId], references: [id])
+  companyId      Int
+  contractor     Company         @relation("jobReportContractor", fields: [contractorId], references: [id])
+  contractorId   Int
+  emailHistory   Json
+  lastEmailSent  DateTime
+  createdAt      DateTime        @default(now())
+  invoiceCreated Boolean
+  invoiceVoid    Boolean
+  invoice        Invoice         @relation(fields: [invoiceId], references: [id])
+  invoiceId      Int
+}

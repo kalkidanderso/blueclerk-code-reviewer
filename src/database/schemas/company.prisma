@@ -110,6 +110,7 @@ model Company {
     contractorContracts           Contract[]             @relation("contractContractor")
     tags                          Tag[]
     customerContract              CustomerContract[]
-
+    jobReportsCompany             JobReport[]            @relation("jobReportCompany")
+    jobReportsContractor          JobReport[]            @relation("jobReportContractor")
   @@index([plan, chargeDate])
 }
