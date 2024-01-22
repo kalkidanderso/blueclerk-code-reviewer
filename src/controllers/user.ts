@@ -1537,10 +1537,6 @@ export const companySubscribe = (req: Request, res: Response) => {
 
     const amount = 50;
 
-    if (amount == 0) {
-        return res.json({ 'status': Status.Error, 'message': 'Invalid no of subscriptions.' });
-    }
-
     chargeSubscription(amount, company.stripeId, (status: any, charge: any, message: any) => {
         if (status == 1) {
             const chargeDate = moment().tz('America/Chicago').add(1, 'month').startOf('month');
