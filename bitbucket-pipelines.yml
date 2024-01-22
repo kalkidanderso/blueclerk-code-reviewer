@@ -21,13 +21,14 @@ pipelines:
             - export REPOSITORY_URL=744236993133.dkr.ecr.us-east-1.amazonaws.com/blueclerk-staging
             - export REGION=us-east-1
             - export TASK_DEFINITION_NAME=blueclerk-staging
-            - export CLUSTER_NAME=blueclerk
-            - export SERVICE_NAME=blueclerk-staging
+            - export CLUSTER_NAME=blueclerk-new-tst-stg
+            - export SERVICE_NAME=blueclerk-new-staging
+            - export SECRET_ID=blueclerk-staging
             # aws login
             - eval $(aws ecr get-login --region ${AWS_DEFAULT_REGION} --no-include-email)
             # docker
             - export IMAGE_TAG="${BITBUCKET_COMMIT::7}"
-            - DATABASE_URL=$(aws secretsmanager get-secret-value --secret-id $SERVICE_NAME --region ${AWS_DEFAULT_REGION} --output text --query SecretString | jq ".DATABASE_URL" | tr -d '"')
+            - DATABASE_URL=$(aws secretsmanager get-secret-value --secret-id $SECRET_ID --region ${AWS_DEFAULT_REGION} --output text --query SecretString | jq ".DATABASE_URL" | tr -d '"')
             - docker build -t ${REPOSITORY_URL}:$IMAGE_TAG --build-arg node_environment=staging --build-arg database_url=$DATABASE_URL .
             - docker push ${REPOSITORY_URL}:$IMAGE_TAG
             - docker tag ${REPOSITORY_URL}:$IMAGE_TAG ${REPOSITORY_URL}:latest
@@ -50,13 +51,14 @@ pipelines:
             - export REPOSITORY_URL=744236993133.dkr.ecr.us-east-1.amazonaws.com/blueclerk-test
             - export REGION=us-east-1
             - export TASK_DEFINITION_NAME=blueclerk-test
-            - export CLUSTER_NAME=blueclerk
-            - export SERVICE_NAME=blueclerk-test
+            - export CLUSTER_NAME=blueclerk-new-tst-stg
+            - export SERVICE_NAME=blueclerk-new-test
+            - export SECRET_ID=blueclerk-test
             # aws login
             - eval $(aws ecr get-login --region ${AWS_DEFAULT_REGION} --no-include-email)
             # docker
             - export IMAGE_TAG="${BITBUCKET_COMMIT::7}"
-            - DATABASE_URL=$(aws secretsmanager get-secret-value --secret-id $SERVICE_NAME --region ${AWS_DEFAULT_REGION} --output text --query SecretString | jq ".DATABASE_URL" | tr -d '"')
+            - DATABASE_URL=$(aws secretsmanager get-secret-value --secret-id $SECRET_ID --region ${AWS_DEFAULT_REGION} --output text --query SecretString | jq ".DATABASE_URL" | tr -d '"')
             - docker build -t ${REPOSITORY_URL}:$IMAGE_TAG --build-arg node_environment=test --build-arg database_url=$DATABASE_URL .
             - docker push ${REPOSITORY_URL}:$IMAGE_TAG
             - docker tag ${REPOSITORY_URL}:$IMAGE_TAG ${REPOSITORY_URL}:latest
