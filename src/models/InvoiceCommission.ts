@@ -50,9 +50,9 @@ const InvoiceCommissionSchema = new Schema({
         },
         paidAt: Date
     }]
-}, { timestamps: { createdAt: true, updatedAt: true } })
+}, { timestamps: { createdAt: true, updatedAt: true } });
 
 //Indexes
 InvoiceCommissionSchema.index({ invoice: 1 });
 
-export const InvoiceCommission = mongoose.model<IInvoiceCommission>('InvoiceCommission', InvoiceCommissionSchema)
+export const InvoiceCommission = mongoose.model<IInvoiceCommission>('InvoiceCommission', InvoiceCommissionSchema);

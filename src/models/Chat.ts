@@ -78,7 +78,7 @@ const ChatSchema = new Schema(
         }
     },
     { timestamps: true }
-)
+);
 
 
 //Indexes
@@ -111,7 +111,7 @@ const JobRequestChatSchema = new Schema({
         required: true
     }
 
-})
+});
 
 
 export const JobRequestChat = Chat.discriminator<IJobRequestChat>('JobRequestChat', JobRequestChatSchema);

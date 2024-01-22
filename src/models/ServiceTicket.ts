@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 import { IUser } from '../models/User';
 import { IHomeOwner } from '../models/HomeOwner';
 import { IJobLocation } from '../models/JobLocation';
@@ -45,7 +45,7 @@ export interface IServiceTicket extends Document {
     workType: Schema.Types.ObjectId  | null
     companyLocation: Schema.Types.ObjectId  | null | ICompanyLocation
     poOverriddenBy: Schema.Types.ObjectId
-    type: "PO Request" | "Ticket"
+    type: 'PO Request' | 'Ticket'
     emailHistory?: [{
         sentTo: string
         sentAt: Date,
@@ -72,7 +72,7 @@ const ServiceTicketSchema = new Schema({
         ref: 'User',
         required: true
     },
-    note: {type: String, index: "text"},
+    note: {type: String, index: 'text'},
     customerContactId: {
         type: Schema.Types.ObjectId,
         ref: 'Contact',
@@ -108,9 +108,9 @@ const ServiceTicketSchema = new Schema({
     },
     track: [{
         user: {
-         type: Schema.Types.ObjectId,
-         ref: 'User'
-     },
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        },
         action: String,
         date: Date
     }
@@ -217,7 +217,7 @@ const ServiceTicketSchema = new Schema({
     lastEmailSent: {
         type: Date
     },
-})
+});
 
 //Indexes
 ServiceTicketSchema.index({ customer: 1 });
@@ -237,4 +237,4 @@ ServiceTicketSchema.index({ company: 1, jobCreated: 1, status: 1 });
 ServiceTicketSchema.index({ company: 1, jobCreated: 1, status: 1, type: 1 });
 ServiceTicketSchema.index({ company: 1, _id: 1 });
 
-export const ServiceTicket = mongoose.model<IServiceTicket>('ServiceTicket', ServiceTicketSchema)
+export const ServiceTicket = mongoose.model<IServiceTicket>('ServiceTicket', ServiceTicketSchema);

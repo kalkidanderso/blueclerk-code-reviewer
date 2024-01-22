@@ -17,53 +17,53 @@ import * as Sentry from '@sentry/node';
 
 export const addCompanySubscriptions = (req: Request, res: Response) => {
 
-    const company = <ICompany>req.company
-    const params = req.body
-/*    if (company.paid == false &&  new Date() > company.chargeDate) {
+    const company = <ICompany>req.company;
+    const params = req.body;
+    /*    if (company.paid == false &&  new Date() > company.chargeDate) {
         return res.json({ 'status': Status.Error, 'message': 'You can\'t buy subscription contact blueclerk admin for details.' })
     }
  */
     if(company.stripeId == undefined || company.stripeId == '') {
-        return res.json({status: Status.Error, message: "Company payment method required."})
+        return res.json({status: Status.Error, message: 'Company payment method required.'});
     }
 
     const now = new Date();
-    const daysRemaining = now.getDate()
-    const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate()
-    const daysToCharge = daysInCurrentMonth-daysRemaining + 1
+    const daysRemaining = now.getDate();
+    const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+    const daysToCharge = daysInCurrentMonth-daysRemaining + 1;
 
-    let amount: number = 0;
+    let amount = 0;
 
     if(params.noOfOfficeAdmins > 0){
-        const perday = 30/daysInCurrentMonth
-        amount = amount+(params.noOfOfficeAdmins * (perday* daysToCharge))
+        const perday = 30/daysInCurrentMonth;
+        amount = amount+(params.noOfOfficeAdmins * (perday* daysToCharge));
     }
 
     if(params.noOfTechnicians > 0){
-        const perday = 30/daysInCurrentMonth
-        amount = amount+(params.noOfTechnicians * (perday *daysToCharge))
+        const perday = 30/daysInCurrentMonth;
+        amount = amount+(params.noOfTechnicians * (perday *daysToCharge));
     }
 
     if(params.noOfManagers > 0){
-        const perday = 30/daysInCurrentMonth
-        amount = amount+(params.noOfManagers * (perday * daysToCharge))
+        const perday = 30/daysInCurrentMonth;
+        amount = amount+(params.noOfManagers * (perday * daysToCharge));
     }
 
     if(params.nbOfAdmins > 0){
-        const perday = 30/daysInCurrentMonth
-        amount = amount+(params.nbOfAdmins * (perday * daysToCharge))
+        const perday = 30/daysInCurrentMonth;
+        amount = amount+(params.nbOfAdmins * (perday * daysToCharge));
     }
     if (amount == 0) {
 
-        return res.json({ 'status': Status.Error, 'message': "Invalid number of subscriptions."});
+        return res.json({ 'status': Status.Error, 'message': 'Invalid number of subscriptions.'});
     }
     try {
         chargeSubscription( amount , company.stripeId, (status:any, charge:any, tax:any, message: any)=>{
             if(status == 1){
-                const noOfTechs: number = company.maxTechnicians + parseInt(params.noOfTechnicians)
-                const noOfManagers: number = company.maxManagers + parseInt(params.noOfManagers)
-                const noOfOfficeAdmins: number = company.maxOfficeAdmins + parseInt(params.noOfOfficeAdmins)
-                const nbOfAdmins: number = company.maxAdmins + parseInt(params.nbOfAdmins)
+                const noOfTechs: number = company.maxTechnicians + parseInt(params.noOfTechnicians);
+                const noOfManagers: number = company.maxManagers + parseInt(params.noOfManagers);
+                const noOfOfficeAdmins: number = company.maxOfficeAdmins + parseInt(params.noOfOfficeAdmins);
+                const nbOfAdmins: number = company.maxAdmins + parseInt(params.nbOfAdmins);
                 // Create Company Invoice
                 const companyInvoice: ICompanyInvoice = new CompanyInvoice({
                     technicians: parseInt(params.noOfTechnicians),
@@ -90,7 +90,7 @@ export const addCompanySubscriptions = (req: Request, res: Response) => {
                     });
                     await companyInvoice.save();
                 });
-                let chargeDate = moment().tz('America/Chicago').add(1, 'month').startOf('month');
+                const chargeDate = moment().tz('America/Chicago').add(1, 'month').startOf('month');
                 company.updateOne(
                     {
                         maxTechnicians: noOfTechs,
@@ -104,20 +104,20 @@ export const addCompanySubscriptions = (req: Request, res: Response) => {
                     })
                     .exec((err: any, raw: any)=>{
                         if (err) {
-                            return res.json({'status': Status.Error, 'message': err.message})
+                            return res.json({'status': Status.Error, 'message': err.message});
                         }
-                        return res.json({'status': Status.Error, 'message': 'Company subscriptions added successfully!.'})
-                    })
+                        return res.json({'status': Status.Error, 'message': 'Company subscriptions added successfully!.'});
+                    });
 
             } else {
-                return res.json({status: Status.Error, message: message})
+                return res.json({status: Status.Error, message: message});
             }
-        })
+        });
     }catch (err) {
         Sentry.captureException(err);
         return res.json({'status': Status.Error, 'message': err.message});
     }
-}
+};
 
 export const getAllSubscriptions = async (req: Request, res: Response) => {
     const company = <ICompany> req.company;
@@ -130,51 +130,51 @@ export const getAllSubscriptions = async (req: Request, res: Response) => {
             'managers': company.maxManagers,
             'contractors': maxVendors
         });
-}
+};
 export const removeCompanySubscriptions = async (req: Request, res: Response) => {
 
-    const company = <ICompany>req.company
-    const params = req.body
+    const company = <ICompany>req.company;
+    const params = req.body;
     if (company.paid == false && new Date() > company.chargeDate) {
         return res.json({
             'status': Status.Error,
-            'message': `Your Company Does Not Have Any Subscription To Cancel!`
-        })
+            'message': 'Your Company Does Not Have Any Subscription To Cancel!'
+        });
     }
     const employeeId = params.employeeId;
-    let checkEmployeeRelatedToCompany = await Employee.findOne({
+    const checkEmployeeRelatedToCompany = await Employee.findOne({
         _id: new ObjectId(employeeId),
         status: EmployeeStatus.ACTIVE
     });
     if (!checkEmployeeRelatedToCompany) {
-        return res.json({status: Status.Error, message: "Invalid Employee Id."})
+        return res.json({status: Status.Error, message: 'Invalid Employee Id.'});
     }
     switch (checkEmployeeRelatedToCompany.permissions.role) {
-        case Role.TECHNICIAN: {
-            company.maxTechnicians--;
-            break;
-        }
-        case Role.MANAGER: {
-            company.maxManagers--;
-            break;
-        }
-        case Role.OFFICE_ADMIN: {
-            company.maxOfficeAdmins--;
-            break;
-        }
-        case Role.ADMIN_EMPLOYEE: {
-            company.maxAdmins--;
-        }
+    case Role.TECHNICIAN: {
+        company.maxTechnicians--;
+        break;
+    }
+    case Role.MANAGER: {
+        company.maxManagers--;
+        break;
+    }
+    case Role.OFFICE_ADMIN: {
+        company.maxOfficeAdmins--;
+        break;
+    }
+    case Role.ADMIN_EMPLOYEE: {
+        company.maxAdmins--;
+    }
     }
     company.save().then(() => {
         checkEmployeeRelatedToCompany.status = EmployeeStatus.INACTIVE;
         checkEmployeeRelatedToCompany.save();
-        return res.json({'status': Status.Error, 'message': 'Employee Subscription Have Been Deleted Successfully.'})
+        return res.json({'status': Status.Error, 'message': 'Employee Subscription Have Been Deleted Successfully.'});
     }).catch((err) => {
         Sentry.captureException(err);
-        return res.json({'status': Status.Error, 'message': err.message})
-    })
-}
+        return res.json({'status': Status.Error, 'message': err.message});
+    });
+};
 
 export const chargeCompanySubscription = (req: Request, res: Response) => {
 
@@ -182,9 +182,9 @@ export const chargeCompanySubscription = (req: Request, res: Response) => {
         {$or: [{maxManagers: { $gt: 0 }}, {maxOfficeAdmins: { $gt: 0 }}, {maxTechnicians: { $gt: 0 }}, {maxAdmins: { $gt: 0 }}], _id: new ObjectId('6027192facb8e2c885da3b66')  },
         async (err: any, companies: ICompany[])=>{
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({'status': Status.Error, 'message': Messages.GenericError});
             }
-            let responses: any = [];
+            const responses: any = [];
             for (let index = 0; index < companies.length; index++) {
                 const company = companies[index];
                 if (!company.stripeId) {
@@ -192,23 +192,23 @@ export const chargeCompanySubscription = (req: Request, res: Response) => {
                     sendAccountDowngradeEmail({to: company.info.companyEmail});
                     continue;
                 }
-                let amount: number = 0;
+                let amount = 0;
 
                 if(company.maxOfficeAdmins > 0){
-                    amount = amount + (company.maxOfficeAdmins * 30)
+                    amount = amount + (company.maxOfficeAdmins * 30);
                 }
                 if(company.maxManagers > 0){
-                    amount = amount + (company.maxManagers * 30)
+                    amount = amount + (company.maxManagers * 30);
                 }
                 if(company.maxTechnicians > 0){
-                    amount = amount + (company.maxTechnicians * 30)
+                    amount = amount + (company.maxTechnicians * 30);
                 }
                 if(company.maxAdmins > 0){
-                    amount = amount + (company.maxAdmins * 30)
+                    amount = amount + (company.maxAdmins * 30);
                 }
                 const nbOfContractors = await Contract.countDocuments({company: company._id, status: ContractStatus.ACCEPTED});
                 if (nbOfContractors > 0) {
-                    amount = amount + (nbOfContractors * 3)
+                    amount = amount + (nbOfContractors * 3);
                 }
                 if(amount > 0) {
                     try {
@@ -240,20 +240,20 @@ export const chargeCompanySubscription = (req: Request, res: Response) => {
                                     });
                                     await companyInvoice.save();
                                 });
-                                let companyInvoices = company.companyInvoices ? company.companyInvoices : [];
+                                const companyInvoices = company.companyInvoices ? company.companyInvoices : [];
                                 companyInvoices.push(companyInvoice);
                                 company.plan = CompanyType.SUBSCRIBED;
                                 company.paid = true;
                                 company.companyInvoices = companyInvoices;
-                                let chargeDate = moment().tz('America/Chicago').add(1, 'month').startOf('month');
+                                const chargeDate = moment().tz('America/Chicago').add(1, 'month').startOf('month');
                                 company.chargeDate = chargeDate.toDate();
                                 await company.save();
                                 // we need to send an email to the company to let it know that the transaction was successfully done!
                                 responses.push({'status': Status.Success, 'company': company.info.companyName, 'message': 'Done.'});
 
                             }else{
-                                let currentDate = new Date();
-                                let downgradeDate = moment().tz('Africa/Tunis').add(currentDate.getDate() + 4, 'days').hours(23).minutes(58);
+                                const currentDate = new Date();
+                                const downgradeDate = moment().tz('Africa/Tunis').add(currentDate.getDate() + 4, 'days').hours(23).minutes(58);
                                 new CronJob(downgradeDate, function() {
                                     request('http://localhost:'+process.env.PORT || 3000+'/api/v1/downgradeCompanies', function (response: any) {
                                         console.log(response);
@@ -263,7 +263,7 @@ export const chargeCompanySubscription = (req: Request, res: Response) => {
                                 sendDeclinedOrderEmail({to: company.info.companyEmail});
                                 responses.push({'status': Status.Error,'company': company.info.companyName, 'message': 'Unable to Charge Company: ' + company._id});
                             }
-                        })
+                        });
                     } catch (err) {
                         Sentry.captureException(err);
                         responses.push({'status': Status.Error, 'message': err.message});
@@ -273,7 +273,7 @@ export const chargeCompanySubscription = (req: Request, res: Response) => {
             }
             return res.json({response: responses});
         });
-}
+};
 
 /**
  * Finalize any draft company invoices,
@@ -370,7 +370,7 @@ export const finalizeCompanyInvoices = async (req: Request, res: Response, sio: 
                     body = 'Payment for company billing failed due to a missing card';
                 } else if (err.code === 'card_declined') {
                     title = err.message;
-                    body = err.body
+                    body = err.body;
                 }
 
                 // if (title) {
@@ -401,9 +401,9 @@ export const finalizeCompanyInvoices = async (req: Request, res: Response, sio: 
                 //     // TODO: Send email to company if payment failed
                 // }
             }
-        };
+        }
     }
 
     return res.json({ status: Status.Success });
 
-}
+};

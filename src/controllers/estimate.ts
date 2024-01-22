@@ -1,57 +1,57 @@
-import { Request, Response } from 'express'
-import { Status, Messages, EstimateStatus } from '../common/constants'
-import { IUser } from '../models/User'
-import { Estimate, IEstimate } from '../models/Estimate'
-import { PurchaseOrder, IPurchaseOrder } from '../models/PurchaseOrder'
-import { ICompany } from '../models/Company'
+import { Request, Response } from 'express';
+import { Status, Messages, EstimateStatus } from '../common/constants';
+import { IUser } from '../models/User';
+import { Estimate, IEstimate } from '../models/Estimate';
+import { PurchaseOrder, IPurchaseOrder } from '../models/PurchaseOrder';
+import { ICompany } from '../models/Company';
 
 export const createEstimate = (req: Request, res: Response) => {
 
     const params = req.body;
     const user = <IUser>req.user;
-    const company = <ICompany>req.company
+    const company = <ICompany>req.company;
 
-    let estimateId: number
+    let estimateId: number;
     if(company.currentEstimateId > company.currentInvoiceId) {
-        estimateId = company.currentEstimateId +1
+        estimateId = company.currentEstimateId +1;
     }else{
-        estimateId = company.currentInvoiceId +1
+        estimateId = company.currentInvoiceId +1;
     }
 
-    estimateId = Math.max(estimateId, 1)
+    estimateId = Math.max(estimateId, 1);
 
     if(params.purchaseOrderId == null || params.purchaseOrderId == undefined) {
 
         if(params.customer == null || params.customer == undefined) {
-            return res.json({ 'status': Status.Error, 'message': 'Customer id is required' })
+            return res.json({ 'status': Status.Error, 'message': 'Customer id is required' });
         }
 
-        var items: any = []
+        let items: any = [];
         if (params.items != undefined) {
             items = JSON.parse(params.items);
         }
-        let estimateItems: any[] = []
+        const estimateItems: any[] = [];
         if (items.length > 0) {
 
             for (let i = 0; i < items.length; i++) {
                 const item = items[i];
                 if ((!item.hasOwnProperty('part') || !item.hasOwnProperty('cost') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('itemCode') || !item.hasOwnProperty('cost') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
-                    return res.json({ 'status': Status.Error, 'message': 'items format is invalid' })
+                    return res.json({ 'status': Status.Error, 'message': 'items format is invalid' });
                 }
-                let obj: any = {}
-                obj.cost = item.cost
-                obj.price = item.price
-                obj.tax = item.tax
-                obj.taxPercentage = item.taxPercentage
-                obj.quantity = item.quantity
+                const obj: any = {};
+                obj.cost = item.cost;
+                obj.price = item.price;
+                obj.tax = item.tax;
+                obj.taxPercentage = item.taxPercentage;
+                obj.quantity = item.quantity;
 
                 if (item.part == undefined || item.part == null) {
-                    obj.name = item.name
-                    obj.itemCode = item.itemCode
+                    obj.name = item.name;
+                    obj.itemCode = item.itemCode;
                 } else {
-                    obj.part = item.part
+                    obj.part = item.part;
                 }
-                estimateItems.push(obj)
+                estimateItems.push(obj);
             }
         }
 
@@ -82,67 +82,67 @@ export const createEstimate = (req: Request, res: Response) => {
         estimate.save((err: any) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
 
             company.updateOne({currentEstimateId: estimateId}, (err: any, raw: any) => {
                 if (err) {
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                 }
 
-                return res.json({ 'status': Status.Success, 'message': 'Estimate created successfully.' })
-            })
-        })
+                return res.json({ 'status': Status.Success, 'message': 'Estimate created successfully.' });
+            });
+        });
 
     } else {
         PurchaseOrder.findById(params.purchaseOrderId)
-        .exec((err: any, purchaseOrder: IPurchaseOrder) => {
-            if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-            }
+            .exec((err: any, purchaseOrder: IPurchaseOrder) => {
+                if (err) {
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
+                }
 
-            if (purchaseOrder == undefined || purchaseOrder == null) {
-                return res.json({ 'status': Status.Error, 'message': 'Invalid purchase order id.' })
-            }
+                if (purchaseOrder == undefined || purchaseOrder == null) {
+                    return res.json({ 'status': Status.Error, 'message': 'Invalid purchase order id.' });
+                }
 
-            const estimate = new Estimate({
-                estimateId: 'Estimate ' + estimateId,
-                note: purchaseOrder.note,
-                items: purchaseOrder.items,
-                total: purchaseOrder.total,
-                customer: purchaseOrder.customer,
-                company: req.companyId,
-                createdBy: user._id,
-                createdAt: Date.now(),
+                const estimate = new Estimate({
+                    estimateId: 'Estimate ' + estimateId,
+                    note: purchaseOrder.note,
+                    items: purchaseOrder.items,
+                    total: purchaseOrder.total,
+                    customer: purchaseOrder.customer,
+                    company: req.companyId,
+                    createdBy: user._id,
+                    createdAt: Date.now(),
                 // tax: purchaseOrder.tax,
                 // taxPercentage: purchaseOrder.taxPercentage,
-            });
+                });
 
-            estimate.save((err: any) => {
+                estimate.save((err: any) => {
 
-                if (err) {
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                }
-                company.updateOne({currentEstimateId: estimateId}, (err: any, raw: any) => {
                     if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                     }
+                    company.updateOne({currentEstimateId: estimateId}, (err: any, raw: any) => {
+                        if (err) {
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
+                        }
 
-                    return res.json({ 'status': Status.Success, 'message': 'Estimate created successfully.' })
-                })
+                        return res.json({ 'status': Status.Success, 'message': 'Estimate created successfully.' });
+                    });
 
-            })
-        })
+                });
+            });
     }
-}
+};
 
 export const getEstimates = (req: Request, res: Response) => {
 
-    let where : any = {}
-    const params = req.body
-    where.company = req.companyId
+    const where : any = {};
+    const params = req.body;
+    where.company = req.companyId;
     if (params.customer != undefined || params.customer != null) {
-        where.customer = params.customer
+        where.customer = params.customer;
     }
 
     Estimate.find(where)
@@ -179,26 +179,26 @@ export const getEstimates = (req: Request, res: Response) => {
         .exec((err: any, estimates: IEstimate[]) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
 
-            return res.json({ 'status': Status.Success, 'estimates': estimates })
-        })
-}
+            return res.json({ 'status': Status.Success, 'estimates': estimates });
+        });
+};
 
 export const updateEstimateStatus = (req: Request, res: Response) => {
 
-    const params = req.body
+    const params = req.body;
 
     Estimate.findOne({ company: req.companyId, _id: params.estimateId })
         .exec((err: any, estimate: IEstimate) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
 
             if (estimate == undefined || estimate == null) {
-                return res.json({ 'status': Status.Error, 'message': 'Invalid Estimate id.' })
+                return res.json({ 'status': Status.Error, 'message': 'Invalid Estimate id.' });
             }
 
             // if (params.status != EstimateStatus.APPROVED && params.status != EstimateStatus.CANCELED) {
@@ -212,29 +212,29 @@ export const updateEstimateStatus = (req: Request, res: Response) => {
             estimate.updateOne({ status: params.status },
                 (err: any) => {
                     if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                     }
 
-                    return res.json({ 'status': Status.Success, 'message': 'Estimate status updated successfully.' })
+                    return res.json({ 'status': Status.Success, 'message': 'Estimate status updated successfully.' });
                 }
-            )
-        })
-}
+            );
+        });
+};
 
 export const updateEstimate = (req: Request, res: Response) => {
 
-    const params = req.body
-    const user = <IUser>req.user
+    const params = req.body;
+    const user = <IUser>req.user;
 
     Estimate.findOne({ '_id': params.estimateId, 'company': req.companyId },
         (err: any, estimate: IEstimate) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
 
             if (estimate == undefined || estimate == null) {
-                return res.json({ 'status': Status.Error, 'message': 'Invalid Estimate id.' })
+                return res.json({ 'status': Status.Error, 'message': 'Invalid Estimate id.' });
             }
 
             // if (estimate.status == EstimateStatus.APPROVED) {
@@ -242,13 +242,13 @@ export const updateEstimate = (req: Request, res: Response) => {
             // }
 
             if (estimate.status == EstimateStatus.CANCELED) {
-                return res.json({ 'status': Status.Error, 'message': "You can\'t change canceled Estimate." })
+                return res.json({ 'status': Status.Error, 'message': 'You can\'t change canceled Estimate.' });
             }
-            let estimateItems: any[] = []
+            const estimateItems: any[] = [];
 
-            var items: any = []
+            let items: any = [];
             if (params.items != undefined) {
-                items = JSON.parse(params.items)
+                items = JSON.parse(params.items);
             }
 
             if (items.length > 0) {
@@ -256,23 +256,23 @@ export const updateEstimate = (req: Request, res: Response) => {
                 for (let i = 0; i < items.length; i++) {
                     const item = items[i];
                     if ((!item.hasOwnProperty('part') || !item.hasOwnProperty('cost') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('itemCode') || !item.hasOwnProperty('cost') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity'))) {
-                        return res.json({ 'status': Status.Error, 'message': 'items format is invalid' })
+                        return res.json({ 'status': Status.Error, 'message': 'items format is invalid' });
                     }
-                    let obj: any = {}
-                    obj.cost = item.cost
-                    obj.price = item.price
-                    obj.quantity = item.quantity
-                    obj.tax = item.tax
-                    obj.taxPercentage = item.taxPercentage
+                    const obj: any = {};
+                    obj.cost = item.cost;
+                    obj.price = item.price;
+                    obj.quantity = item.quantity;
+                    obj.tax = item.tax;
+                    obj.taxPercentage = item.taxPercentage;
 
                     if (item.part == undefined || item.part == null) {
-                        obj.name = item.name
-                        obj.itemCode = item.itemCode
+                        obj.name = item.name;
+                        obj.itemCode = item.itemCode;
                     } else {
-                        obj.part = item.part
+                        obj.part = item.part;
                     }
 
-                    estimateItems.push(obj)
+                    estimateItems.push(obj);
                 }
 
             }
@@ -283,27 +283,27 @@ export const updateEstimate = (req: Request, res: Response) => {
             estimate.updateOne({ items: estimateItems, total: params.total, customer: params.customer, note: params.note },
                 (err: any, raw: any) => {
                     if (err) {
-                        return res.json({ 'status': Status.Error, 'message': err })
+                        return res.json({ 'status': Status.Error, 'message': err });
                     }
 
-                    return res.json({ 'status': Status.Success, 'message': "Estimate updated successfully." })
-                })
+                    return res.json({ 'status': Status.Success, 'message': 'Estimate updated successfully.' });
+                });
         });
-}
+};
 
 export const cancelEstimate = (req: Request, res: Response) => {
 
-    const params = req.body
+    const params = req.body;
 
     Estimate.findOne({_id: params.estimateId, company : req.companyId })
         .exec((err: any, estimate: IEstimate) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
 
             if (estimate == undefined || estimate == null) {
-                return res.json({ 'status': Status.Error, 'message': 'Invalid Estimate id.' })
+                return res.json({ 'status': Status.Error, 'message': 'Invalid Estimate id.' });
             }
 
             // if (estimate.status == EstimateStatus.APPROVED){
@@ -311,17 +311,17 @@ export const cancelEstimate = (req: Request, res: Response) => {
             // }
 
             if (estimate.status == EstimateStatus.CANCELED){
-                return res.json({ 'status': Status.Error, 'message': 'Estimate is already canceled.' })
+                return res.json({ 'status': Status.Error, 'message': 'Estimate is already canceled.' });
             }
 
             estimate.updateOne({ status: EstimateStatus.CANCELED})
                 .exec((err: any, res: any) => {
 
                     if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                     }
 
-                    return res.json({ 'status': Status.Success, 'message': 'Estimate canceled.' })
-                })
-        })
-}
+                    return res.json({ 'status': Status.Success, 'message': 'Estimate canceled.' });
+                });
+        });
+};

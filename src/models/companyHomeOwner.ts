@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ICompanyHomeOwner extends Document {
 
@@ -34,4 +34,4 @@ const CompanyHomeOwnerSchema = new Schema({
 
 }, { timestamps: true });
 
-export const CompanyHomeOwner = mongoose.model<ICompanyHomeOwner>('CompanyHomeOwner', CompanyHomeOwnerSchema)
+export const CompanyHomeOwner = mongoose.model<ICompanyHomeOwner>('CompanyHomeOwner', CompanyHomeOwnerSchema);

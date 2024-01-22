@@ -12,7 +12,7 @@ import { ServiceTicket } from '../models/ServiceTicket';
 import { Job } from '../models/Job';
 import { Invoice } from '../models/Invoice';
 import { Payment } from '../models/Payment';
-import {ObjectId} from 'mongodb'
+import {ObjectId} from 'mongodb';
 import { AdvancePayment } from '../models/AdvancePayment';
 import * as Sentry from '@sentry/node';
 
@@ -33,7 +33,7 @@ export const getCompanyLocations = async (req: Request, res: Response) => {
         Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message});
     }
-}
+};
 
 export const getCompanyLocationById = async (req: Request, res: Response) => {
     try {
@@ -48,7 +48,7 @@ export const getCompanyLocationById = async (req: Request, res: Response) => {
         Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message});
     }
-}
+};
 
 export const createCompanyLocation = async (req: Request, res: Response) => {
     try {
@@ -56,7 +56,7 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
         const company = <ICompany>req.company;
         
         if (params.isMainLocation) {
-            let existingMainLocation = await CompanyLocation.findOne({ company, isActive: true, isMainLocation: true });
+            const existingMainLocation = await CompanyLocation.findOne({ company, isActive: true, isMainLocation: true });
             if (existingMainLocation) {
                 return res.json({ status: Status.Error, message: 'Company already have main location', mainLocation: existingMainLocation });
             }
@@ -66,7 +66,7 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
         await validateAndParseAssignedVendorsParam(params);
         await validateAndParseAssignedEmployeesParam(params);
 
-        let existingDivision = await CompanyLocation.find({company: company._id, workTypes: {$ne: []}});
+        const existingDivision = await CompanyLocation.find({company: company._id, workTypes: {$ne: []}});
 
         const companyLocation = new CompanyLocation(
             {
@@ -107,16 +107,16 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
 
         const savedCompanyLocation = await companyLocation.save();
         const populatedCompanyLocation = await savedCompanyLocation
-                                            .populate('workTypes')
-                                            .populate('assignedEmployees.employee')
-                                            .populate('assignedEmployees.workTypes')
-                                            .populate('assignedVendors.vendor')
-                                            .populate('assignedVendors.workTypes')
-                                            .execPopulate();
+            .populate('workTypes')
+            .populate('assignedEmployees.employee')
+            .populate('assignedEmployees.workTypes')
+            .populate('assignedVendors.vendor')
+            .populate('assignedVendors.workTypes')
+            .execPopulate();
         
         //Verify Division and auto allocate jobs
         if (!existingDivision.length) {
-            await checkIsFirstLocation(params, company, populatedCompanyLocation._id)
+            await checkIsFirstLocation(params, company, populatedCompanyLocation._id);
         }
 
         return res.json({ status: Status.Success, companyLocation : populatedCompanyLocation });
@@ -125,7 +125,7 @@ export const createCompanyLocation = async (req: Request, res: Response) => {
 
         return res.json({ status: Status.Error, message: error.message });
     }
-}
+};
 
 export const updateCompanyLocation = async (req: Request, res: Response) => {
     try {
@@ -139,13 +139,13 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
         }
 
         if (!companyLocation.isMainLocation && params.isMainLocation) {
-            let existingMainLocation = await CompanyLocation.findOne({ company, isActive: true, isMainLocation: true });
+            const existingMainLocation = await CompanyLocation.findOne({ company, isActive: true, isMainLocation: true });
             if (existingMainLocation) {
                 return res.json({ status: Status.Error, message: 'Company already have main location', mainLocation: existingMainLocation });
             }
         }
 
-        let existingDivision = await CompanyLocation.find({company: company._id, workTypes: {$ne: []}});
+        const existingDivision = await CompanyLocation.find({company: company._id, workTypes: {$ne: []}});
         await validateAndParseWorkTypesParam(params);
         await validateAndParseAssignedVendorsParam(params);
         await validateAndParseAssignedEmployeesParam(params);
@@ -189,22 +189,22 @@ export const updateCompanyLocation = async (req: Request, res: Response) => {
         await companyLocation.save();
 
         const newCompanyLocation = await CompanyLocation.findOne({ _id: params.companyLocationId, company })
-        .populate('workTypes')
-        .populate('assignedEmployees.employee')
-        .populate('assignedEmployees.workTypes')
-        .populate('assignedVendors.vendor')
-        .populate('assignedVendors.workTypes');
+            .populate('workTypes')
+            .populate('assignedEmployees.employee')
+            .populate('assignedEmployees.workTypes')
+            .populate('assignedVendors.vendor')
+            .populate('assignedVendors.workTypes');
 
         if (!existingDivision.length) {
-            await checkIsFirstLocation(params, company, params.companyLocationId)
+            await checkIsFirstLocation(params, company, params.companyLocationId);
         }
         
-        return res.json({ status: Status.Success, message: 'Company Location updated successfully', "companyLocation": newCompanyLocation });
+        return res.json({ status: Status.Success, message: 'Company Location updated successfully', 'companyLocation': newCompanyLocation });
     } catch (error) {
         Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message });
     }
-}
+};
 
 /**
  * To manage the employees or vendors who are assigned to a specific company location
@@ -216,39 +216,39 @@ export const updateCompanyLocationAssignments = async (req: Request, res: Respon
         const company = <ICompany>req.company;
 
         
-        let data: {[key: string]: any} = {};
+        const data: {[key: string]: any} = {};
         if(params.assignedVendors) {
             await validateAndParseAssignedVendorsParam(params);
-            data["assignedVendors"] = params.assignedVendors;
+            data['assignedVendors'] = params.assignedVendors;
         }
 
         if(params.assignedEmployees) {
             await validateAndParseAssignedEmployeesParam(params);
-            data["assignedEmployees"] = params.assignedEmployees;
+            data['assignedEmployees'] = params.assignedEmployees;
         }
         
         await CompanyLocation.updateOne({ _id: params.companyLocationId, company }, data);
 
         const newCompanyLocation = await CompanyLocation.findOne({ _id: params.companyLocationId, company })
-        .populate('workTypes')
-        .populate('assignedEmployees.employee')
-        .populate('assignedEmployees.workTypes')
-        .populate('assignedVendors.vendor')
-        .populate('assignedVendors.workTypes');
+            .populate('workTypes')
+            .populate('assignedEmployees.employee')
+            .populate('assignedEmployees.workTypes')
+            .populate('assignedVendors.vendor')
+            .populate('assignedVendors.workTypes');
 
-        return res.json({ status: Status.Success, message: 'Company Location updated successfully', "companyLocation": newCompanyLocation });
+        return res.json({ status: Status.Success, message: 'Company Location updated successfully', 'companyLocation': newCompanyLocation });
     } catch (error) {   
         return res.json({ status: Status.Error, message: error.message });
     }
 
-}
+};
 
 export const updateCompanyLocationBillingAddress = async (req: Request, res: Response) => {
     try {
         const params = req.body;
         const company = <ICompany>req.company;
         
-        let billingAddressData = {
+        const billingAddressData = {
             isAddressAsBillingAddress : params.isAddressAsBillingAddress,
             billingAddress: {
                 street: params.street,
@@ -257,22 +257,22 @@ export const updateCompanyLocationBillingAddress = async (req: Request, res: Res
                 zipCode: params.zipCode,
                 emailSender: params.emailSender
             },
-        }
+        };
         await CompanyLocation.updateOne({ _id: params.companyLocationId, company }, billingAddressData);
 
         const newCompanyLocation = await CompanyLocation.findOne({ _id: params.companyLocationId, company })
-        .populate('workTypes')
-        .populate('assignedEmployees.employee')
-        .populate('assignedEmployees.workTypes')
-        .populate('assignedVendors.vendor')
-        .populate('assignedVendors.workTypes');
+            .populate('workTypes')
+            .populate('assignedEmployees.employee')
+            .populate('assignedEmployees.workTypes')
+            .populate('assignedVendors.vendor')
+            .populate('assignedVendors.workTypes');
 
-        return res.json({ status: Status.Success, message: 'Company Location updated successfully', "companyLocation": newCompanyLocation });
+        return res.json({ status: Status.Success, message: 'Company Location updated successfully', 'companyLocation': newCompanyLocation });
     } catch (error) {   
         return res.json({ status: Status.Error, message: error.message });
     }
 
-}
+};
 
 export const getUserDivision = async (req: Request, res: Response) => {
     try {
@@ -285,86 +285,86 @@ export const getUserDivision = async (req: Request, res: Response) => {
         if (company.admin as unknown as string != userId && !employee?.canAccessAllLocations) {
             if (employee) {
                 userPipeline = [
-                    {$unwind: "$assignedEmployees"},
+                    {$unwind: '$assignedEmployees'},
                     {
-                            $match: { "assignedEmployees.employee": new ObjectId(userId)}
+                        $match: { 'assignedEmployees.employee': new ObjectId(userId)}
                     },
-                    {$unwind: "$assignedEmployees.workTypes"},
+                    {$unwind: '$assignedEmployees.workTypes'},
                     {
                         $lookup: {
-                            from: "worktypes",
-                            localField: "assignedEmployees.workTypes",
-                            foreignField: "_id",
-                            as: "workType"
-                            }  
+                            from: 'worktypes',
+                            localField: 'assignedEmployees.workTypes',
+                            foreignField: '_id',
+                            as: 'workType'
+                        }  
                     },
-                    {$unwind: "$workType"},
-                ]
+                    {$unwind: '$workType'},
+                ];
             }else{
                 userPipeline = [
-                    {$unwind: "$assignedVendors"},
+                    {$unwind: '$assignedVendors'},
                     {
-                            $match: { "assignedVendors.vendor": new ObjectId(userId)}
+                        $match: { 'assignedVendors.vendor': new ObjectId(userId)}
                     },
-                    {$unwind: "$assignedVendors.workTypes"},
+                    {$unwind: '$assignedVendors.workTypes'},
                     {
                         $lookup: {
-                            from: "worktypes",
-                            localField: "assignedVendors.workTypes",
-                            foreignField: "_id",
-                            as: "workType"
-                            }  
+                            from: 'worktypes',
+                            localField: 'assignedVendors.workTypes',
+                            foreignField: '_id',
+                            as: 'workType'
+                        }  
                     },
-                    {$unwind: "$workType"},
-                ]
+                    {$unwind: '$workType'},
+                ];
             }
         }else{
             userPipeline = [
                 {
                     $lookup: {
-                        from: "worktypes",
-                        localField: "workTypes",
-                        foreignField: "_id",
-                        as: "workType"
-                        }  
+                        from: 'worktypes',
+                        localField: 'workTypes',
+                        foreignField: '_id',
+                        as: 'workType'
+                    }  
                 },
-                {$unwind: "$workType"},
-            ]
+                {$unwind: '$workType'},
+            ];
         }
 
-        let divisions = await CompanyLocation.aggregate([
+        const divisions = await CompanyLocation.aggregate([
             {$match: {company: new ObjectId(company._id), isActive: true}},
             ...userPipeline,
             {
                 $project: {
-                    address: "$address",
-                    locationId: "$_id",
-                    workTypeId: "$workType._id",
-                    key: {$concat : [{ $toString: "$_id"},"-",{ $toString: "$workType._id"}]},
-                    name: {$concat : ["$name"," - ","$workType.title"]},
-                    isMainLocation: "$isMainLocation"
+                    address: '$address',
+                    locationId: '$_id',
+                    workTypeId: '$workType._id',
+                    key: {$concat : [{ $toString: '$_id'},'-',{ $toString: '$workType._id'}]},
+                    name: {$concat : ['$name',' - ','$workType.title']},
+                    isMainLocation: '$isMainLocation'
                 }
             }
         ]).exec();
 
         if (divisions.length > 1) {
-            let allOption: any = {
-                name: "All",
+            const allOption: any = {
+                name: 'All',
             };
               
             if (company.admin as unknown as string != userId && !employee?.canAccessAllLocations) {
-                allOption["locationId"] = divisions.map((loc: any) => loc.locationId),
-                allOption["workTypeId"] = divisions.map((workType: any) => workType.workTypeId)
+                allOption['locationId'] = divisions.map((loc: any) => loc.locationId),
+                allOption['workTypeId'] = divisions.map((workType: any) => workType.workTypeId);
             }
 
-            divisions.unshift(allOption)
+            divisions.unshift(allOption);
         }
 
         return res.json({ status: Status.Success, divisions });
     } catch (error) {
         return res.json({ status: Status.Error, message: error.message});
     }
-}
+};
 
 /**
  * To manage company main location when Company Profile updated,
@@ -413,14 +413,14 @@ export const _manageCompanyMainLocation = async (company: ICompany): Promise<ICo
         mainLocation.contact = {
             phone: company.contact?.phone,
             fax: company.contact?.fax
-        }
+        };
     }
 
     await mainLocation.save();
 
     return mainLocation;
 
-}
+};
 
 const validateAndParseWorkTypesParam = async (params: any) => {
     // For handling request from swagger which uses application/x-www-form-urlencoded content type
@@ -432,21 +432,21 @@ const validateAndParseWorkTypesParam = async (params: any) => {
 
     for (const workTypeId of (params.workTypes || [])) {
         if (!await WorkType.findById(workTypeId)) {
-            throw new Error("Invalid Company Location Work Type ID: " + workTypeId);
+            throw new Error('Invalid Company Location Work Type ID: ' + workTypeId);
         }
     }
-}
+};
 
 const validateAndParseAssignedVendorsParam = async (params: any) => {
     // For handling request from swagger which uses application/x-www-form-urlencoded content type
     if (typeof params.assignedVendors === 'string') {
-        params.assignedVendors = JSON.parse("["+params.assignedVendors+"]");
+        params.assignedVendors = JSON.parse('['+params.assignedVendors+']');
     }
 
     if (params.assignedVendors) {
         const vendorIds = params.assignedVendors.map((e: any) => e.vendorId);
         if (checkIfDuplicateExists(vendorIds)) {
-            throw new Error("Duplicate Vendor ID found");
+            throw new Error('Duplicate Vendor ID found');
         }
     }
 
@@ -454,7 +454,7 @@ const validateAndParseAssignedVendorsParam = async (params: any) => {
 
     for (const assignedVendor of (params.assignedVendors || [])) {
         if (!await Company.findById(assignedVendor.vendorId)) {
-            throw new Error("Invalid Assigned Vendor ID: " + assignedVendor.vendorId);
+            throw new Error('Invalid Assigned Vendor ID: ' + assignedVendor.vendorId);
         }
 
         if (params.workTypes && params.workTypes.length > 0) {
@@ -462,7 +462,7 @@ const validateAndParseAssignedVendorsParam = async (params: any) => {
 
             for (const workTypeId of (assignedVendor.workTypes || [])) {
                 if (!await WorkType.findById(workTypeId)) {
-                    throw new Error("Invalid Assigned Vendor Work Type ID: " + workTypeId);
+                    throw new Error('Invalid Assigned Vendor Work Type ID: ' + workTypeId);
                 }
 
                 if (params.workTypes.indexOf(workTypeId) === -1) {
@@ -483,18 +483,18 @@ const validateAndParseAssignedVendorsParam = async (params: any) => {
     }
 
     params.assignedVendors = assignedVendors;
-}
+};
 
 const validateAndParseAssignedEmployeesParam = async (params: any) => {
     // For handling request from swagger which uses application/x-www-form-urlencoded content type
     if (typeof params.assignedEmployees === 'string') {
-        params.assignedEmployees = JSON.parse("["+params.assignedEmployees+"]");
+        params.assignedEmployees = JSON.parse('['+params.assignedEmployees+']');
     }
 
     if (params.assignedEmployees) {
         const employeeIds = params.assignedEmployees.map((e: any) => e.employeeId);
         if (checkIfDuplicateExists(employeeIds)) {
-            throw new Error("Duplicate Emplyee ID found");
+            throw new Error('Duplicate Emplyee ID found');
         }
     }
 
@@ -503,7 +503,7 @@ const validateAndParseAssignedEmployeesParam = async (params: any) => {
     for (const assignedEmployee of (params.assignedEmployees || [])) {
 
         if (!await Employee.findById(assignedEmployee.employeeId)) {
-            throw new Error("Invalid Assigned Employee ID: " + assignedEmployee.employeeId);
+            throw new Error('Invalid Assigned Employee ID: ' + assignedEmployee.employeeId);
         }
 
         if (params.workTypes && params.workTypes.length > 0) {
@@ -511,7 +511,7 @@ const validateAndParseAssignedEmployeesParam = async (params: any) => {
 
             for (const workTypeId of (assignedEmployee.workTypes || [])) {
                 if (!await WorkType.findById(workTypeId)) {
-                    throw new Error("Invalid Assigned Emplyee Work Type ID: " + workTypeId);
+                    throw new Error('Invalid Assigned Emplyee Work Type ID: ' + workTypeId);
                 }
 
                 if (params.workTypes.indexOf(workTypeId) === -1) {
@@ -532,17 +532,17 @@ const validateAndParseAssignedEmployeesParam = async (params: any) => {
     }
 
     params.assignedEmployees = assignedEmployees;
-}
+};
 
 
 const checkIsFirstLocation = async (params: any, company: ICompany, locationId: string) => {
     console.log(locationId);
     
     if (params.workTypes && params.workTypes.length && locationId) {
-        await Job.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
-        await ServiceTicket.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
-        await Invoice.updateMany({company: company._id}, { $set :{"workType": params.workTypes[0], "companyLocation": locationId}}).exec();
-        await Payment.updateMany({company: company._id}, { $set :{"workType": [params.workTypes[0]], "companyLocation": [locationId]}}).exec();
-        await AdvancePayment.updateMany({company: company._id}, { $set :{"workType": [params.workTypes[0]], "companyLocation": [locationId]}}).exec();
+        await Job.updateMany({company: company._id}, { $set :{'workType': params.workTypes[0], 'companyLocation': locationId}}).exec();
+        await ServiceTicket.updateMany({company: company._id}, { $set :{'workType': params.workTypes[0], 'companyLocation': locationId}}).exec();
+        await Invoice.updateMany({company: company._id}, { $set :{'workType': params.workTypes[0], 'companyLocation': locationId}}).exec();
+        await Payment.updateMany({company: company._id}, { $set :{'workType': [params.workTypes[0]], 'companyLocation': [locationId]}}).exec();
+        await AdvancePayment.updateMany({company: company._id}, { $set :{'workType': [params.workTypes[0]], 'companyLocation': [locationId]}}).exec();
     }
-}
+};

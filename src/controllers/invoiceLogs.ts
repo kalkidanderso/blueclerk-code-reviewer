@@ -1,4 +1,4 @@
-import { Request, Response } from 'express'
+import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 
 import {
@@ -19,12 +19,12 @@ export const get = async (req: Request, res: Response) => {
     try {
         const params = req.body;
         const { invoice, invoiceId, companyLocation, workType } = req.body;
-        let pageSize = req.body?.pageSize ? parseInt(req.body?.pageSize) : null;
+        const pageSize = req.body?.pageSize ? parseInt(req.body?.pageSize) : null;
 
         const { query: queryParams = {} } = req;
         const loggedInCompanyId = req.companyId;
-        let { customerId, homeOwnerId, companyId, isActive } = queryParams
-        let query: any = {'$and':[]};
+        const { customerId, homeOwnerId, companyId, isActive } = queryParams;
+        const query: any = {'$and':[]};
         // Return error when all cursors are provided
         if (params.nextCursor && params.previousCursor) {
             return res.json({
@@ -53,7 +53,7 @@ export const get = async (req: Request, res: Response) => {
 
         }
 
-        console.log("query", query);
+        console.log('query', query);
 
         let paginationQuery = {};
         let sortQuery = { createdAt: -1, _id: -1 };
@@ -90,8 +90,8 @@ export const get = async (req: Request, res: Response) => {
 
             if (query['$and']) {
                 
-                    query['$and'].push({ ...paginationQuery });
-                }
+                query['$and'].push({ ...paginationQuery });
+            }
             // Getting previous page is special, we need to reverse the sort
             sortQuery = { createdAt: 1, _id: 1 };
         }
@@ -112,7 +112,7 @@ export const get = async (req: Request, res: Response) => {
                 },
                 {
                     path: 'createdBy',
-                    select: "profile.displayName"
+                    select: 'profile.displayName'
                 },
                 {
                     path: 'customer',
@@ -135,10 +135,10 @@ export const get = async (req: Request, res: Response) => {
             { $count: 'count' }
             // { $sort: sortQuery }
         ]);
-        let nextCursor = { createdAt: invoiceLogs[invoiceLogs.length - 1]?.createdAt, _id: invoiceLogs[invoiceLogs.length - 1]?._id };
+        const nextCursor = { createdAt: invoiceLogs[invoiceLogs.length - 1]?.createdAt, _id: invoiceLogs[invoiceLogs.length - 1]?._id };
         const nextPageQuery: any = { $and: [] };
         query['$and']?.map((q: any) => {
-            nextPageQuery['$and'].push({ ...q })
+            nextPageQuery['$and'].push({ ...q });
         });
         // To be added with the pagination for the previous page
         nextPageQuery['$and'].push({
@@ -156,11 +156,11 @@ export const get = async (req: Request, res: Response) => {
         /**
          * Check if previous page is availabe
          */
-        let previousCursor = { createdAt: invoiceLogs[0]?.createdAt, _id: invoiceLogs[0]?._id };
+        const previousCursor = { createdAt: invoiceLogs[0]?.createdAt, _id: invoiceLogs[0]?._id };
         // Deep clone query
         const previousPageQuery: any = { $and: [] };
         query['$and']?.map((q: any) => {
-            previousPageQuery['$and'].push({ ...q })
+            previousPageQuery['$and'].push({ ...q });
         });
         // To be added with the pagination for the previous page
         previousPageQuery['$and'].push({
@@ -190,22 +190,22 @@ export const get = async (req: Request, res: Response) => {
 
     }
     catch (err) {
-        console.log("Err", err);
+        console.log('Err', err);
         // Sentry.captureException(err);
         //     return res.json({ 'status': Status.Error, 'message': err.message });
     }
-}
+};
 
 export const create = async (data: IInvoiceLogs) => {
     try {
 
-        const logItem = new InvoiceLogs(data)
+        const logItem = new InvoiceLogs(data);
 
         await logItem.save();
 
     }
     catch (err) {
         console.log(err);
-        Sentry.captureException("error logging invoice", err);
+        Sentry.captureException('error logging invoice', err);
     }
-}
+};

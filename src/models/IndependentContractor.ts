@@ -1,5 +1,5 @@
-import mongoose, { Schema } from 'mongoose'
-import { User, IUser } from './User'
+import mongoose, { Schema } from 'mongoose';
+import { User, IUser } from './User';
 
 export interface IIndependentContractor extends IUser {
 
@@ -14,6 +14,6 @@ const IndependentContractorSchema = new Schema({
         required: true
     }
 
-})
+});
 
 export const IndependentContractor = User.discriminator<IIndependentContractor>('IndependentContractor', IndependentContractorSchema);

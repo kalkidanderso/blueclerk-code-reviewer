@@ -33,9 +33,9 @@ export const _syncQBDefaultPaymentTerms = async (req: Request, res: Response, co
                 }
             });
         }
-    };
+    }
 
-}
+};
 
 export const _createQBPaymentTerm = async (req: Request, res: Response, company: ICompany, paymentTerm: IPaymentTerm, next: (error: number, errorMessage: string, qbPaymentTerm: IQBPaymentTerm) => void) => {
 
@@ -96,12 +96,12 @@ export const _createQBPaymentTerm = async (req: Request, res: Response, company:
                     }
         
                     return next(null, null, qbPaymentTerm);
-                })
+                });
             }
-        })
-    })
+        });
+    });
 
-}
+};
 
 export const syncQBPaymentTerms = async (req: Request, res: Response) => {
 
@@ -140,7 +140,7 @@ export const syncQBPaymentTerms = async (req: Request, res: Response) => {
                         || err.fault?.error[0]?.detail
                         || err.fault?.error[0]?.message
                         || Messages.GenericError
-                })
+                });
             }
 
             const qbPaymentTerms: IQBPaymentTerm[] = data?.QueryResponse?.Term;
@@ -157,7 +157,7 @@ export const syncQBPaymentTerms = async (req: Request, res: Response) => {
                             // QB Payment Term created, update DB Payment Term's quickbookId
                             PaymentTerm.findByIdAndUpdate(paymentTerm._id, { quickbookId: qbPaymentTerm.Id }).exec();
                         }
-                    })
+                    });
                 } else {
                     // QB Payment Term found, update DB Payment Term's quickbookId directly
                     PaymentTerm.findByIdAndUpdate(paymentTerm._id, { quickbookId: qbPaymentTerm.Id }).exec();
@@ -203,10 +203,10 @@ export const syncQBPaymentTerms = async (req: Request, res: Response) => {
             company.save();
 
             return res.json({ status: Status.Success, message: 'Payment Term synced successfully.', createdPaymentTerms, updatedPaymentTerms });
-        })
-    })
+        });
+    });
 
-}
+};
 
 export const findQBAllTerms = async (req: Request, res: Response) => {
 
@@ -220,17 +220,17 @@ export const findQBAllTerms = async (req: Request, res: Response) => {
             { field: 'fetchAll', value: true }
         ], async (err: any, data: any) => {
             if (err) {
-                reject(err)
+                reject(err);
             } else {
                 resolve(data?.QueryResponse?.Term);
             }
+        });
+    })
+        .then((data: any) => {
+            return res.json({ status: Status.Success, data: data ?? null });
         })
-    })
-    .then((data: any) => {
-        return res.json({ status: Status.Success, data: data ?? null });
-    })
-    .catch((error: any) => {
-        Sentry.captureException(error);
-        return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
-    })
-}
+        .catch((error: any) => {
+            Sentry.captureException(error);
+            return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
+        });
+};

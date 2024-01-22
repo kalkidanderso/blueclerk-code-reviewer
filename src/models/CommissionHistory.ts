@@ -43,7 +43,7 @@ const CommissionHistorySchema = new Schema({
         type: Date,
         default: null,
     },
-     commission: {
+    commission: {
         type: Number,
         default: null,
     },
@@ -55,7 +55,7 @@ const CommissionHistorySchema = new Schema({
         amount: Number,
         note: String,
     },
-     commissionType: {
+    commissionType: {
         type: String,
         default: null,
     },
@@ -68,7 +68,7 @@ const CommissionHistorySchema = new Schema({
     },
     job: { type: Schema.Types.ObjectId, ref: 'Job' },
 
-}, { timestamps: { createdAt: true, updatedAt: true } })
+}, { timestamps: { createdAt: true, updatedAt: true } });
 
 //Indexes
 CommissionHistorySchema.index({ effectiveDate: 1 });

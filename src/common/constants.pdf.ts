@@ -10,15 +10,15 @@ export const Layouts = {
             return i === 0 || i === node.table.widths.length ? 0 : 1;
         },
         vLineColor: function (i: number, node: { table: { widths: string | any[]; }; }) {
-            return i === 0 || i === node.table.widths.length ? "black" : "white";
+            return i === 0 || i === node.table.widths.length ? 'black' : 'white';
         },
         hLineColor: function (i: number, node: { table: { body: string | any[]; }; }) {
             return i === 0 || i === node.table.body.length
-                ? "#d0d3dc"
-                : "#eeeeee";
+                ? '#d0d3dc'
+                : '#eeeeee';
         },
     }
-}
+};
 
 export const Styles = {
     arReport: {
@@ -85,7 +85,7 @@ export const Styles = {
         tableHeader: {
             bold: true,
             fontSize: 13,
-            color: "black",
+            color: 'black',
         },
         reportFilter: {
             fontSize: 9,
@@ -293,4 +293,4 @@ export const Styles = {
             color: '#4F4F4F',
         }
     }
-}
+};

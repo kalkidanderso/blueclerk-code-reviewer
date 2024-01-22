@@ -22,7 +22,7 @@ const _getNotificationQuery = (
             { company: companyId },
 
         ]
-    }
+    };
     const queryAnd: any[] = [];
     if (isDismissed != null && isDismissed !== 'ALL') {
         queryAnd.push({ 'dismissedStatus.isDismissed': isDismissed });
@@ -42,12 +42,12 @@ const _getNotificationQuery = (
                     'message.body': searchRegex
                 }
             ]
-        })
+        });
     }
     query['$and'].push(...queryAnd);
     return query;
 
-}
+};
 
 /**
  * Save notification to database,
@@ -64,41 +64,41 @@ export const _handleNotification = async ({ sio, companyId, notificationType, me
             body: messageBody
         },
         metadata: metadataId
-    }
+    };
 
     /**
      * Create the notification discriminator based on the notification type,
      * this is important for the metadata to be populated properly
      */
     switch (notificationType) {
-        case NotificationTypes.SERVICE_TICKET_CREATED:
-            notification = new NotificationServiceTicket(notificationEntry);
-            break;
+    case NotificationTypes.SERVICE_TICKET_CREATED:
+        notification = new NotificationServiceTicket(notificationEntry);
+        break;
 
-        case NotificationTypes.CONTRACT_INVITATION:
-        case NotificationTypes.CONTRACT_ACCEPTED:
-        case NotificationTypes.CONTRACT_CANCELED:
-        case NotificationTypes.CONTRACT_REJECTED:
-        case NotificationTypes.CONTRACT_FINISHED:
-            notification = new NotificationContract(notificationEntry);
-            break;
+    case NotificationTypes.CONTRACT_INVITATION:
+    case NotificationTypes.CONTRACT_ACCEPTED:
+    case NotificationTypes.CONTRACT_CANCELED:
+    case NotificationTypes.CONTRACT_REJECTED:
+    case NotificationTypes.CONTRACT_FINISHED:
+        notification = new NotificationContract(notificationEntry);
+        break;
 
-        case NotificationTypes.JOB_RESCHEDULED:
-            notification = new NotificationJob(notificationEntry);
-            break;
+    case NotificationTypes.JOB_RESCHEDULED:
+        notification = new NotificationJob(notificationEntry);
+        break;
 
-        case NotificationTypes.JOB_REQUEST_CREATED:
-        case NotificationTypes.JOB_REQUEST_STATUS_UPDATED:
-            notification = new NotificationJobRequest(notificationEntry);
-            break;
+    case NotificationTypes.JOB_REQUEST_CREATED:
+    case NotificationTypes.JOB_REQUEST_STATUS_UPDATED:
+        notification = new NotificationJobRequest(notificationEntry);
+        break;
 
-        case NotificationTypes.NEW_CHAT:
-            notification = new NotificationChat(notificationEntry);
-            break;
+    case NotificationTypes.NEW_CHAT:
+        notification = new NotificationChat(notificationEntry);
+        break;
 
-        default:
-            notification = new Notification(notificationEntry);
-            break;
+    default:
+        notification = new Notification(notificationEntry);
+        break;
     }
 
     // Save the notification with Service Ticket as the metadata
@@ -106,7 +106,7 @@ export const _handleNotification = async ({ sio, companyId, notificationType, me
     await notification.populate('metadata').execPopulate();
     await sio.to(companyId && companyId.toString()).emit(SocketEvents.NOTIFICATION_CENTER, notification);
 
-}
+};
 
 /**
  * Retrieve multiple notifications based on company
@@ -120,8 +120,8 @@ export const getNotifications = async (req: Request, res: Response) => {
     const currentPage = parseInt(params.currentPage || 0);
     const pageSize = parseInt(params.pageSize || DefaultPageSize);
 
-    const total = await Notification.count(_query)
-    const totalUnread = await Notification.count(_getNotificationQuery(companyId, false, false))
+    const total = await Notification.count(_query);
+    const totalUnread = await Notification.count(_getNotificationQuery(companyId, false, false));
     Notification.find(_query).sort({ createdAt: 'desc' })
         .skip(currentPage * pageSize)
         .limit(pageSize)
@@ -139,7 +139,7 @@ export const getNotifications = async (req: Request, res: Response) => {
         })
         .exec((err: any, notifications: INotification[]) => {
             if (err) {
-                return res.json({ status: Status.Error, message: Messages.GenericError })
+                return res.json({ status: Status.Error, message: Messages.GenericError });
             }
 
             return res.json({
@@ -147,10 +147,10 @@ export const getNotifications = async (req: Request, res: Response) => {
                 notifications,
                 total,
                 totalUnread
-            })
+            });
         }
         );
-}
+};
 
 /**
  * Update the status of notificatoin, read and dismiss status
@@ -211,10 +211,10 @@ export const updateNotification = (req: Request, res: Response) => {
                     status: Status.Success,
                     message: 'Notification updated successfully.',
                     notification: updatedNotification
-                })
+                });
 
-            })
+            });
         }
         );
 
-}
+};

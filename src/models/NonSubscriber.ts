@@ -1,5 +1,5 @@
-import mongoose, { Schema } from 'mongoose'
-import { User, IUser } from './User'
+import mongoose, { Schema } from 'mongoose';
+import { User, IUser } from './User';
 
 export interface INonSubscriber extends IUser {
 
@@ -15,6 +15,6 @@ const NonSubscriberSchema = new Schema({
         required: true
     }
 
-})
+});
 
-export const NonSubscriber = User.discriminator<INonSubscriber>('NonSubscriber', NonSubscriberSchema)
+export const NonSubscriber = User.discriminator<INonSubscriber>('NonSubscriber', NonSubscriberSchema);

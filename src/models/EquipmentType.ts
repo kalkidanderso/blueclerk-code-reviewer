@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IEquipmentType extends Document {
 
@@ -21,7 +21,7 @@ const EquipmentTypeSchema = new Schema({
         ref: 'Company'
     }
 
-})
+});
 
 //Indexes
 EquipmentTypeSchema.index({ industry: 1 });
@@ -30,4 +30,4 @@ EquipmentTypeSchema.index({ title: 1, industry: 1, createdBy: 1 });
 EquipmentTypeSchema.index({ title: 1, createdBy: 1 });
 EquipmentTypeSchema.index({ createdBy: 1, industry: 1 });
 
-export const EquipmentType = mongoose.model<IEquipmentType>('EquipmentType', EquipmentTypeSchema)
+export const EquipmentType = mongoose.model<IEquipmentType>('EquipmentType', EquipmentTypeSchema);

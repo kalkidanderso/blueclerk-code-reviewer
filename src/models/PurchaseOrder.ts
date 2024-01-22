@@ -1,11 +1,11 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IPurchaseOrder extends Document {
     purchaseOrderId: string
     items: [{
         part: Schema.Types.ObjectId
-        name: String
-        ItemCode: String
+        name: string
+        ItemCode: string
         quantity: number
         tax: number
         taxPercentage:number
@@ -118,7 +118,7 @@ const PurchaseOrderSchema = new Schema({
         type: Boolean,
         default: false
     }
-})
+});
 
 //Indexes
 PurchaseOrderSchema.index({ estimate: 1 });
@@ -130,4 +130,4 @@ PurchaseOrderSchema.index({ createdBy: 1 });
 PurchaseOrderSchema.index({ estimate: 1, company: 1 });
 PurchaseOrderSchema.index({ company: 1, equipment: 1 });
 
-export const PurchaseOrder = mongoose.model<IPurchaseOrder>('PurchaseOrder', PurchaseOrderSchema)
+export const PurchaseOrder = mongoose.model<IPurchaseOrder>('PurchaseOrder', PurchaseOrderSchema);

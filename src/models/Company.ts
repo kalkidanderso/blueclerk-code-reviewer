@@ -49,26 +49,26 @@ export interface ICompany extends Document {
     maxAdmins: number
     userPermissions: {
         0: {
-            on: [Number],
-            off: [Number],
+            on: [number],
+            off: [number],
         },
         1: {
-            on: [Number],
-            off: [Number],
+            on: [number],
+            off: [number],
         },
         2: {
-            on: [Number],
-            off: [Number],
+            on: [number],
+            off: [number],
         },
         3: {
-            on: [Number],
-            off: [Number],
+            on: [number],
+            off: [number],
         },
     },
     emailPreferences: {
-        preferences: Number,
+        preferences: number,
         time: Date,
-        timeZone: String
+        timeZone: string
     },
     currentJobId: number,
     prefix: string,
@@ -147,7 +147,7 @@ export interface IQBCompany {
 const CompanySchema = new Schema({
 
     info: {
-        companyName: { type: String, index: "text"},
+        companyName: { type: String, index: 'text'},
         industry: { type: Schema.Types.ObjectId, ref: 'Industry' },
         logoUrl: String,
         companyEmail: String,
@@ -185,8 +185,8 @@ const CompanySchema = new Schema({
     // type 0 for subscribed
     // type 1 for free
     plan: {
-      type: Number,
-      default: 0
+        type: Number,
+        default: 0
     },
     chargeDate: Date, // signup + 30 days
     trialEndDate: Date, // signup + 30 days
@@ -318,7 +318,7 @@ const CompanySchema = new Schema({
             },
         }]
     },
-     costing: {
+    costing: {
         count: {
             type: Number,
             default: 0
@@ -374,7 +374,7 @@ const CompanySchema = new Schema({
         }
     }
 
-}, { timestamps: { createdAt: true, updatedAt: true } })
+}, { timestamps: { createdAt: true, updatedAt: true } });
 
 //Indexes
 CompanySchema.index({ 'info.industry': 1 });
@@ -387,4 +387,4 @@ CompanySchema.index({ 'info.companyEmail': 1 });
 CompanySchema.index({ plan: 1, chargeDate: 1 });
 
 // export const Company = User.discriminator<ICompany>('Company', CompanySchema)
-export const Company = mongoose.model<ICompany>('Company', CompanySchema)
+export const Company = mongoose.model<ICompany>('Company', CompanySchema);

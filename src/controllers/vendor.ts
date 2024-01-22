@@ -32,7 +32,7 @@ export const createContractor = (req: Request, res: Response, sio: any) => {
 
     checkCompanyEmailExists(req, res, (req: Request, res: Response) => {
 
-        const params = req.body
+        const params = req.body;
 
         const company = new Company(
             {
@@ -58,12 +58,12 @@ export const createContractor = (req: Request, res: Response, sio: any) => {
                 type: 1,
                 userPermissions: UserPermissions
             }
-        )
+        );
 
         company.save((err: any) => {
 
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({'status': Status.Error, 'message': Messages.GenericError});
             }
 
             const companyAdmin = new CompanyAdmin(
@@ -93,12 +93,12 @@ export const createContractor = (req: Request, res: Response, sio: any) => {
                     },
                     company: company._id
                 }
-            )
+            );
 
             companyAdmin.save((err: any) => {
 
                 if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                    return res.json({'status': Status.Error, 'message': Messages.GenericError});
                 }
 
                 company.updateOne({
@@ -106,24 +106,24 @@ export const createContractor = (req: Request, res: Response, sio: any) => {
                 }, (err: any, raq: any) => {
 
                     if (err) {
-                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError});
                     }
-                    _createHubSpotContact(company, companyAdmin)
-                    sendEmail({to: params.email})
-                    login(req, res, sio)
-                })
+                    _createHubSpotContact(company, companyAdmin);
+                    sendEmail({to: params.email});
+                    login(req, res, sio);
+                });
 
-            })
-        })
+            });
+        });
 
-    })
+    });
 
-}
+};
 
 // search contractor/organization for contract
 export const searchContractor = (req: Request, res: Response) => {
 
-    let query: any = [];
+    const query: any = [];
     const params = req.body;
 
     if (params.email) {
@@ -145,27 +145,27 @@ export const searchContractor = (req: Request, res: Response) => {
         (err: any, contractors: ICompany[]) => {
 
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({'status': Status.Error, 'message': Messages.GenericError});
             }
 
             if (contractors.length == 0) {
-                return res.json({'status': Status.Success, 'contractors': []})
+                return res.json({'status': Status.Success, 'contractors': []});
             }
-            return res.json({'status': Status.Success, 'contractors': contractors})
+            return res.json({'status': Status.Success, 'contractors': contractors});
         }
-    )
-}
+    );
+};
 
 // company start / initiate contract for contractor
 export const startContract = async (req: Request, res: Response, sio: any) => {
 
-    const params = req.body
-    const user = <IUser>req.user
+    const params = req.body;
+    const user = <IUser>req.user;
     const company = <ICompany>req.company;
     /*    if (company.paid == false && company.type == 1) {
             return res.json({'status': Status.Error, 'message': 'Your Free Trial has ended. Please buy Subscription to Add Contractors'});
         }*/
-    let nbOfAvailableContracts = await Contract.countDocuments({
+    const nbOfAvailableContracts = await Contract.countDocuments({
         company: company._id,
         status: {$in: [ContractStatus.ACCEPTED, ContractStatus.PENDING]}
     });
@@ -174,11 +174,11 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
         (err: any, contractor: ICompany) => {
 
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({'status': Status.Error, 'message': Messages.GenericError});
             }
 
             if (contractor == undefined) {
-                return res.json({'status': Status.Error, 'message': 'Invalid vendor.'})
+                return res.json({'status': Status.Error, 'message': 'Invalid vendor.'});
             }
 
             // Check if company still in 30 days free period or not
@@ -201,16 +201,16 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
                 (err: any, oldcontract: IContract[]) => {
                     let contract: IContract;
                     if (err) {
-                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError});
                     }
 
                     if (oldcontract[0]?.status == ContractStatus.PENDING || oldcontract[0]?.status == ContractStatus.ACCEPTED) {
-                        return res.json({'status': Status.Error, 'message': 'Vendor already exist.'})
+                        return res.json({'status': Status.Error, 'message': 'Vendor already exist.'});
                     } else if (oldcontract[0]?.status == ContractStatus.CANCELED || oldcontract[0]?.status == ContractStatus.FINISHED || oldcontract[0]?.status == ContractStatus.REJECTED) {
 
                         // if previous canceled, finished or rejected contract found, reactivate it instead creating new one
-                        contract = oldcontract[0]
-                        contract.status = ContractStatus.ACCEPTED
+                        contract = oldcontract[0];
+                        contract.status = ContractStatus.ACCEPTED;
                     } else {
                         // if first time start contract with contractor, create new
                         contract = new Contract(
@@ -219,13 +219,13 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
                                 contractor: contractor._id,
                                 status: ContractStatus.ACCEPTED,
                             }
-                        )
+                        );
                     }
 
                     contract.save(async (err: any) => {
 
                         if (err) {
-                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                            return res.json({'status': Status.Error, 'message': Messages.GenericError});
                         }
 
                         // Send email to contractor for contract started
@@ -234,7 +234,7 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
                             company: req.company.info.companyName,
                             contractor: contractor.info.companyName,
                             companyEmail: req.company.info.companyEmail
-                        })
+                        });
 
                         /**
                          * Kris' remark (Sept 16th, 2021):
@@ -273,7 +273,7 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
                                     total: 0,
                                     isDraft: true,
                                     company: company._id
-                                })
+                                });
                                 await companyInvoice.save();
                             }
 
@@ -296,7 +296,7 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
                         }
 
                         // Construct notification entry to be saved
-                        let notificationEntry: INotificationContract = new NotificationContract({
+                        const notificationEntry: INotificationContract = new NotificationContract({
                             company: contractor._id,
                             notificationType: NotificationTypes.CONTRACT_INVITATION,
                             message: {
@@ -318,19 +318,19 @@ export const startContract = async (req: Request, res: Response, sio: any) => {
                             await sio.to(contractor._id.toString()).emit(SocketEvents.NOTIFICATION_CENTER, notification);
 
                             return res.json({'status': Status.Success, 'message': 'Vendor Added.'});
-                        })
-                    })
-                })
+                        });
+                    });
+                });
 
         }
-    )
-}
+    );
+};
 
 //invite contractor for signup
 export const inviteContractor = (req: Request, res: Response) => {
 
-    const params = req.body
-    const user = <IUser>req.user
+    const params = req.body;
+    const user = <IUser>req.user;
     const company = <ICompany>req.company;
 
     // if (moment(company.trialEndDate).isBefore(moment()) && !company.stripeId) {
@@ -377,14 +377,14 @@ export const inviteContractor = (req: Request, res: Response) => {
 
             return res.json({status: Status.Success, message: 'Invitation sent.', contract});
         }
-    )
+    );
 
-}
+};
 
 // get all contracts for contractor
 export const getAllContracts = (req: Request, res: Response) => {
 
-    const user = <ICompanyAdmin>req.user
+    const user = <ICompanyAdmin>req.user;
 
     Contract.find({contractor: user.company})
         .populate({
@@ -397,35 +397,35 @@ export const getAllContracts = (req: Request, res: Response) => {
         })
         .exec((err: any, contracts: IContract[]) => {
 
-                if (err) {
-                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
-                }
-
-                if (contracts.length == 0) {
-                    return res.json({'status': Status.Error, 'message': 'No contract found.'})
-                }
-
-                return res.json({'status': Status.Success, 'contracts': contracts})
+            if (err) {
+                return res.json({'status': Status.Error, 'message': Messages.GenericError});
             }
-        )
-}
+
+            if (contracts.length == 0) {
+                return res.json({'status': Status.Error, 'message': 'No contract found.'});
+            }
+
+            return res.json({'status': Status.Success, 'contracts': contracts});
+        }
+        );
+};
 
 // contract accept or reject by contractor /organization
 export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
 
-    const params = req.body
-    const contractor = <ICompany>req.company
+    const params = req.body;
+    const contractor = <ICompany>req.company;
 
-    var contractStatus = 0;
+    let contractStatus = 0;
 
     if (params.status == 'accept') {
-        contractStatus = ContractStatus.ACCEPTED
+        contractStatus = ContractStatus.ACCEPTED;
 
     } else if (params.status == 'reject') {
-        contractStatus = ContractStatus.REJECTED
+        contractStatus = ContractStatus.REJECTED;
 
     } else {
-        return res.json({'status': Status.Error, 'message': 'Invalid contract status'})
+        return res.json({'status': Status.Error, 'message': 'Invalid contract status'});
     }
 
     Contract.findOne({
@@ -434,40 +434,40 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
     }).populate('company').populate('contractor').then(async (contract) => {
 
         if (contract == undefined) {
-            return res.json({'status': Status.Error, 'message': 'Invalid contract.'})
+            return res.json({'status': Status.Error, 'message': 'Invalid contract.'});
         }
 
         if (contract.status == ContractStatus.ACCEPTED) {
-            return res.json({'status': Status.Error, 'message': 'Contract is already accepted.'})
+            return res.json({'status': Status.Error, 'message': 'Contract is already accepted.'});
         }
 
         if (contract.status == ContractStatus.CANCELED) {
-            return res.json({'status': Status.Error, 'message': 'Contract is already canceled.'})
+            return res.json({'status': Status.Error, 'message': 'Contract is already canceled.'});
         }
 
         if (contract.status == ContractStatus.REJECTED) {
-            return res.json({'status': Status.Error, 'message': 'Contract is already rejected.'})
+            return res.json({'status': Status.Error, 'message': 'Contract is already rejected.'});
         }
 
         if (contract.status == ContractStatus.FINISHED) {
-            return res.json({'status': Status.Error, 'message': 'Contract is already finished.'})
+            return res.json({'status': Status.Error, 'message': 'Contract is already finished.'});
         }
 
-        let company = contract.company;
+        const company = contract.company;
         const contractor = <ICompany>contract.contractor;
-        let nbCurrentContract = await Contract.countDocuments({
+        const nbCurrentContract = await Contract.countDocuments({
             company: company._id,
             status: {$in: [ContractStatus.ACCEPTED, ContractStatus.PENDING]}
         });
         if (contractStatus == ContractStatus.ACCEPTED) {
-            let amount: number = 0;
+            let amount = 0;
             const now = new Date();
-            const daysRemaining = now.getDate()
-            const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-            const daysToCharge = daysInCurrentMonth - daysRemaining + 1
+            const daysRemaining = now.getDate();
+            const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            const daysToCharge = daysInCurrentMonth - daysRemaining + 1;
 
-            const perday = 3 / daysInCurrentMonth
-            amount = amount + (perday * daysToCharge)
+            const perday = 3 / daysInCurrentMonth;
+            amount = amount + (perday * daysToCharge);
             if (daysToCharge >= 10) {
                 if (!company.stripeId) {
                     // Company doesn't have billing info
@@ -491,18 +491,18 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                             {status: contractStatus},
                             (err: any, raw: any) => {
                                 if (err) {
-                                    return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                                    return res.json({'status': Status.Error, 'message': Messages.GenericError});
                                 }
 
                                 // ToDo send email to company /contractor on update
                                 const companyCustomer = new CompanyCustomer({
                                     company: contractor._id,
                                     customer: company._id,
-                                })
+                                });
                                 companyCustomer.save((err: any) => {
 
                                     if (err) {
-                                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                                        return res.json({'status': Status.Error, 'message': Messages.GenericError});
                                     }
 
                                     sendContractStatusChangeEmailToCompany({
@@ -510,16 +510,16 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                                         contractor: contractor.info.companyName,
                                         company: company.info.companyName,
                                         contractStatus: params.status + 'ed'
-                                    })
+                                    });
                                     sendContractStatusChangeEmailToContractor({
                                         to: contractor.info.companyEmail,
                                         contractor: contractor.info.companyName,
                                         company: company.info.companyName,
                                         replyTo: company.info.companyEmail,
                                         contractStatus: params.status + 'ed'
-                                    })
-                                })
-                            })
+                                    });
+                                });
+                            });
                         // Create Company Invoice
                         const companyInvoice: ICompanyInvoice = new CompanyInvoice({
                             technicians: 0,
@@ -546,8 +546,8 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                             });
                             await companyInvoice.save();
                         });
-                        let companyInvoices = company.companyInvoices ? company.companyInvoices : [];
-                        let chargeDate = moment().tz('America/Chicago').add(1, 'month').startOf('month');
+                        const companyInvoices = company.companyInvoices ? company.companyInvoices : [];
+                        const chargeDate = moment().tz('America/Chicago').add(1, 'month').startOf('month');
 
                         companyInvoices.push(companyInvoice);
                         company.plan = CompanyType.SUBSCRIBED;
@@ -557,7 +557,7 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                         await company.save();
 
                         // Save notification
-                        let notificationEntry: INotificationContract = new NotificationContract({
+                        const notificationEntry: INotificationContract = new NotificationContract({
                             company: company._id,
                             notificationType: NotificationTypes.CONTRACT_ACCEPTED,
                             message: {
@@ -577,9 +577,9 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                             await notification.populate('metadata').execPopulate();
                             await sio.to(company._id.toString()).emit(SocketEvents.NOTIFICATION_CENTER, notification);
 
-                            return res.json({'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.'})
-                        })
-                    })
+                            return res.json({'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.'});
+                        });
+                    });
                 } catch (err) {
                     Sentry.captureException(err);
                     return res.json({ 'status': Status.Error, 'message': err.message });
@@ -589,18 +589,18 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                     {status: contractStatus},
                     (err: any, raw: any) => {
                         if (err) {
-                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                            return res.json({'status': Status.Error, 'message': Messages.GenericError});
                         }
 
                         // ToDo send email to company /contractor on update
                         const companyCustomer = new CompanyCustomer({
                             company: contractor._id,
                             customer: company._id,
-                        })
+                        });
                         companyCustomer.save((err: any) => {
 
                             if (err) {
-                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                                return res.json({'status': Status.Error, 'message': Messages.GenericError});
                             }
 
                             sendContractStatusChangeEmailToCompany({
@@ -608,21 +608,21 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                                 contractor: contractor.info.companyName,
                                 company: company.info.companyName,
                                 contractStatus: params.status + 'ed'
-                            })
+                            });
                             sendContractStatusChangeEmailToContractor({
                                 to: contractor.info.companyEmail,
                                 contractor: contractor.info.companyName,
                                 company: company.info.companyName,
                                 replyTo: company.info.companyEmail,
                                 contractStatus: params.status + 'ed'
-                            })
+                            });
 
                             // return res.json({ 'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.' })
 
                             // needs to change
 
-                        })
-                    })
+                        });
+                    });
                 // Create Company Invoice
                 const companyInvoice: ICompanyInvoice = new CompanyInvoice({
                     technicians: 0,
@@ -649,8 +649,8 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                     });
                     await companyInvoice.save();
                 });
-                let companyInvoices = company.companyInvoices ? company.companyInvoices : [];
-                let chargeDate = moment().tz('America/Chicago').add(1, 'month').startOf('month');
+                const companyInvoices = company.companyInvoices ? company.companyInvoices : [];
+                const chargeDate = moment().tz('America/Chicago').add(1, 'month').startOf('month');
 
                 companyInvoices.push(companyInvoice);
                 company.plan = CompanyType.SUBSCRIBED;
@@ -660,7 +660,7 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                 await company.save();
 
                 // Save notification
-                let notificationEntry: INotificationContract = new NotificationContract({
+                const notificationEntry: INotificationContract = new NotificationContract({
                     company: company._id,
                     notificationType: NotificationTypes.CONTRACT_ACCEPTED,
                     message: {
@@ -680,25 +680,25 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                     await notification.populate('metadata').execPopulate();
                     await sio.to(company._id.toString()).emit(SocketEvents.NOTIFICATION_CENTER, notification);
 
-                    return res.json({'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.'})
-                })
+                    return res.json({'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.'});
+                });
             }
         } else {
             contract.updateOne(
                 {status: contractStatus},
                 (err: any, raw: any) => {
                     if (err) {
-                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError});
                     }
 
                     const companyCustomer = new CompanyCustomer({
                         company: contractor._id,
                         customer: company._id,
-                    })
+                    });
                     companyCustomer.save((err: any) => {
 
                         if (err) {
-                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                            return res.json({'status': Status.Error, 'message': Messages.GenericError});
                         }
 
                         sendContractStatusChangeEmailToCompany({
@@ -706,17 +706,17 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                             contractor: contractor.info.companyName,
                             company: company.info.companyName,
                             contractStatus: params.status + 'ed'
-                        })
+                        });
                         sendContractStatusChangeEmailToContractor({
                             to: contractor.info.companyEmail,
                             contractor: contractor.info.companyName,
                             company: company.info.companyName,
                             replyTo: company.info.companyEmail,
                             contractStatus: params.status + 'ed'
-                        })
+                        });
 
                         // Save notification
-                        let notificationEntry: INotificationContract = new NotificationContract({
+                        const notificationEntry: INotificationContract = new NotificationContract({
                             company: company._id,
                             notificationType: NotificationTypes.CONTRACT_REJECTED,
                             message: {
@@ -724,7 +724,7 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                                 body: `Company ${contractor.info.companyName} has rejected your vendor contract`
                             },
                             metadata: contract._id
-                        })
+                        });
 
                         notificationEntry.save(async (err: any, notification: INotificationContract) => {
 
@@ -736,17 +736,17 @@ export const acceptRejectContract = (req: Request, res: Response, sio: any) => {
                             await notification.populate('metadata').execPopulate();
                             await sio.to(company._id.toString()).emit(SocketEvents.NOTIFICATION_CENTER, notification);
 
-                            return res.json({'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.'})
-                        })
-                    })
-                })
+                            return res.json({'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.'});
+                        });
+                    });
+                });
 
         }
     }).catch((err) => {
         Sentry.captureException(err);
         return res.json({ 'status': Status.Error, 'message': err.message });
-    })
-}
+    });
+};
 
 export const updateContract = async (req: Request, res: Response, sio: any) => {
 
@@ -760,7 +760,7 @@ export const updateContract = async (req: Request, res: Response, sio: any) => {
         if (contract.status === ContractStatus.ACCOUNT_NOT_CREATED) {
             return res.json({
                 status: Status.Error,
-                message: `Contract found but the Contractor haven't registered to BlueClerk, you can remind them to registered first`
+                message: 'Contract found but the Contractor haven\'t registered to BlueClerk, you can remind them to registered first'
             });
         }
 
@@ -770,96 +770,96 @@ export const updateContract = async (req: Request, res: Response, sio: any) => {
             return res.json({status: Status.Error, message: 'Contractor not found.'});
         }
 
-        let notificationType
-        let messageTitle
-        let messageBody
+        let notificationType;
+        let messageTitle;
+        let messageBody;
 
         switch (params.status) {
-            case ContractStatus.ACCEPTED:
-                // Reset finished information
-                contract.finishedBy = null;
-                contract.finishedAt = null;
+        case ContractStatus.ACCEPTED:
+            // Reset finished information
+            contract.finishedBy = null;
+            contract.finishedAt = null;
 
-                // Construct notification data
-                notificationType = NotificationTypes.CONTRACT_ACCEPTED;
-                messageTitle = 'New vendor contract received';
-                messageBody = `Company ${company.info.companyName} has added you to be a vendor`;
+            // Construct notification data
+            notificationType = NotificationTypes.CONTRACT_ACCEPTED;
+            messageTitle = 'New vendor contract received';
+            messageBody = `Company ${company.info.companyName} has added you to be a vendor`;
 
-                // Send email to contractor for contract started
-                sendContractStartEmail({
-                    to: contractor.info.companyEmail,
-                    company: req.company.info.companyName,
-                    contractor: contractor.info.companyName,
-                    companyEmail: req.company.info.companyEmail
-                })
+            // Send email to contractor for contract started
+            sendContractStartEmail({
+                to: contractor.info.companyEmail,
+                company: req.company.info.companyName,
+                contractor: contractor.info.companyName,
+                companyEmail: req.company.info.companyEmail
+            });
 
-                // Handle charge for the company
-                if (
-                    (company.paid
+            // Handle charge for the company
+            if (
+                (company.paid
                         && new Date() < company.chargeDate)
                     || company.stripeId
-                ) {
-                    // Get the pro-rated charge
-                    const {amount, tax} = await _getProRatedAmount();
+            ) {
+                // Get the pro-rated charge
+                const {amount, tax} = await _getProRatedAmount();
 
-                    // Create a pending invoice items to Stripe
-                    const invoiceItem = await createStripeInvoiceItem(company.stripeId, amount + tax, contractor.info?.companyName);
+                // Create a pending invoice items to Stripe
+                const invoiceItem = await createStripeInvoiceItem(company.stripeId, amount + tax, contractor.info?.companyName);
 
-                    // Find existing company invoice
-                    let companyInvoice = await CompanyInvoice.findOne({
-                        company: company._id,
-                        isDraft: true
+                // Find existing company invoice
+                let companyInvoice = await CompanyInvoice.findOne({
+                    company: company._id,
+                    isDraft: true
+                });
+
+                // No company invoice, create new
+                if (!companyInvoice) {
+                    companyInvoice = new CompanyInvoice({
+                        technicians: 0,
+                        managers: 0,
+                        officeAdmins: 0,
+                        admins: 0,
+                        contractors: 0,
+                        charges: 0,
+                        tax: 0,
+                        total: 0,
+                        isDraft: true,
+                        company: company._id
                     });
-
-                    // No company invoice, create new
-                    if (!companyInvoice) {
-                        companyInvoice = new CompanyInvoice({
-                            technicians: 0,
-                            managers: 0,
-                            officeAdmins: 0,
-                            admins: 0,
-                            contractors: 0,
-                            charges: 0,
-                            tax: 0,
-                            total: 0,
-                            isDraft: true,
-                            company: company._id
-                        })
-                        await companyInvoice.save();
-                    }
-
-                    // Update company invoice data
-                    companyInvoice.contractors += 1;
-                    companyInvoice.charges += amount;
-                    companyInvoice.tax += tax;
-                    companyInvoice.total += invoiceItem.amount / 100;
                     await companyInvoice.save();
-
-                    // Add the company invoice
-                    company.companyInvoices = company.companyInvoices ?? [];
-                    const existCompanyInvoice = company.companyInvoices.find(
-                        inv => inv.toString() === companyInvoice._id.toString()
-                    );
-                    if (!existCompanyInvoice) {
-                        company.companyInvoices.push(companyInvoice);
-                        await company.save();
-                    }
                 }
-                break;
 
-            case ContractStatus.FINISHED:
-                // Add finished information
-                contract.finishedBy = user;
-                contract.finishedAt = new Date();
+                // Update company invoice data
+                companyInvoice.contractors += 1;
+                companyInvoice.charges += amount;
+                companyInvoice.tax += tax;
+                companyInvoice.total += invoiceItem.amount / 100;
+                await companyInvoice.save();
 
-                // Construct notification data
-                notificationType = NotificationTypes.CONTRACT_FINISHED;
-                messageTitle = 'Contract finished';
-                messageBody = `Company ${company.info.companyName} has finished your vendor contract`;
-                break;
+                // Add the company invoice
+                company.companyInvoices = company.companyInvoices ?? [];
+                const existCompanyInvoice = company.companyInvoices.find(
+                    inv => inv.toString() === companyInvoice._id.toString()
+                );
+                if (!existCompanyInvoice) {
+                    company.companyInvoices.push(companyInvoice);
+                    await company.save();
+                }
+            }
+            break;
 
-            default:
-                return res.json({status: Status.Error, message: 'Status must be 1 (ACCEPTED) or 4 (FINISHED).'});
+        case ContractStatus.FINISHED:
+            // Add finished information
+            contract.finishedBy = user;
+            contract.finishedAt = new Date();
+
+            // Construct notification data
+            notificationType = NotificationTypes.CONTRACT_FINISHED;
+            messageTitle = 'Contract finished';
+            messageBody = `Company ${company.info.companyName} has finished your vendor contract`;
+            break;
+
+        default:
+            return res.json({status: Status.Error, message: 'Status must be 1 (ACCEPTED) or 4 (FINISHED).'});
 
         }
 
@@ -885,32 +885,32 @@ export const updateContract = async (req: Request, res: Response, sio: any) => {
         return res.json({status: Status.Success, message: 'Company Contract status updated successfully.', contract});
     }
 
-}
+};
 
 // cancel or finish by compnay
 export const cancelOrFinishContract = (req: Request, res: Response, sio: any) => {
 
-    const params = req.body
-    const company = <ICompany>req.company
+    const params = req.body;
+    const company = <ICompany>req.company;
 
-    var contractStatus = 0;
+    let contractStatus = 0;
     let notificationType: NotificationTypes = NotificationTypes.CONTRACT_CANCELED;
     let messageTitle: string, messageBody: string;
 
     if (params.status == 'cancel') {
-        contractStatus = ContractStatus.CANCELED
+        contractStatus = ContractStatus.CANCELED;
         notificationType = NotificationTypes.CONTRACT_CANCELED;
         messageTitle = 'Contract canceled';
         messageBody = `Company ${company.info.companyName} has canceled your vendor contract`;
 
     } else if (params.status == 'finish') {
-        contractStatus = ContractStatus.FINISHED
+        contractStatus = ContractStatus.FINISHED;
         notificationType = NotificationTypes.CONTRACT_FINISHED;
         messageTitle = 'Contract finished';
         messageBody = `Company ${company.info.companyName} has finished your vendor contract`;
 
     } else {
-        return res.json({'status': Status.Error, 'message': 'Invalid contract status'})
+        return res.json({'status': Status.Error, 'message': 'Invalid contract status'});
     }
 
     Contract.findOne(
@@ -918,42 +918,42 @@ export const cancelOrFinishContract = (req: Request, res: Response, sio: any) =>
         (err: any, contract: IContract) => {
 
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({'status': Status.Error, 'message': Messages.GenericError});
             }
 
             if (contract == undefined || contract == null) {
-                return res.json({'status': Status.Error, 'message': 'Invalid contract.'})
+                return res.json({'status': Status.Error, 'message': 'Invalid contract.'});
             }
 
             if (contract.status == ContractStatus.CANCELED) {
-                return res.json({'status': Status.Error, 'message': 'Contract is already canceled.'})
+                return res.json({'status': Status.Error, 'message': 'Contract is already canceled.'});
             }
 
             if (contract.status == ContractStatus.REJECTED) {
-                return res.json({'status': Status.Error, 'message': 'Contract is already rejected.'})
+                return res.json({'status': Status.Error, 'message': 'Contract is already rejected.'});
             }
 
             if (contract.status == ContractStatus.FINISHED) {
-                return res.json({'status': Status.Error, 'message': 'Contract is already finished.'})
+                return res.json({'status': Status.Error, 'message': 'Contract is already finished.'});
             }
 
             contract.updateOne(
                 {status: contractStatus},
                 (err: any, raw: any) => {
                     if (err) {
-                        return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                        return res.json({'status': Status.Error, 'message': Messages.GenericError});
                     }
 
                     // ToDo send email to company /contractor on update
                     Company.findById(contract.contractor,
                         (err: any, contractor: ICompany) => {
                             if (err) {
-                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                                return res.json({'status': Status.Error, 'message': Messages.GenericError});
                             }
                             // sendContractStatusChangeEmailToContractor({ to: contractor.info.companyEmail, contractor: contractor.info.companyName , company: company.info.companyName, contractStatus:params.status+'ed' })
 
                             // Save notification
-                            let notificationEntry: INotificationContract = new NotificationContract({
+                            const notificationEntry: INotificationContract = new NotificationContract({
                                 company: contractor._id,
                                 notificationType,
                                 message: {
@@ -972,14 +972,14 @@ export const cancelOrFinishContract = (req: Request, res: Response, sio: any) =>
                                 // Send notification message to specific room based on the Company ID
                                 await notification.populate('metadata').execPopulate();
                                 await sio.to(contractor && contractor._id.toString()).emit(SocketEvents.NOTIFICATION_CENTER, notification);
-                            })
+                            });
 
-                            return res.json({'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.'})
-                        })
-                })
+                            return res.json({'status': Status.Success, 'message': 'Contract ' + params.status + 'ed.'});
+                        });
+                });
         }
-    )
-}
+    );
+};
 
 export const finishContract = async (req: Request, res: Response, sio: any) => {
 
@@ -1005,7 +1005,7 @@ export const finishContract = async (req: Request, res: Response, sio: any) => {
     const contractorCompany = await Company.findById(contract.contractor);
 
     // Save notification
-    let notificationEntry: INotificationContract = new NotificationContract({
+    const notificationEntry: INotificationContract = new NotificationContract({
         company: contractorCompany._id,
         notificationType: NotificationTypes.CONTRACT_FINISHED,
         message: {
@@ -1024,30 +1024,30 @@ export const finishContract = async (req: Request, res: Response, sio: any) => {
         // Send notification message to specific room based on the Company ID
         await notification.populate('metadata').execPopulate();
         await sio.to(contractorCompany?._id?.toString()).emit(SocketEvents.NOTIFICATION_CENTER, notification);
-    })
+    });
 
     return res.json({status: Status.Success, message: 'Contract finished successfully.'});
 
-}
+};
 
 export const upgradeToCompany = (req: Request, res: Response) => {
     // return res.json({ 'status': Status.Error, 'message': 'reached inside.' })
-    const params = req.body
-    const user = <ICompanyAdmin>req.user
+    const params = req.body;
+    const user = <ICompanyAdmin>req.user;
 
     Company.findById(user.company,
         (err: any, contractor: ICompany) => {
 
             if (err) {
-                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                return res.json({'status': Status.Error, 'message': Messages.GenericError});
             }
 
             if (contractor == undefined || contractor == null) {
-                return res.json({'status': Status.Error, 'message': 'Invalid user.'})
+                return res.json({'status': Status.Error, 'message': 'Invalid user.'});
             }
 
             if (contractor.type == 0 || contractor.paid == true) {
-                return res.json({'status': Status.Error, 'message': 'You can not upgrade.'})
+                return res.json({'status': Status.Error, 'message': 'You can not upgrade.'});
             }
 
             // create strip customer and charge
@@ -1055,16 +1055,16 @@ export const upgradeToCompany = (req: Request, res: Response) => {
 
                 if (status == 1) {
 
-                    var chargeDate = new Date();
+                    const chargeDate = new Date();
                     chargeDate.setDate(chargeDate.getDate() + 30);
 
-                    contractor.paid = true
-                    contractor.plan = CompanyType.SUBSCRIBED
-                    contractor.type = 0
-                    contractor.chargeDate = chargeDate
+                    contractor.paid = true;
+                    contractor.plan = CompanyType.SUBSCRIBED;
+                    contractor.type = 0;
+                    contractor.chargeDate = chargeDate;
                     contractor.updateOne(contractor, (err: any, raw: any) => {
                         if (err) {
-                            return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                            return res.json({'status': Status.Error, 'message': Messages.GenericError});
                         }
 
                         const stripCard = customer.sources.data[0];
@@ -1078,26 +1078,26 @@ export const upgradeToCompany = (req: Request, res: Response) => {
                             expirationYear: stripCard.exp_year,
                             cardType: stripCard.brand,
                             name: stripCard.name
-                        })
+                        });
 
                         card.save((err: any) => {
                             if (err) {
-                                return res.json({'status': Status.Error, 'message': Messages.GenericError})
+                                return res.json({'status': Status.Error, 'message': Messages.GenericError});
                             }
 
-                            _upgradeHubSpotContact(contractor)
+                            _upgradeHubSpotContact(contractor);
 
-                            return res.json({status: Status.Success, message: "Account upgraded successfully."});
-                        })
-                    })
+                            return res.json({status: Status.Success, message: 'Account upgraded successfully.'});
+                        });
+                    });
 
                 } else {
-                    return res.json({status: Status.Error, message: message})
+                    return res.json({status: Status.Error, message: message});
                 }
-            })
+            });
         }
-    )
-}
+    );
+};
 
 export const getContractors = async (req: Request, res: Response) => {
 
@@ -1113,13 +1113,13 @@ export const getContractors = async (req: Request, res: Response) => {
     const technicians = await Employee.find({company}).exec();
 
     return res.json({status: Status.Success, contractors, technicians});
-}
+};
 
 export const remindContractor = async (req: Request, res: Response) => {
 
     const params = req.body;
 
-    const contract = await Contract.findById(params.contractId).populate('company', 'info')
+    const contract = await Contract.findById(params.contractId).populate('company', 'info');
     if (!contract) {
         return res.json({status: Status.Error, message: 'Contract not found'});
     }
@@ -1137,7 +1137,7 @@ export const remindContractor = async (req: Request, res: Response) => {
 
     return res.json({status: Status.Success, message: 'Contract invitation resent', contract});
 
-}
+};
 
 // update the display name field of the contractor in company collection
 export const updateVendorDisplayName = async (req: Request, res: Response) => {
@@ -1156,7 +1156,7 @@ export const updateVendorDisplayName = async (req: Request, res: Response) => {
 
     return res.json({status: Status.Success, message: 'Contractor display name updated'});
 
-}
+};
 
 // PRIVATE METHOD
 
@@ -1165,7 +1165,7 @@ export const _getProRatedAmount = async (): Promise<{ amount: number, tax: numbe
     const now = new Date();
     const daysRemaining = now.getDate();
     const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const daysToCharge = daysInCurrentMonth - daysRemaining + 1
+    const daysToCharge = daysInCurrentMonth - daysRemaining + 1;
 
     // Vendor price is $5/month
     const perDay = 5 / daysInCurrentMonth;
@@ -1182,4 +1182,4 @@ export const _getProRatedAmount = async (): Promise<{ amount: number, tax: numbe
 
     return {amount, tax};
 
-}
+};

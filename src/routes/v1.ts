@@ -1,60 +1,59 @@
-import express from 'express'
-import { validate, Validations } from '../middleware/validator'
-import passport from 'passport'
+import express from 'express';
+import { validate, Validations } from '../middleware/validator';
+import passport from 'passport';
 import {
     checkPermissions,
     checkSpecificPermissions,
     checkUserScanPermissions
-} from '../middleware/permissions'
+} from '../middleware/permissions';
 import { uploadInvoices, uploadImageInS3 } from '../middleware/multer';
-import { getCompanyId } from '../middleware/company'
-import { getSupplierId } from '../middleware/supplier';
+import { getCompanyId } from '../middleware/company';
 import { refreshQBToken } from '../middleware/quickbook';
-import { getTechnicianContractor } from '../middleware/job'
+import { getTechnicianContractor } from '../middleware/job';
 
-import { Role, Permissions } from '../common/constants'
+import { Role, Permissions } from '../common/constants';
 
-import * as userController from '../controllers/user'
-import * as vendorController from '../controllers/vendor'
-import * as jobTypeController from '../controllers/jobType'
-import * as itemController from '../controllers/item'
-import * as equipmentTypeController from '../controllers/equipmentType'
-import * as equipmentBrandController from '../controllers/equipmentBrand'
-import * as customerController from '../controllers/customer'
-import * as customerEquipmentController from '../controllers/customerEquipment'
-import * as industryController from '../controllers/industry'
-import * as jobController from '../controllers/job'
-import * as jobRouteController from '../controllers/jobRoute'
-import * as imageController from '../controllers/image'
-import * as groupController from '../controllers/group'
-import * as companyEquipmentController from '../controllers/companyEquipment'
-import * as orderController from '../controllers/order'
-import * as companyEquipmentHistoryController from '../controllers/companyEquipmentHistory'
-import * as companyEquipmentInventoryController from '../controllers/companyEquipmentInventory'
-import * as companyCardController from '../controllers/companyCard'
+import * as userController from '../controllers/user';
+import * as vendorController from '../controllers/vendor';
+import * as jobTypeController from '../controllers/jobType';
+import * as itemController from '../controllers/item';
+import * as equipmentTypeController from '../controllers/equipmentType';
+import * as equipmentBrandController from '../controllers/equipmentBrand';
+import * as customerController from '../controllers/customer';
+import * as customerEquipmentController from '../controllers/customerEquipment';
+import * as industryController from '../controllers/industry';
+import * as jobController from '../controllers/job';
+import * as jobRouteController from '../controllers/jobRoute';
+import * as imageController from '../controllers/image';
+import * as groupController from '../controllers/group';
+import * as companyEquipmentController from '../controllers/companyEquipment';
+import * as orderController from '../controllers/order';
+import * as companyEquipmentHistoryController from '../controllers/companyEquipmentHistory';
+import * as companyEquipmentInventoryController from '../controllers/companyEquipmentInventory';
+import * as companyCardController from '../controllers/companyCard';
 import * as companyLocationController from '../controllers/companyLocation';
-import * as subscriptionController from '../controllers/subscription'
-import * as permissionController from '../controllers/permission'
-import * as customerImportController from '../controllers/customerImport'
-import * as serviceTicketController from '../controllers/serviceTicket'
-import * as quickBookController from '../controllers/quickbook'
-import * as quickBookCustomerController from '../controllers/quickbook.customer'
-import * as quickBookItemController from '../controllers/quickbook.item'
-import * as quickBookPaymentTermController from '../controllers/quickbook.paymentTerm'
-import * as quickBookInvoiceController from '../controllers/quickbook.invoice'
-import * as quickBookPaymentController from '../controllers/quickbook.payment'
-import * as companyController from '../controllers/company'
-import * as emailDefaultController from '../controllers/emailDefault'
-import * as invoiceController from '../controllers/invoice'
-import * as invoiceLogsController from '../controllers/invoiceLogs'
-import * as paymentAdvanceController from '../controllers/advancePayment'
-import * as partController from '../controllers/part'
-import * as purchaseOrderController from '../controllers/purchaseOrder'
-import * as estimateController from '../controllers/estimate'
-import * as paymentController from '../controllers/payment'
-import * as paymentTermController from '../controllers/paymentTerm'
+import * as subscriptionController from '../controllers/subscription';
+import * as permissionController from '../controllers/permission';
+import * as customerImportController from '../controllers/customerImport';
+import * as serviceTicketController from '../controllers/serviceTicket';
+import * as quickBookController from '../controllers/quickbook';
+import * as quickBookCustomerController from '../controllers/quickbook.customer';
+import * as quickBookItemController from '../controllers/quickbook.item';
+import * as quickBookPaymentTermController from '../controllers/quickbook.paymentTerm';
+import * as quickBookInvoiceController from '../controllers/quickbook.invoice';
+import * as quickBookPaymentController from '../controllers/quickbook.payment';
+import * as companyController from '../controllers/company';
+import * as emailDefaultController from '../controllers/emailDefault';
+import * as invoiceController from '../controllers/invoice';
+import * as invoiceLogsController from '../controllers/invoiceLogs';
+import * as paymentAdvanceController from '../controllers/advancePayment';
+import * as partController from '../controllers/part';
+import * as purchaseOrderController from '../controllers/purchaseOrder';
+import * as estimateController from '../controllers/estimate';
+import * as paymentController from '../controllers/payment';
+import * as paymentTermController from '../controllers/paymentTerm';
 import * as reportController from '../controllers/report';
-import * as tagController from '../controllers/tag'
+import * as tagController from '../controllers/tag';
 import * as ContactController from '../controllers/contact';
 import * as notificationController from '../controllers/notification';
 import * as integrationController from '../controllers/integration';
@@ -62,19 +61,19 @@ import * as scriptController from '../controllers/script';
 import * as workTypeController from '../controllers/workType';
 
 import homeOwner from './homeOwner';
-import jobLocation from './jobLocation'
-import jobSite from './jobSite'
+import jobLocation from './jobLocation';
+import jobSite from './jobSite';
 import chat from './chat';
 import blockchain from './blockchain';
 import { isLogin } from '../middleware/session';
 
 export default function (sio: any) {
 
-    const router: express.Router = express.Router()
+    const router: express.Router = express.Router();
 
-    router.use('/homeOwner', homeOwner)
-    router.use('/jobLocation', jobLocation)
-    router.use('/jobSite', jobSite)
+    router.use('/homeOwner', homeOwner);
+    router.use('/jobLocation', jobLocation);
+    router.use('/jobSite', jobSite);
     router.use('/chats', chat);
     router.use('/blockchain', blockchain);
 
@@ -83,28 +82,28 @@ export default function (sio: any) {
         '/login',
         validate(Validations.login),
         (req, res) => {
-            userController.login(req, res, sio)
+            userController.login(req, res, sio);
         }
-    )
+    );
 
     // Used for Service Provider Sign Up
     router.get(
         '/getAllCompanies',
         companyController.getAllCompanies
-    )
+    );
 
     // Used for Builder Sign Up
     router.get(
         '/getAllCustomers',
         customerController.getAllCustomers
-    )
+    );
 
     router.post(
         '/logout',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         userController.logout
-    )
+    );
 
     router.post(
         '/subscribe',
@@ -112,14 +111,14 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         userController.companySubscribe
-    )
+    );
 
     router.post(
         '/agreeTermAndCondition',
         passport.authenticate('jwt', { session: false }),
         validate(Validations.agree),
         userController.agreeToTermAndConditions
-    )
+    );
 
     // router.post(
     //     '/signup',
@@ -133,24 +132,24 @@ export default function (sio: any) {
         '/signup',
         validate(Validations.signUp),
         (req, res) => {
-            userController.signup(req, res, sio)
+            userController.signup(req, res, sio);
         }
-    )
+    );
 
     router.post(
         '/adminSignUp',
         validate(Validations.adminSignUp),
         (req, res) => {
-            userController.createGlobalAdmin(req, res, sio)
+            userController.createGlobalAdmin(req, res, sio);
         }
-    )
+    );
 
     router.get(
         '/getCompanyProfile/:companyId',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         userController.getCompanyProfile
-    )
+    );
 
     router.post(
         '/getDefaultPermissions',
@@ -158,7 +157,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         permissionController.getAllPermissions
-    )
+    );
 
     router.post(
         '/updateDefaultPermissions',
@@ -167,7 +166,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateDefaultPermissions),
         permissionController.updateDefaultPermissions
-    )
+    );
 
     router.post(
         '/getOfficeAdminPermissions',
@@ -175,7 +174,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         permissionController.getOfficeAdminPermissions
-    )
+    );
 
     router.post(
         '/getTechPermissions',
@@ -183,7 +182,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         permissionController.getTechPermissions
-    )
+    );
 
     router.post(
         '/getManagerPermissions',
@@ -191,7 +190,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         permissionController.getManagerPermissions
-    )
+    );
 
     router.post(
         '/updateUserPermissions',
@@ -200,7 +199,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.udpateUserPermissions),
         permissionController.updateUserPermissions
-    )
+    );
 
     router.post(
         '/updateEmployeeEmailPreferences',
@@ -210,7 +209,7 @@ export default function (sio: any) {
         checkPermissions(Role.TECHNICIAN),
         validate(Validations.updateEmployeeEmailPreferences),
         companyController.updateEmployeeEmailPreferences
-    )
+    );
     router.post(
         '/updateContractorEmailPreferences',
         passport.authenticate('jwt', { session: false }),
@@ -219,7 +218,7 @@ export default function (sio: any) {
         checkPermissions(Role.ADMIN_EMPLOYEE),
         validate(Validations.updateContractorEmailPreferences),
         companyController.updateContractorEmailPreferences
-    )
+    );
     router.post(
         '/updateCustomerEmailPreferences',
         passport.authenticate('jwt', { session: false }),
@@ -229,7 +228,7 @@ export default function (sio: any) {
         validate(Validations.updateCustomerEmailPreferences),
         companyController.updateCustomerEmailPreferences
 
-    )
+    );
     router.post(
         '/getEmployeePermissions',
         passport.authenticate('jwt', { session: false }),
@@ -237,7 +236,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.employeePermissions),
         permissionController.getUserPermissions
-    )
+    );
 
 
     //Industry
@@ -248,12 +247,12 @@ export default function (sio: any) {
         checkPermissions(Role.GLOBAL_ADMIN),
         validate(Validations.createIndustry),
         industryController.createIndustry
-    )
+    );
 
     router.post(
         '/getIndustries',
         industryController.getIndustries
-    )
+    );
 
     // router.post(
     //     '/removeIndustry',
@@ -272,7 +271,7 @@ export default function (sio: any) {
         validate(Validations.createManager),
         getCompanyId(),
         userController.createManager
-    )
+    );
 
     router.post(
         '/createTechnician',
@@ -282,7 +281,7 @@ export default function (sio: any) {
         validate(Validations.createTechnician),
         getCompanyId(),
         userController.createTechnician
-    )
+    );
 
     router.post(
         '/createOfficeAdmin',
@@ -292,7 +291,7 @@ export default function (sio: any) {
         validate(Validations.createOfficeAdmin),
         getCompanyId(),
         userController.createOfficeAdmin
-    )
+    );
 
     router.post(
         '/createAdminEmployee',
@@ -302,7 +301,7 @@ export default function (sio: any) {
         validate(Validations.createOfficeAdmin),
         getCompanyId(),
         userController.createAdminEmployee
-    )
+    );
 
     router.post(
         '/updateEmployeeRole',
@@ -311,7 +310,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.changeEmployeeRole),
         userController.updateEmployeeRole
-    )
+    );
 
     router.post(
         '/updateEmployeeLocPermission',
@@ -320,7 +319,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.changeEmployeeLocPermission),
         userController.updateEmployeeLocPermission
-    )
+    );
 
     router.post(
         '/getManagers',
@@ -329,7 +328,7 @@ export default function (sio: any) {
         getCompanyId(),
         getCompanyId(),
         userController.getManagersList
-    )
+    );
 
     router.post(
         '/getTechnicians',
@@ -338,7 +337,7 @@ export default function (sio: any) {
         getCompanyId(),
         getCompanyId(),
         userController.getTechniciansList
-    )
+    );
 
     router.post(
         '/getOfficeAdmins',
@@ -346,7 +345,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         getCompanyId(),
-        userController.getOfficeAdminsList)
+        userController.getOfficeAdminsList);
 
     router.post(
         '/updateProfile',
@@ -354,7 +353,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         //validate(Validations.updateProfile),
-        userController.updateProfile)
+        userController.updateProfile);
 
     router.post(
         '/changePassword',
@@ -362,12 +361,12 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.changePassword),
-        userController.changePassword)
+        userController.changePassword);
 
     router.post(
         '/forgotPassword',
         validate(Validations.forgotPassword),
-        userController.forgotPassword)
+        userController.forgotPassword);
 
 
     router.post(
@@ -376,7 +375,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.deleteEmployee),
-        userController.deleteEmployee)
+        userController.deleteEmployee);
 
     router.post(
         '/activateEmployee',
@@ -384,7 +383,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.deleteEmployee),
-        userController.activateEmployee)
+        userController.activateEmployee);
 
 
 
@@ -396,14 +395,14 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createEquipmentType),
         equipmentTypeController.createEquipmentType
-    )
+    );
 
     router.post(
         '/getEquipmentTypes',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        equipmentTypeController.getEquipmentTypes)
+        equipmentTypeController.getEquipmentTypes);
 
     //Equipment brands
     router.post(
@@ -413,7 +412,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createEquipmentBrand),
         equipmentBrandController.createEquipmentBrand
-    )
+    );
 
     router.post(
         '/getEquipmentBrands',
@@ -421,7 +420,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         equipmentBrandController.getEquipmentBrands
-    )
+    );
 
     // COMPANY LOCATION
     router.get(
@@ -430,7 +429,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         companyLocationController.getCompanyLocations
-    )
+    );
 
     router.get(
         '/getCompanyLocation/:id',
@@ -438,7 +437,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         companyLocationController.getCompanyLocationById
-    )
+    );
 
     router.post(
         '/createCompanyLocation',
@@ -447,7 +446,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createCompanyLocation),
         companyLocationController.createCompanyLocation
-    )
+    );
 
     router.put(
         '/updateCompanyLocation',
@@ -456,7 +455,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateCompanyLocation),
         companyLocationController.updateCompanyLocation
-    )
+    );
 
     router.put(
         '/updateCompanyLocationAssignments',
@@ -464,7 +463,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         companyLocationController.updateCompanyLocationAssignments
-    )
+    );
 
     router.put(
         '/updateCompanyLocationBillingAddress',
@@ -472,7 +471,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         companyLocationController.updateCompanyLocationBillingAddress
-    )
+    );
 
     router.post(
         '/getUserDivisions',
@@ -480,7 +479,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         companyLocationController.getUserDivision
-    )
+    );
 
     // Customers
     router.post(
@@ -490,7 +489,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createCustomer),
         customerController.createCustomer
-    )
+    );
 
     router.post(
         '/getCustomers',
@@ -499,7 +498,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getCustomers),
         customerController.getCustomers
-    )
+    );
 
     router.post(
         '/getCustomerDetail',
@@ -508,7 +507,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getCustomerDetail),
         customerController.customerDetail
-    )
+    );
 
     router.post(
         '/updateCustomer',
@@ -517,7 +516,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateCustomer),
         customerController.updateCustomer
-    )
+    );
 
     router.post(
         '/updateCustomPrices',
@@ -526,7 +525,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateCustomPrices),
         customerController.updateCustomPrices
-    )
+    );
 
     router.post(
         '/searchDuplicatedCustomers',
@@ -536,7 +535,7 @@ export default function (sio: any) {
         validate(Validations.searchDuplicatedCustomers),
         refreshQBToken(),
         customerController.searchDuplicatedCustomers
-    )
+    );
 
     router.post(
         '/mergeCustomers',
@@ -545,7 +544,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.mergeCustomers),
         customerController.mergeCustomers
-    )
+    );
 
     router.get(
         '/getSupplierBuilders',
@@ -553,7 +552,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         customerController.getSupplierBuilders
-    )
+    );
 
     //Customer equipments
     router.post(
@@ -563,7 +562,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createCustomerEquipment),
         customerEquipmentController.createCustomerEquipment
-    )
+    );
 
     router.post(
         '/getCustomerEquipments',
@@ -572,7 +571,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getCustomerEquipments),
         customerEquipmentController.getCustomerEquipments
-    )
+    );
 
     router.post(
         '/getCustomerEquipmentJobs',
@@ -581,7 +580,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getCustomerEquipmentJobs),
         customerEquipmentController.getCustomerEquipmentJobs
-    )
+    );
 
     router.post(
         '/getEquipmentInfo',
@@ -590,7 +589,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getCustomerEquipmentInfo),
         customerEquipmentController.getCustomerEquipmentInfo
-    )
+    );
 
     router.post(
         '/getEquipmentJobs',
@@ -599,7 +598,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getCustomerEquipmentInfo),
         customerEquipmentController.getEquipmentJobs
-    )
+    );
 
     router.post(
         '/scanJobEquipment',
@@ -608,7 +607,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.linkEquipmentJob),
         customerEquipmentController.linkJobToEquipment
-    )
+    );
 
     router.post(
         '/scanTag',
@@ -618,7 +617,7 @@ export default function (sio: any) {
         checkUserScanPermissions(Permissions.Scan_Tag),
         validate(Validations.getCustomerEquipmentJobs),
         customerEquipmentController.checkTagAssociation
-    )
+    );
 
     // Job Type
 
@@ -629,7 +628,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createJobType),
         jobTypeController.createJobType
-    )
+    );
 
     router.post(
         '/editJobType',
@@ -638,7 +637,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.editJobType),
         jobTypeController.editJobType
-    )
+    );
 
     router.post(
         '/changeJobTypeStatus',
@@ -647,7 +646,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.changeJobTypeStatus),
         jobTypeController.changeJobTypeStatus
-    )
+    );
 
     router.post(
         '/getJobTypes',
@@ -655,7 +654,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         jobTypeController.getJobTypes
-    )
+    );
 
     // Item
 
@@ -666,7 +665,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getItems),
         itemController.getItems
-    )
+    );
 
     router.post(
         '/createItem',
@@ -675,7 +674,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createItem),
         itemController.createItem
-    )
+    );
 
     router.post(
         '/updateItem',
@@ -684,7 +683,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateItem),
         itemController.updateItem
-    )
+    );
     router.post(
         '/toggleItemStatus',
         passport.authenticate('jwt', { session: false }),
@@ -692,7 +691,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.toggleItemStatus),
         itemController.toggleItemStatus
-    )
+    );
     router.post(
         '/checkItemExist',
         passport.authenticate('jwt', { session: false }),
@@ -700,7 +699,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.itemExist),
         itemController.disabledItemExists
-    )
+    );
 
     router.post(
         '/updateItems',
@@ -708,7 +707,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         itemController.updateItems
-    )
+    );
 
     router.post(
         '/searchDuplicatedItems',
@@ -717,7 +716,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.searchDuplicatedItems),
         itemController.searchDuplicatedItems
-    )
+    );
 
     router.post(
         '/mergeItems',
@@ -726,7 +725,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.mergeItems),
         itemController.mergeItems
-    )
+    );
 
     // Discount Item
 
@@ -737,7 +736,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getDiscountItems),
         itemController.getDiscountItems
-    )
+    );
 
     router.post(
         '/createDiscountItem',
@@ -746,7 +745,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createDiscountItem),
         itemController.createDiscountItem
-    )
+    );
 
     router.put(
         '/updateDiscountItem',
@@ -755,7 +754,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateDiscountItem),
         itemController.updateDiscountItem
-    )
+    );
 
     // Job
 
@@ -768,7 +767,7 @@ export default function (sio: any) {
         uploadImageInS3.fields([{ name: 'image' }, { name: 'images' }]),
         validate(Validations.createJob),
         jobController.createJob
-    )
+    );
 
     router.post(
         '/createSubJob',
@@ -777,7 +776,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createSubJob),
         jobController.createSubJob
-    )
+    );
 
     router.post(
         '/getJobs',
@@ -786,7 +785,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getJobs),
         jobController.getJobs
-    )
+    );
 
     router.get(
         '/getJobsStream',
@@ -794,9 +793,9 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         (req, res) => {
-            jobController.getJobsStream(req, res, sio)
+            jobController.getJobsStream(req, res, sio);
         }
-    )
+    );
 
     router.post(
         '/searchJobs',
@@ -805,7 +804,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.searchJob),
         jobController.getFilteredJobs
-    )
+    );
 
     router.post(
         '/getTechnicianJobs',
@@ -814,7 +813,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.technicianJobs),
         jobController.getJobsByTechnicianId
-    )
+    );
 
     router.post(
         '/getTechnicianJobsToday',
@@ -823,7 +822,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.technicianJobs),
         jobController.getTodaysJobsByTechnicianId
-    )
+    );
 
     router.get(
         '/getScheduledJobsStream',
@@ -831,9 +830,9 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         (req, res) => {
-            jobController.getJobsStream(req, res, sio)
+            jobController.getJobsStream(req, res, sio);
         }
-    )
+    );
 
     router.post(
         '/updateJob',
@@ -844,9 +843,9 @@ export default function (sio: any) {
         uploadImageInS3.fields([{ name: 'image' }, { name: 'images' }]),
         validate(Validations.updateJob),
         (req, res) => {
-            jobController.updateJob(req, res, sio)
+            jobController.updateJob(req, res, sio);
         }
-    )
+    );
 
     router.post(
         '/startJob',
@@ -855,7 +854,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.generalJob),
         jobController.startJob
-    )
+    );
 
     router.post(
         '/startJobTask',
@@ -864,7 +863,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.startJobTask),
         jobController.startJobTask
-    )
+    );
 
     router.post(
         '/updateJobTask',
@@ -873,7 +872,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateJobTask),
         jobController.updateJobTask
-    )
+    );
 
     router.post(
         '/getJobDetails',
@@ -882,7 +881,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.generalJob),
         jobController.getJobDetails
-    )
+    );
 
     router.get(
         '/getJobReportPDF/:jobReportId',
@@ -890,7 +889,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         jobController.getJobReportPDF
-    )
+    );
 
     router.post(
         '/editJob',
@@ -901,7 +900,7 @@ export default function (sio: any) {
         uploadImageInS3.fields([{ name: 'image' }, { name: 'images' }]),
         validate(Validations.editJob),
         jobController.editJob
-    )
+    );
 
     router.put(
         '/updateJobRequestStatus',
@@ -910,7 +909,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateJoBRequestStatus),
         jobController.updateJobRequestStatus
-    )
+    );
 
     router.post(
         '/updateJobTechnicianStatus',
@@ -920,9 +919,9 @@ export default function (sio: any) {
         uploadImageInS3.fields([{ name: 'images' }]),
         validate(Validations.updateJobTechnicianStatus),
         (req, res) => {
-            jobController.updateJobTechnicianStatus(req, res, sio)
+            jobController.updateJobTechnicianStatus(req, res, sio);
         }
-    )
+    );
 
     router.post(
         '/updateJobTime',
@@ -931,7 +930,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateJobTime),
         jobController.updateJobTime
-    )
+    );
 
     // JOB ROUTE
 
@@ -941,7 +940,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         jobRouteController.getAllJobRoutes
-    )
+    );
 
     router.get(
         '/getJobRoute',
@@ -951,7 +950,7 @@ export default function (sio: any) {
         validate(Validations.jobRoute),
         getTechnicianContractor(),
         jobRouteController.getJobRoute
-    )
+    );
 
     router.get(
         '/getAllJobRoutesByTechnician',
@@ -961,7 +960,7 @@ export default function (sio: any) {
         validate(Validations.allJobRoutesByTechnician),
         getTechnicianContractor(),
         jobRouteController.getAllJobRoutesByTechnician
-    )
+    );
 
     router.post(
         '/createJobRoute',
@@ -971,7 +970,7 @@ export default function (sio: any) {
         validate(Validations.jobRoute),
         validate(Validations.createJobRoute),
         jobRouteController.createJobRoute
-    )
+    );
 
     router.put(
         '/updateJobRoute',
@@ -980,7 +979,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateJobRoute),
         jobRouteController.updateJobRoute
-    )
+    );
 
     // JOB REPORT
 
@@ -991,7 +990,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getJobReport),
         jobController.getJobReportDetails
-    )
+    );
 
     router.get(
         '/getAllJobReports',
@@ -1000,7 +999,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getAllJobReports),
         jobController.getAllJobReports
-    )
+    );
 
     router.delete(
         '/deleteJobReport',
@@ -1009,7 +1008,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.deleteJobReport),
         jobController.deleteJobReportById
-    )
+    );
 
     //Image upload
     router.post(
@@ -1017,7 +1016,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         imageController.uploadImage
-    )
+    );
 
     router.delete(
         '/deleteImage',
@@ -1026,7 +1025,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.deleteImage),
         imageController.deleteImage
-    )
+    );
 
     //Group
     router.post(
@@ -1036,7 +1035,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createGroup),
         groupController.createGroup
-    )
+    );
 
     router.post(
         '/getGroups',
@@ -1044,7 +1043,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         groupController.getGroups
-    )
+    );
 
     router.post(
         '/deleteGroup',
@@ -1053,7 +1052,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.groupGeneric),
         groupController.deleteGroup
-    )
+    );
 
     router.post(
         '/addGroupManager',
@@ -1062,7 +1061,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.addManager),
         groupController.addManager
-    )
+    );
 
     router.post(
         '/addGroupMember',
@@ -1071,7 +1070,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.memberGeneric),
         groupController.addMember
-    )
+    );
 
     router.post(
         '/removeGroupMember',
@@ -1080,7 +1079,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.memberGeneric),
         groupController.removeMember
-    )
+    );
 
 
     //Company Equipment
@@ -1091,7 +1090,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createCompanyEquipment),
         companyEquipmentController.createCompanyEquipment
-    )
+    );
 
     router.post(
         '/getCompanyEquipments',
@@ -1099,7 +1098,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         companyEquipmentController.getCompanyEquipments
-    )
+    );
 
     // Company Equipment History
     router.post(
@@ -1109,7 +1108,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createCompanyEquipmentHistory),
         companyEquipmentHistoryController.createCompanyEquipmentHistory
-    )
+    );
 
     // Company Equipment Inventory
     router.post(
@@ -1119,7 +1118,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createEquipmentInventory),
         companyEquipmentInventoryController.createCompanyEquipmentInventory
-    )
+    );
 
     router.post(
         '/getInventoryReport',
@@ -1127,7 +1126,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         companyEquipmentInventoryController.getIventoryHistory
-    )
+    );
 
 
     // Company cards
@@ -1138,7 +1137,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.addCompanyCard),
         companyCardController.createCompanyCard
-    )
+    );
 
     router.post(
         '/removeCompanyCard',
@@ -1147,7 +1146,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.removeCompanyCard),
         companyCardController.removeCompanyCard
-    )
+    );
 
     router.post(
         '/getCompanyCards',
@@ -1155,7 +1154,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         companyCardController.getCompanyCards
-    )
+    );
 
     // place tags orders
     router.post(
@@ -1165,7 +1164,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.placeOrder),
         orderController.placeOrder
-    )
+    );
 
     router.post(
         '/getOrders',
@@ -1173,7 +1172,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         orderController.getOrders
-    )
+    );
 
 
     router.post(
@@ -1183,7 +1182,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.buySubscriptions),
         subscriptionController.addCompanySubscriptions
-    )
+    );
     router.get(
         '/getAllSubscriptions',
         passport.authenticate('jwt', { session: false }),
@@ -1191,7 +1190,7 @@ export default function (sio: any) {
         getCompanyId(),
         checkSpecificPermissions([Role.ADMIN_EMPLOYEE, Role.COMPANY_ADMIN]),
         subscriptionController.getAllSubscriptions
-    )
+    );
 
     router.post(
         '/cancelSubscriptions',
@@ -1200,19 +1199,19 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.removeSubscription),
         subscriptionController.removeCompanySubscriptions
-    )
+    );
 
     router.get(
         '/chargeSubscription',
         subscriptionController.chargeCompanySubscription
-    )
+    );
 
     router.get(
         '/finalizeStripeInvoices',
         (req, res) => {
-            subscriptionController.finalizeCompanyInvoices(req, res, sio)
+            subscriptionController.finalizeCompanyInvoices(req, res, sio);
         }
-    )
+    );
 
     // router.post(
     //     '/updateSubscription',
@@ -1231,7 +1230,7 @@ export default function (sio: any) {
         '/searchContractor',
         // validate(Validations.searchContractor),
         vendorController.searchContractor
-    )
+    );
 
     router.post(
         '/startContract',
@@ -1240,9 +1239,9 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.startContract),
         (req, res) => {
-            vendorController.startContract(req, res, sio)
+            vendorController.startContract(req, res, sio);
         }
-    )
+    );
 
     router.post(
         '/inviteContractor',
@@ -1251,7 +1250,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.searchContractor),
         vendorController.inviteContractor
-    )
+    );
 
     router.post(
         '/remindContractor',
@@ -1260,7 +1259,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.remindContractor),
         vendorController.remindContractor
-    )
+    );
 
     // limit only for contractors
     router.post(
@@ -1269,7 +1268,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         vendorController.getAllContracts
-    )
+    );
 
     // limit only for contractors
     // router.post(
@@ -1289,9 +1288,9 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateContract),
         (req, res) => {
-            vendorController.cancelOrFinishContract(req, res, sio)
+            vendorController.cancelOrFinishContract(req, res, sio);
         }
-    )
+    );
 
     router.post(
         '/finishContract',
@@ -1300,9 +1299,9 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.finishContract),
         (req, res) => {
-            vendorController.finishContract(req, res, sio)
+            vendorController.finishContract(req, res, sio);
         }
-    )
+    );
 
     router.post(
         '/changeContractorPermission',
@@ -1311,7 +1310,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.contractorPermissions),
         permissionController.addContractorPermissions
-    )
+    );
 
     router.post(
         '/upgradeToCompany',
@@ -1319,7 +1318,7 @@ export default function (sio: any) {
         isLogin(),
         validate(Validations.upgradeToCompany),
         vendorController.upgradeToCompany
-    )
+    );
 
     router.get(
         '/getContractors',
@@ -1327,32 +1326,32 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         vendorController.getContractors
-    )
+    );
 
     router.post(
         '/updateVendorDisplayName',
         passport.authenticate('jwt', { session: false }),
         validate(Validations.updateVendorDisplayName),
         vendorController.updateVendorDisplayName
-    )
+    );
 
     router.post(
         '/checkAndGet',
         validate(Validations.socialLogin),
         userController.checkAndGetUser
-    )
+    );
 
     router.post(
         '/signUpSocial',
         validate(Validations.socialSignUp),
         userController.createCompanySocial
-    )
+    );
 
     router.post(
         '/contractorSignUpSocial',
         validate(Validations.contractorSocialSignUp),
         userController.createContractorSocial
-    )
+    );
     router.post(
         '/importCustomer',
         passport.authenticate('jwt', { session: false }),
@@ -1360,7 +1359,7 @@ export default function (sio: any) {
         getCompanyId(),
         // validate(Validations.customerImport),
         customerImportController.uploadfile
-    )
+    );
 
     // Service Ticket
     router.post(
@@ -1369,7 +1368,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         serviceTicketController.getServiceTickets
-    )
+    );
 
     router.post(
         '/getOpenServiceTickets',
@@ -1378,7 +1377,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getOpenServiceTickets),
         serviceTicketController.getOpenServiceTickets
-    )
+    );
 
     router.get(
         '/getOpenServiceTicketsStream',
@@ -1387,9 +1386,9 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getOpenServiceTicketsStream),
         (req, res) => {
-            serviceTicketController.getOpenServiceTicketsStream(req, res, sio)
+            serviceTicketController.getOpenServiceTicketsStream(req, res, sio);
         }
-    )
+    );
 
     router.post(
         '/createServiceTicket',
@@ -1397,9 +1396,9 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         (req, res) => {
-            serviceTicketController.createServiceTicket(req, res, sio)
+            serviceTicketController.createServiceTicket(req, res, sio);
         }
-    )
+    );
 
     router.post(
         '/editServiceTicket',
@@ -1408,7 +1407,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.editTicket),
         serviceTicketController.editServiceTicket
-    )
+    );
 
     router.post(
         '/updateServiceTicket',
@@ -1417,7 +1416,7 @@ export default function (sio: any) {
         getCompanyId(),
         //validate(Validations.updateTicket),
         serviceTicketController.updateServiceTicket
-    )
+    );
     router.post(
         '/getServiceTicketDetail',
         passport.authenticate('jwt', { session: false }),
@@ -1425,7 +1424,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getTicketDetail),
         serviceTicketController.getServiceTicketDetail
-    )
+    );
 
 
     // Quickbooks
@@ -1447,7 +1446,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         quickBookCustomerController.syncQBCustomers
-    )
+    );
 
     router.post(
         '/createQBCustomer',
@@ -1457,7 +1456,7 @@ export default function (sio: any) {
         validate(Validations.createQBCustomer),
         refreshQBToken(),
         quickBookCustomerController.createQBCustomer
-    )
+    );
 
     router.post(
         '/syncQBItems',
@@ -1465,14 +1464,14 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         quickBookItemController.syncQBItems
-    )
+    );
     router.post(
         '/syncQBItem',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
         quickBookItemController.syncQBItem
-    )
+    );
 
     router.post(
         '/syncQBPaymentTerms',
@@ -1480,7 +1479,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         quickBookPaymentTermController.syncQBPaymentTerms
-    )
+    );
 
     router.post(
         '/createQBInvoice',
@@ -1489,7 +1488,7 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookInvoiceController.createQBInvoice
-    )
+    );
 
     router.post(
         '/createQBInvoices',
@@ -1497,7 +1496,7 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookInvoiceController.createQBInvoices
-    )
+    );
 
     router.post(
         '/syncQBInvoices',
@@ -1505,7 +1504,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         quickBookInvoiceController.syncQBInvoices
-    )
+    );
 
     router.post(
         '/createQBPayment',
@@ -1514,7 +1513,7 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookPaymentController.createQBPayment
-    )
+    );
 
     router.post(
         '/createQBPayments',
@@ -1523,7 +1522,7 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookPaymentController.createQBPayments
-    )
+    );
 
     router.post(
         '/syncQBPayments',
@@ -1531,7 +1530,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         quickBookPaymentController.syncQBPayments
-    )
+    );
 
     router.post(
         '/getQBUri',
@@ -1540,7 +1539,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getQBUri),
         quickBookController.getQBUri
-    )
+    );
     router.post(
         '/getQBAccounts',
         passport.authenticate('jwt', { session: false }),
@@ -1548,14 +1547,14 @@ export default function (sio: any) {
         getCompanyId(),
         // validate(Validations.getQBUri),
         quickBookController.getQBAccounts
-    )
+    );
 
     router.get(
         '/QBCallback',
         (req, res) => {
-            quickBookController.getCallBackToken(req, res, sio)
+            quickBookController.getCallBackToken(req, res, sio);
         }
-    )
+    );
 
     router.post(
         '/disconnectQB',
@@ -1563,12 +1562,12 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         quickBookController.disconnectQB
-    )
+    );
 
     router.post(
         '/blueclerkSyncWebhook',
         quickBookController.blueclerkSyncWebhook
-    )
+    );
 
     // Company
 
@@ -1578,7 +1577,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         companyController.getContractorForJob
-    )
+    );
 
     router.post(
         '/getCompanyContracts',
@@ -1586,7 +1585,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         companyController.getCompanyContracts
-    )
+    );
 
     router.post(
         '/getContractorDetail',
@@ -1595,7 +1594,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getContractorDetail),
         companyController.getContractorDetail
-    )
+    );
 
     router.put(
         '/updateContract',
@@ -1604,9 +1603,9 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateCompanyContract),
         (req, res) => {
-            vendorController.updateContract(req, res, sio)
+            vendorController.updateContract(req, res, sio);
         }
-    )
+    );
 
     router.post(
         '/updateCompanyProfile',
@@ -1615,7 +1614,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateCompanyProfile),
         companyController.updateCompanyProfile
-    )
+    );
 
     router.get(
         '/getCompanyCustomer',
@@ -1623,7 +1622,7 @@ export default function (sio: any) {
         isLogin(),
         validate(Validations.getCompanyCustomer),
         companyController.getCompanyCustomer
-    )
+    );
 
     router.put(
         '/updateCompanyCustomer',
@@ -1632,7 +1631,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateCompanyCustomer),
         companyController.updateCompanyCustomer
-    )
+    );
 
     // Item Tier
 
@@ -1642,7 +1641,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         companyController.getItemTierList
-    )
+    );
 
     router.post(
         '/addItemTier',
@@ -1650,7 +1649,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         companyController.addItemTier
-    )
+    );
 
     router.put(
         '/updateItemTier',
@@ -1659,7 +1658,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateItemTier),
         companyController.updateItemTier
-    )
+    );
 
     // Email Default
     router.get(
@@ -1668,7 +1667,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         emailDefaultController.getCompanyEmailDefault
-    )
+    );
 
     router.put(
         '/updateCompanyEmailDefault',
@@ -1676,7 +1675,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         emailDefaultController.updateCompanyEmailDefault
-    )
+    );
 
     router.post(
         '/setCustomWorkOrderNumber',
@@ -1684,7 +1683,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         companyController.setCustomWorkNumber
-    )
+    );
 
     router.post(
         '/getCurrentJobId',
@@ -1692,7 +1691,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         companyController.getCustomWorkNumber
-    )
+    );
 
     router.post(
         '/getSyncInfo',
@@ -1700,7 +1699,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         companyController.getSyncInfo
-    )
+    );
 
     router.post(
         '/getAllEmployees',
@@ -1708,7 +1707,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         companyController.getAllEmployees
-    )
+    );
     router.get(
         '/getEmployeeDetail',
         passport.authenticate('jwt', { session: false }),
@@ -1716,19 +1715,19 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getEmployeeDetails),
         companyController.getEmployeeDetail
-    )
+    );
     router.post(
         '/getEmployeesForJob',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
         companyController.getEmployeesForJob
-    )
+    );
 
     router.get(
         '/downgradeCompanies',
         companyController.downgradeCompanies
-    )
+    );
 
     router.post(
         '/setCustomInvoiceNumber',
@@ -1737,7 +1736,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.setCustomInvoiceNumber),
         invoiceController.setCustomInvoiceNumber
-    )
+    );
 
     router.post(
         '/getCurrentInvoiceNumber',
@@ -1745,7 +1744,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         invoiceController.getInvoiceNumber
-    )
+    );
 
     // Sales Taxes
     router.post(
@@ -1755,7 +1754,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createSaleTax),
         companyController.createSalesTax
-    )
+    );
 
     router.post(
         '/updateSalesTax',
@@ -1764,7 +1763,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateSaleTax),
         companyController.updateSalesTax
-    )
+    );
 
     router.post(
         '/deleteSalesTax',
@@ -1773,7 +1772,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.deleteSaleTax),
         companyController.deleteSalesTax
-    )
+    );
 
     router.post(
         '/getSalesTax',
@@ -1781,7 +1780,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         companyController.getSalesTaxes
-    )
+    );
     // Invoice Logs
     router.post(
         '/getInvoiceLogs',
@@ -1790,7 +1789,7 @@ export default function (sio: any) {
         getCompanyId(),
         // checkUserPermissions(Permissions.Get_Invoice_Detail),
         invoiceLogsController.get
-    )
+    );
 
     // Job Charges
     router.post(
@@ -1800,7 +1799,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createJobCharges),
         companyController.createJobCharges
-    )
+    );
 
     router.post(
         '/updateJobCharges',
@@ -1809,7 +1808,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateJobCharges),
         companyController.updateJobCharges
-    )
+    );
 
     router.post(
         '/deleteJobCharges',
@@ -1818,7 +1817,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.deleteJobCharges),
         companyController.deleteJobCharges
-    )
+    );
 
     router.post(
         '/getJobCharges',
@@ -1826,7 +1825,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         companyController.getJobCharges
-    )
+    );
 
     // Invoice
     router.post(
@@ -1837,7 +1836,7 @@ export default function (sio: any) {
         validate(Validations.createInvoice),
         refreshQBToken(),
         invoiceController.createInvoice
-    )
+    );
 
     router.get(
         '/getInvoiceEmailTemplate',
@@ -1846,7 +1845,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getInvoiceEmailTemplate),
         invoiceController.getInvoiceEmailTemplate
-    )
+    );
 
     router.post(
         '/sendInvoice',
@@ -1856,7 +1855,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.sendInvoice),
         invoiceController.sendInvoiceEmail
-    )
+    );
 
     router.post(
         '/sendInvoices',
@@ -1865,7 +1864,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.sendInvoices),
         invoiceController.sendInvoicesEmail
-    )
+    );
 
     router.get(
         '/generateInvoicePdf',
@@ -1874,7 +1873,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.sendInvoice),
         invoiceController.generateInvoicePdf
-    )
+    );
 
     router.post(
         '/sendJobReportEmail',
@@ -1883,7 +1882,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.sendReport),
         jobController.sendJobReport
-    )
+    );
 
     router.get(
         '/getJobReportEmailTemplate',
@@ -1893,7 +1892,7 @@ export default function (sio: any) {
         validate(Validations.getJobReportEmailTemplate),
         jobController.getJobReportEmailTemplate
         
-    )
+    );
 
     router.post(
         '/createPOInvoice',
@@ -1902,7 +1901,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createPOInvoice),
         invoiceController.createPOInvoice
-    )
+    );
 
     router.post(
         '/updateInvoice',
@@ -1912,7 +1911,7 @@ export default function (sio: any) {
         validate(Validations.updateInvoice),
         refreshQBToken(),
         invoiceController.updateInvoice
-    )
+    );
 
     router.post(
         '/updateInvoiceMessages',
@@ -1922,7 +1921,7 @@ export default function (sio: any) {
         validate(Validations.updateInvoice),
         refreshQBToken(),
         invoiceController.updateInvoiceMessages
-    )
+    );
 
     router.post(
         '/getInvoiceDetail',
@@ -1930,7 +1929,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         invoiceController.getInvoiceDetail
-    )
+    );
 
     router.post(
         '/getInvoices',
@@ -1939,14 +1938,14 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getInvoices),
         invoiceController.getInvoices
-    )
+    );
 
     router.get(
         '/getUnsyncedInvoices',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         invoiceController.getUnsyncedInvoices
-    )
+    );
 
     router.get(
         '/getCompanyInvoices',
@@ -1954,7 +1953,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         invoiceController.getCompanyInvoices
-    )
+    );
     router.get(
         '/getCompanyInvoiceDetails',
         passport.authenticate('jwt', { session: false }),
@@ -1962,7 +1961,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.companyInvoice),
         invoiceController.getCompanyInvoiceDetails
-    )
+    );
     router.post(
         '/unvoidInvoice',
         passport.authenticate('jwt', { session: false }),
@@ -1971,7 +1970,7 @@ export default function (sio: any) {
         // checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.unVoidInvoice),    
         invoiceController.unVoidInvoice
-    )
+    );
     router.delete(
         '/voidInvoice',
         passport.authenticate('jwt', { session: false }),
@@ -1979,12 +1978,12 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.voidInvoice),
         invoiceController.voidInvoice
-    )
+    );
 
     router.post(
         '/updateCompaniesDefaultPermissions',
         permissionController.updateAllCompaniesPermissions
-    )
+    );
 
     router.put(
         '/updateCommission',
@@ -1993,28 +1992,28 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateCommission),
         invoiceController.updateCommission
-    )
+    );
 
     router.get(
         '/updateCommissionCron',
         (req, res) => {
-            invoiceController.updateCommissionCron(req, res)
+            invoiceController.updateCommissionCron(req, res);
         }
-    )
+    );
 
     router.get(
         '/getCommissionHistory/:beneficiaryId',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         invoiceController.getCommissionHistory
-    )
+    );
 
     router.get(
         '/getCommissionHistoryByJob/:jobId',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         invoiceController.getCommissionHistoryByJob
-    )
+    );
 
     router.get(
         '/getInvoicesByContractor',
@@ -2022,7 +2021,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         invoiceController.getInvoicesByContractor
-    )
+    );
 
     //Parts Inventory
 
@@ -2032,7 +2031,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         partController.getPartInventory
-    )
+    );
 
     router.post(
         '/createPart',
@@ -2041,7 +2040,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createPartInventory),
         partController.createPartInventory
-    )
+    );
 
     router.post(
         '/updatePart',
@@ -2050,7 +2049,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.udpatePartInventory),
         partController.updatePartInventory
-    )
+    );
 
     router.post(
         '/removePart',
@@ -2059,7 +2058,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.removePartInventory),
         partController.removePartInventory
-    )
+    );
 
     // Purchase Order
     router.post(
@@ -2069,7 +2068,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createPurchaseOrder),
         purchaseOrderController.createPO
-    )
+    );
 
     router.post(
         '/getAllPurchaseOrder',
@@ -2077,7 +2076,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         purchaseOrderController.getAllPO
-    )
+    );
 
     router.post(
         '/getEquipmentPurchaseOrder',
@@ -2086,7 +2085,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getEquipmentPO),
         purchaseOrderController.getAllEquipmentPurchaseOrder
-    )
+    );
 
     router.post(
         '/updatePurchaseOrderStatus',
@@ -2095,7 +2094,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.udpatePurchaseOrderStatus),
         purchaseOrderController.updatePOStatus
-    )
+    );
 
     router.post(
         '/createPOEstimate',
@@ -2104,7 +2103,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createPurchaseOrderEstimate),
         purchaseOrderController.createPOEstimate
-    )
+    );
 
     router.post(
         '/updatePurchaseOrder',
@@ -2113,7 +2112,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.udpatePurchaseOrder),
         purchaseOrderController.updatePO
-    )
+    );
 
     router.post(
         '/updateEstimate',
@@ -2122,7 +2121,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.udpateEstimate),
         estimateController.updateEstimate
-    )
+    );
 
     router.post(
         '/updateEstimateStatus',
@@ -2131,7 +2130,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.udpateEstimateStatus),
         estimateController.updateEstimateStatus
-    )
+    );
 
     router.post(
         '/createEstimate',
@@ -2139,7 +2138,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         estimateController.createEstimate
-    )
+    );
 
     router.post(
         '/getEstimate',
@@ -2147,7 +2146,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         estimateController.getEstimates
-    )
+    );
 
     router.post(
         '/cancelEstimate',
@@ -2156,7 +2155,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.cancelEstimate),
         estimateController.cancelEstimate
-    )
+    );
 
     router.post(
         '/getCompanyContractorActivity',
@@ -2164,7 +2163,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         companyController.getCompanyContractorActivity
-    )
+    );
 
     // PAYMENT TERM
 
@@ -2175,7 +2174,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.setCompanyDefaultPaymentTerm),
         paymentTermController.setCompanyDefaultPaymentTerm
-    )
+    );
 
     router.post(
         '/setCustomerPaymentTerm',
@@ -2184,7 +2183,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.setCustomerPaymentTerm),
         paymentTermController.setCustomerPaymentTerm
-    )
+    );
 
     router.get(
         '/getPaymentTerms',
@@ -2193,7 +2192,7 @@ export default function (sio: any) {
         getCompanyId(),
         // TODO: Add and use new proper permission
         paymentTermController.getPaymentTerms
-    )
+    );
 
     router.post(
         '/createPaymentTerm',
@@ -2203,7 +2202,7 @@ export default function (sio: any) {
         // TODO: Add and use new proper permission
         validate(Validations.createPaymentTerm),
         paymentTermController.createPaymentTerm
-    )
+    );
 
     router.put(
         '/updatePaymentTerm',
@@ -2213,7 +2212,7 @@ export default function (sio: any) {
         // TODO: Add and use new proper permission
         validate(Validations.updatePaymentTerm),
         paymentTermController.updatePaymentTerm
-    )
+    );
 
     router.delete(
         '/deletePaymentTerm',
@@ -2223,7 +2222,7 @@ export default function (sio: any) {
         // TODO: Add and use new proper permission
         validate(Validations.deletePaymentTerm),
         paymentTermController.deletePaymentTerm
-    )
+    );
 
     // PAYMENT
 
@@ -2234,7 +2233,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getInvoicesByCustomerId),
         invoiceController.getInvoicesByCustomerId
-    )
+    );
 
     router.get(
         '/getPayments',
@@ -2242,7 +2241,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         paymentController.getPayments
-    )
+    );
 
     router.get(
         '/getUnsyncedPayments',
@@ -2250,7 +2249,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         paymentController.getUnsyncedPayments
-    )
+    );
 
     router.get(
         '/getPaymentsByCustomerId',
@@ -2259,7 +2258,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getPaymentsByCustomer),
         paymentController.getPaymentsByCustomerId
-    )
+    );
 
     router.get(
         '/getPaymentsByContractor',
@@ -2267,7 +2266,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         paymentController.getPaymentsByContractor
-    )
+    );
 
     router.post(
         '/recordPayment',
@@ -2277,7 +2276,7 @@ export default function (sio: any) {
         validate(Validations.recordPayment),
         refreshQBToken(),
         paymentController.createPayment
-    )
+    );
 
     router.post(
         '/recordPaymentContractor',
@@ -2286,7 +2285,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.recordPaymentContractor),
         paymentController.createPaymentContractor
-    )
+    );
 
     router.put(
         '/updatePayment',
@@ -2295,7 +2294,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updatePayment),
         paymentController.updatePayment
-    )
+    );
 
     router.put(
         '/updatePaymentContractor',
@@ -2304,7 +2303,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updatePaymentContractor),
         paymentController.updatePaymentContractor
-    )
+    );
 
     router.post(
         '/voidPaymentContractor',
@@ -2313,7 +2312,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.voidPaymentContractor),
         paymentController.voidPaymentContractor
-    )
+    );
 
     router.delete(
         '/voidPayment',
@@ -2322,7 +2321,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.voidPaymentContractor),
         paymentController.voidPaymentContractor
-    )
+    );
 
     router.get(
         '/getPayrollBalance',
@@ -2330,7 +2329,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         paymentController.getPayrollBalance
-    )
+    );
 
     router.get(
         '/exportVendorJobs',
@@ -2338,7 +2337,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         paymentController.exportVendorJobs
-    )
+    );
 
     router.get(
         '/getPayrollReport',
@@ -2346,7 +2345,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         paymentController.getPayrollReport
-    )
+    );
 
     // Advance Payment
     router.post(
@@ -2356,7 +2355,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.recordAdvancePayment),
         paymentAdvanceController.createAdvancePaymentContractor
-    )
+    );
 
     router.get(
         '/getAdvancePaymentsByContractor',
@@ -2365,7 +2364,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getAdvancePayments),
         paymentAdvanceController.getAdvancePaymentsByContractor
-    )
+    );
 
     router.put(
         '/updateAdvancePaymentContractor',
@@ -2374,7 +2373,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateAdvancePaymentContractor),
         paymentAdvanceController.updateAdvancePaymentContractor
-    )
+    );
 
     router.delete(
         '/voidAdvancePaymentContractor',
@@ -2383,7 +2382,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.voidAdvancePaymentContractor),
         paymentAdvanceController.voidAdvancePaymentContractor
-    )
+    );
 
     // REPORT
 
@@ -2394,7 +2393,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.generateIncomeReport),
         reportController.generateIncomeReport
-    )
+    );
 
     router.get(
         '/generateIncomeReportPdf',
@@ -2402,14 +2401,14 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.generateIncomeReport),
         reportController.generateIncomeReportPdf
-    )
+    );
 
     router.get(
         '/getIncomeReportEmailTemplate',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         reportController.getIncomeReportEmailTemplate
-    )
+    );
 
     router.post(
         '/sendIncomeReport',
@@ -2418,7 +2417,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.generateIncomeReport),
         reportController.sendIncomeReportEmail
-    )
+    );
 
     router.get(
         '/getReportEmailTemplate/:reportType',
@@ -2426,7 +2425,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         reportController.getReportEmailTemplate
-    )
+    );
 
     router.post(
         '/sendReport/:reportType',
@@ -2435,7 +2434,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.sendReportEmail),
         reportController.sendReportEmail
-    )
+    );
 
     router.get(
         '/generateAccountReceivableReport',
@@ -2444,7 +2443,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.generateAccountReceivableReport),
         reportController.generateAccountReceivableReport
-    )
+    );
 
     router.get(
         '/generateAccountReceivableReport/subdivisions',
@@ -2453,7 +2452,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.generateAccountReceivableDetail),
         reportController.generateAccountReceivableDetail
-    )
+    );
 
     router.get(
         '/generateAccountReceivableReport/invoices',
@@ -2462,7 +2461,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.generateAccountReceivableInvoices),
         reportController.generateAccountReceivableInvoices
-    )
+    );
 
     router.get(
         '/generateReportPdf/:reportType',
@@ -2471,21 +2470,21 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.generateReportPdf),
         reportController.generateReportPdf
-    )
+    );
 
     router.get(
         '/getMemorizedReports',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         reportController.getMemorizedReports
-    )
+    );
 
     router.get(
         '/getMemorizedReport',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         reportController.getMemorizedReport
-    )
+    );
 
     router.post(
         '/createMemorizedReport',
@@ -2493,7 +2492,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createMemorizedReport),
         reportController.createMemorizedReport
-    )
+    );
 
     router.put(
         '/updateMemorizedReport',
@@ -2501,7 +2500,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateMemorizedReport),
         reportController.updateMemorizedReport
-    )
+    );
 
     router.delete(
         '/deleteMemorizedReport',
@@ -2509,7 +2508,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateMemorizedReport),
         reportController.deleteMemorizedReport
-    )
+    );
 
     // CODE LOCATION TAG
 
@@ -2520,7 +2519,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.codeLocationTag),
         tagController.codeLocationTag
-    )
+    );
 
     router.post(
         '/getLocationTagInfo',
@@ -2529,7 +2528,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getLocationTagInfo),
         tagController.getLocationTagInfo
-    )
+    );
 
     router.post(
         '/updateLocationTag',
@@ -2538,7 +2537,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateLocationTag),
         tagController.updateLocationTag
-    )
+    );
 
     router.post(
         '/getLocationTags',
@@ -2546,7 +2545,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         tagController.getLocationTags
-    )
+    );
     router.post(
         '/getLocationTagJobs',
         passport.authenticate('jwt', { session: false }),
@@ -2555,7 +2554,7 @@ export default function (sio: any) {
         validate(Validations.getLocationTagJobs),
         checkUserScanPermissions(Permissions.Get_Location_Tag_Jobs),
         tagController.getLocationTagJobs
-    )
+    );
 
     // CONTACT
 
@@ -2565,7 +2564,7 @@ export default function (sio: any) {
         isLogin(),
         validate(Validations.addContact),
         ContactController.addContact
-    )
+    );
 
     router.put(
         '/updateContact',
@@ -2574,14 +2573,14 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateContact),
         ContactController.updateContact
-    )
+    );
 
     router.get(
         '/getContacts',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         ContactController.getContacts
-    )
+    );
 
     router.get(
         '/getCustomerAllContacts',
@@ -2590,7 +2589,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getCustomerAllContacts),
         ContactController.getCustomerAllContacts
-    )
+    );
 
     router.delete(
         '/removeContact',
@@ -2598,7 +2597,7 @@ export default function (sio: any) {
         isLogin(),
         validate(Validations.removeContact),
         ContactController.removeContact
-    )
+    );
 
     // Notification
     router.get(
@@ -2608,7 +2607,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getNotifications),
         notificationController.getNotifications
-    )
+    );
 
     router.put(
         '/updateNotification/:notificationId([0-9a-f]{24})?',
@@ -2617,7 +2616,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateNotification),
         notificationController.updateNotification
-    )
+    );
 
     // Integrations
     router.post(
@@ -2627,9 +2626,9 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createIntegrationServiceTicket),
         (req, res) => {
-            integrationController.createServiceTicket(req, res, sio)
+            integrationController.createServiceTicket(req, res, sio);
         }
-    )
+    );
 
     // Scripts
     router.post(
@@ -2638,35 +2637,35 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         scriptController.syncItemTier
-    )
+    );
 
     router.post(
         '/script/migrateJobTask',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         scriptController.migrateJobTask
-    )
+    );
 
     router.post(
         '/script/migrateTicketAndJobImage',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         scriptController.migrateTicketAndJobImage
-    )
+    );
 
     router.post(
         '/script/migrateTechnicianStatus',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         scriptController.migrateTechnicianStatus
-    )
+    );
 
     router.post(
         '/script/addJobTypeMongooseId',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         scriptController.addJobTypeMongooseId
-    )
+    );
 
     router.post(
         '/script/addVendorBalance',
@@ -2674,7 +2673,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         scriptController.addVendorBalance
-    )
+    );
 
     router.post(
         '/script/addPaymentType',
@@ -2682,7 +2681,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         scriptController.addPaymentType
-    )
+    );
 
     router.post(
         '/script/addInvoiceCommission',
@@ -2690,7 +2689,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         scriptController.addInvoiceCommission
-    )
+    );
 
     router.post(
         '/script/updatePaidTechnicians',
@@ -2698,7 +2697,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         scriptController.updatePaidTechnicians
-    )
+    );
 
     router.post(
         '/script/migrateCustomer',
@@ -2706,7 +2705,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         scriptController.migrateCustomer
-    )
+    );
 
     router.post(
         '/script/updateQBCustomerJob',
@@ -2714,17 +2713,17 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         scriptController.updateQBCustomerJob
-    )
+    );
 
     router.post(
         '/script/revertBackInvoices',
         scriptController.revertBackInvoices
-    )
+    );
 
     router.post(
         '/script/revertBackInvoices',
         scriptController.revertBackInvoices
-    )
+    );
 
     // QUICKBOOK DIRECT CHECK API
     router.get(
@@ -2734,7 +2733,7 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookCustomerController.getQBCustomer
-    )
+    );
 
     router.get(
         '/quickbook/itemCheck',
@@ -2743,7 +2742,7 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookItemController.getQBItem
-    )
+    );
 
     router.get(
         '/quickbook/invoiceCheck',
@@ -2752,7 +2751,7 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookInvoiceController.getQBInvoice
-    )
+    );
 
     router.get(
         '/quickbook/paymentCheck',
@@ -2761,7 +2760,7 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookPaymentController.getQBPayment
-    )
+    );
 
     // QUICKBOOK DIRECT CUSTOMER API
 
@@ -2772,7 +2771,7 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookCustomerController.findQBCustomers
-    )
+    );
 
     router.get(
         '/quickbook/findQBCustomersByEmail',
@@ -2781,7 +2780,7 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookCustomerController.findQBCustomersByEmail
-    )
+    );
 
     // QUICKBOOK DIRECT ACCOUNT API
 
@@ -2791,7 +2790,7 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookInvoiceController.findQBInvoice
-    )
+    );
 
     router.get(
         '/quickbook/findQBAccount',
@@ -2799,7 +2798,7 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookItemController.findQBAccount
-    )
+    );
 
     // QUICKBOOK DIRECT ITEM API
 
@@ -2809,7 +2808,7 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookItemController.findQBItem
-    )
+    );
 
     // QUICKBOOK DIRECT PAYMENT METHOD API
 
@@ -2819,7 +2818,7 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookPaymentTermController.findQBAllTerms
-    )
+    );
 
     // QUICKBOOK DIRECT INVOICE API
     router.put(
@@ -2828,7 +2827,7 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookInvoiceController.updateQBInvoice
-    )
+    );
 
     // QUICKBOOK DIRECT PAYMENT API
 
@@ -2838,7 +2837,7 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookPaymentController.deleteQBPayment
-    )
+    );
 
     router.get(
         '/quickbook/findQBPayment',
@@ -2846,57 +2845,57 @@ export default function (sio: any) {
         getCompanyId(),
         refreshQBToken(),
         quickBookPaymentController.findQBPayment
-    )
+    );
 
     // WORK TYPE API
     router.get(
         '/getWorkTypes',
         workTypeController.getWorkTypes
-    )
+    );
 
     router.get(
         '/getWorkType/:id',
         workTypeController.getWorkTypeById
-    )
+    );
 
     router.delete(
         '/deleteWorkType/:id',
         workTypeController.deleteWorkType,
         passport.authenticate('jwt', { session: false })
-    )
+    );
 
     router.put(
         '/updateWorkType',
         workTypeController.updateWorkType,
         passport.authenticate('jwt', { session: false })
-    )
+    );
 
     router.post(
         '/createWorkType',
         workTypeController.createWorkType,
         passport.authenticate('jwt', { session: false })
-    )
+    );
 
     router.get('/customers/export',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
         customerController.exportCustomersToExcel
-    )
+    );
     router.get(
         '/getJobCostingList',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
         companyController.getJobCostingList
-    )
+    );
     router.post(
         '/addJobCosting',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
         companyController.addJobCosting
-    )
+    );
     router.put(
         '/updateJobCosting',
         passport.authenticate('jwt', { session: false }),
@@ -2904,7 +2903,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateJobCosting),
         companyController.updateJobCosting
-    )
+    );
 
     router.put(
         '/updateJobCommission/:id',
@@ -2913,9 +2912,9 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateJobCommission),
         invoiceController.updateJobCommission
-    )
+    );
 
-    return router
+    return router;
 
 }
 

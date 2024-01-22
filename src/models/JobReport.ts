@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 import { IInvoice } from './Invoice';
 import {PurchaseOrder} from './PurchaseOrder';
 
@@ -64,8 +64,8 @@ const JobReportSchema = new Schema({
         }
     }],
     lastEmailSent: {
-      type: Date,
-      required: false
+        type: Date,
+        required: false
     },
     createdAt: {
         type: Date,
@@ -91,4 +91,4 @@ JobReportSchema.index({ company: 1 });
 JobReportSchema.index({ contractor: 1 });
 JobReportSchema.index({ invoice: 1 });
 
-export const JobReport = mongoose.model<IJobReport>('JobReport', JobReportSchema)
+export const JobReport = mongoose.model<IJobReport>('JobReport', JobReportSchema);

@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 import { ICustomer } from './Customer';
 import { ICompanyLocation } from './CompanyLocation';
 import { IWorkType } from './WorkType';
@@ -16,7 +16,7 @@ export const enum logType {
 }
 export interface IInvoiceLogs extends Document {
 
-    invoiceId: String
+    invoiceId: string
     invoice: Schema.Types.ObjectId,
     oldInvoiceId:Schema.Types.ObjectId,
     company: Schema.Types.ObjectId,
@@ -26,9 +26,9 @@ export interface IInvoiceLogs extends Document {
     createdAt?: Date
     createdBy: Schema.Types.ObjectId
     updatedAt?: Date,
-    amountPaid:String,
+    amountPaid:string,
     type: logType,
-    info:String
+    info:string
 
 }
 
@@ -72,7 +72,7 @@ const InvoiceLogsSchema = new Schema({
 
 
 }, { timestamps: { createdAt: true, updatedAt: true } }
-)
+);
 
 //Indexes
 InvoiceLogsSchema.index({ company: 1 });
@@ -83,4 +83,4 @@ InvoiceLogsSchema.index({ companyLocation: 1 });
 InvoiceLogsSchema.index({ workType: 1 });
 InvoiceLogsSchema.index({ invoiceId: 1 });
 
-export const InvoiceLogs = mongoose.model<IInvoiceLogs>('InvoiceLogs', InvoiceLogsSchema)
+export const InvoiceLogs = mongoose.model<IInvoiceLogs>('InvoiceLogs', InvoiceLogsSchema);

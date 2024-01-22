@@ -49,4 +49,4 @@ ContractSchema.index({ contractor: 1 });
 ContractSchema.index({ createdBy: 1 });
 ContractSchema.index({ finishedBy: 1 });
 
-export const Contract = mongoose.model<IContract>('Contract', ContractSchema)
+export const Contract = mongoose.model<IContract>('Contract', ContractSchema);

@@ -18,7 +18,7 @@ export const _initializeFirebase = async () => {
         projectId: FIREBASE_PROJECT_ID
     });
 
-}
+};
 
 /**
  * Send the notification over Firebase to one device,
@@ -78,27 +78,27 @@ export const sendNotification = async ({
 
     // Identify the Chat Channel and add the corresponding data
     switch (chatChannel) {
-        case ChatChannels.JOB_REQUEST:
-            message.data.jobRequestId = jobRequestId;
-            message.data.jobRequestNumber = jobRequestNumber;
-            break;
+    case ChatChannels.JOB_REQUEST:
+        message.data.jobRequestId = jobRequestId;
+        message.data.jobRequestNumber = jobRequestNumber;
+        break;
     
-        default:
-            break;
+    default:
+        break;
     }
 
     // Send the message notification
     return getMessaging().send(message)
-    .then((response) => {
+        .then((response) => {
         // Response is a message ID string.
-        console.log('Successfully sent message:', response);
-    })
-    .catch((error) => {
-        Sentry.captureException(error);
-        console.log('Error sending message:', error);
-    });
+            console.log('Successfully sent message:', response);
+        })
+        .catch((error) => {
+            Sentry.captureException(error);
+            console.log('Error sending message:', error);
+        });
 
-}
+};
 
 // TODO: TO BE USED LATER?
 export const subscribeToTopic = async (registrationTokens: string[], channelTopic: string) => {
@@ -110,4 +110,4 @@ export const subscribeToTopic = async (registrationTokens: string[], channelTopi
 
     return;
 
-}
+};

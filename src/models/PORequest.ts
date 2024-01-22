@@ -9,6 +9,6 @@ const PORequestSchema = new Schema({
     PORequestId: {
         type: String
     },
-})
+});
 
 export const PORequest = ServiceTicket.discriminator<IPORequest>('PORequest', PORequestSchema);

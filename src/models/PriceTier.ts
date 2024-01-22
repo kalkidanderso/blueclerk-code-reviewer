@@ -37,7 +37,7 @@ const PriceTierSchema = new Schema(
     },
     { timestamps: { createdAt: true, updatedAt: true } }
 
-)
+);
 
 //Indexes
 PriceTierSchema.index({ companyId: 1 });

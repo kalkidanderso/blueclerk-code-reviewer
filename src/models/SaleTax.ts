@@ -1,9 +1,9 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ISaleTax extends Document {
 
     state: string
-    tax: Number
+    tax: number
     company: Schema.Types.ObjectId
     createdBy: Schema.Types.ObjectId
     createdAt: Date
@@ -27,6 +27,6 @@ const SaleTaxSchema = new Schema({
         type: Date
     }
 
-})
+});
 
-export const SaleTax = mongoose.model<ISaleTax>('SaleTax', SaleTaxSchema)
+export const SaleTax = mongoose.model<ISaleTax>('SaleTax', SaleTaxSchema);

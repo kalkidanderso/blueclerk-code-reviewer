@@ -1,9 +1,9 @@
-import mongoose, { Document, Schema } from 'mongoose'
-import { IContact } from '../common/contact'
-import { ICustomer } from '../models/Customer'
-import { IHomeOwner } from '../models/HomeOwner'
-import { ICompany } from '../models/Company'
-import { IUser } from '../models/User'
+import mongoose, { Document, Schema } from 'mongoose';
+import { IContact } from '../common/contact';
+import { ICustomer } from '../models/Customer';
+import { IHomeOwner } from '../models/HomeOwner';
+import { ICompany } from '../models/Company';
+import { IUser } from '../models/User';
 
 export interface IJobLocation extends Document {
     name: string
@@ -32,22 +32,22 @@ export interface IJobLocation extends Document {
 
 const JobLocationSchema = new Schema({
 
-    name: { type: String, required: true, index: "text" },
+    name: { type: String, required: true, index: 'text' },
     contacts: [{
-      type: Schema.Types.ObjectId,
-      ref: 'Contact',
-      required: false
+        type: Schema.Types.ObjectId,
+        ref: 'Contact',
+        required: false
     }],
     location: {
-      type: {
-        type: String,
-        enum: ['Point'],
-        required: false
-      },
-      coordinates: {
-        type: [Number],
-        required: false
-      }
+        type: {
+            type: String,
+            enum: ['Point'],
+            required: false
+        },
+        coordinates: {
+            type: [Number],
+            required: false
+        }
     },
     jobSites: [{
         type: Schema.Types.ObjectId,
@@ -55,14 +55,14 @@ const JobLocationSchema = new Schema({
         required: false
     }],
     address: {
-      city: String,
-      state: String,
-      street: String,
-      zipcode: String
+        city: String,
+        state: String,
+        street: String,
+        zipcode: String
     },
     isActive: {
-      type: Boolean,
-      default: true
+        type: Boolean,
+        default: true
     },
     customerId: {
         type: Schema.Types.ObjectId,
@@ -99,8 +99,8 @@ JobLocationSchema.index({ isActive: 1 });
 JobLocationSchema.index({ contacts: 1 });
 JobLocationSchema.index({ 'address.street': 1 });
 JobLocationSchema.index({ 'address.city': 1 });
-JobLocationSchema.index({ _id: 1, customerId: 1, isActive: 1 })
-JobLocationSchema.index({ companyId: 1, quickbookId: 1 })
-JobLocationSchema.index({ customerId: 1, companyId: 1, name: 1, address: 1, location: 1 })
+JobLocationSchema.index({ _id: 1, customerId: 1, isActive: 1 });
+JobLocationSchema.index({ companyId: 1, quickbookId: 1 });
+JobLocationSchema.index({ customerId: 1, companyId: 1, name: 1, address: 1, location: 1 });
 
-export const JobLocation = mongoose.model<IJobLocation>('JobLocation', JobLocationSchema)
+export const JobLocation = mongoose.model<IJobLocation>('JobLocation', JobLocationSchema);

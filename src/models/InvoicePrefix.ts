@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IInvoicePrefix extends Document {
 
@@ -16,9 +16,9 @@ const InvoicePrefixSchema = new Schema({
         ref: 'Company',
         required: true
     }
-})
+});
 
 //Indexes
 InvoicePrefixSchema.index({ company: 1 });
 
-export const InvoicePrefix = mongoose.model<IInvoicePrefix>('InvoicePrefix', InvoicePrefixSchema)
+export const InvoicePrefix = mongoose.model<IInvoicePrefix>('InvoicePrefix', InvoicePrefixSchema);

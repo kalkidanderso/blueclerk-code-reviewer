@@ -6,7 +6,7 @@ export interface INotificationContract extends INotification {
 
     metadata: Schema.Types.ObjectId
 
-};
+}
 
 const NotificationContractSchema = new Schema({
 
@@ -23,7 +23,7 @@ export interface INotificationServiceTicket extends INotification {
 
     metadata: Schema.Types.ObjectId
 
-};
+}
 
 const NotificationServiceTicketSchema = new Schema({
 
@@ -40,7 +40,7 @@ export interface INotificationJob extends INotification {
 
     metadata: Schema.Types.ObjectId
 
-};
+}
 
 const NotificationJobSchema = new Schema({
 
@@ -57,7 +57,7 @@ export interface INotificationJobRequest extends INotification {
 
     metadata: Schema.Types.ObjectId
 
-};
+}
 
 const NotificationJobRequestSchema = new Schema({
 
@@ -74,7 +74,7 @@ export interface INotificationChat extends INotification {
 
     metatadata: Schema.Types.ObjectId
 
-};
+}
 
 const NotificationChatSchema = new Schema({
 

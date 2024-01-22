@@ -23,7 +23,7 @@ export const _createDefaultPaymentTerms = async (company: ICompany): Promise<voi
                 dueDays,
                 company: company._id,
                 createdBy: company.admin
-            }))
+            }));
         }
     }
 
@@ -33,7 +33,7 @@ export const _createDefaultPaymentTerms = async (company: ICompany): Promise<voi
 
     return;
 
-}
+};
 
 /**
  * To reset Payment Term quickbookId,
@@ -48,7 +48,7 @@ export const _resetPaymentTermQB = async (company: ICompany): Promise<void> => {
 
     return;
 
-}
+};
 
 export const setCompanyDefaultPaymentTerm = async (req: Request, res: Response) => {
 
@@ -70,7 +70,7 @@ export const setCompanyDefaultPaymentTerm = async (req: Request, res: Response) 
 
     return res.json({ status: Status.Success, message: 'Company default Payment Term successfully set.', companyPaymentTerm: paymentTerm });
 
-}
+};
 
 export const setCustomerPaymentTerm = async (req: Request, res: Response) => {
 
@@ -100,7 +100,7 @@ export const setCustomerPaymentTerm = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, message: 'Customer Payment Term successfully set.', customerPaymentTerm: paymentTerm });
 
-}
+};
 
 export const getPaymentTerms = async (req: Request, res: Response) => {
 
@@ -123,7 +123,7 @@ export const getPaymentTerms = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, paymentTerms });
 
-}
+};
 
 export const createPaymentTerm = async (req: Request, res: Response) => {
 
@@ -160,12 +160,12 @@ export const createPaymentTerm = async (req: Request, res: Response) => {
 
                 return res.json({ status: Status.Success, message: 'Payment Term successfully created', paymentTerm, quickbookPaymentTerm: qbPaymentTerm });
             }
-        })
+        });
     } else {
         return res.json({ status: Status.Success, message: 'Payment Term successfully created', paymentTerm });
     }
 
-}
+};
 
 export const updatePaymentTerm = async (req: Request, res: Response) => {
 
@@ -189,7 +189,7 @@ export const updatePaymentTerm = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, message: 'Payment Term updated successfully.', paymentTerm });
 
-}
+};
 
 export const deletePaymentTerm = async (req: Request, res: Response) => {
 
@@ -209,4 +209,4 @@ export const deletePaymentTerm = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, message: 'Payment Term successfully deleted.' });
 
-}
+};

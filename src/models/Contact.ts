@@ -1,6 +1,6 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 
-import { IContact } from '../common/contact'
+import { IContact } from '../common/contact';
 
 
 const ContactSchema = new Schema({
@@ -28,10 +28,10 @@ const ContactSchema = new Schema({
         type: Boolean,
         default: true, // True = subscribed, False = unsubscribed
     }
-}, { timestamps: { createdAt: true, updatedAt: true } })
+}, { timestamps: { createdAt: true, updatedAt: true } });
 
 //Indexes
 ContactSchema.index({ userId: 1 });
 ContactSchema.index({ name: 1, phone: 1, email: 1});
 
-export const Contact = mongoose.model<IContact>('Contact', ContactSchema)
+export const Contact = mongoose.model<IContact>('Contact', ContactSchema);

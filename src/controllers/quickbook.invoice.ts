@@ -4,8 +4,8 @@ import axios from 'axios';
 import moment from 'moment';
 import { Status, Messages, InvoiceStatus } from '../common/constants';
 import { IContact } from '../common/contact';
-import { ICompany, Company } from '../models/Company'
-import { Customer, ICustomer, IQBCustomer } from '../models/Customer'
+import { ICompany, Company } from '../models/Company';
+import { Customer, ICustomer, IQBCustomer } from '../models/Customer';
 import { IJobLocation, JobLocation } from '../models/JobLocation';
 import { IServiceTicket } from '../models/ServiceTicket';
 import { IJob } from '../models/Job';
@@ -45,231 +45,231 @@ export const _createQBInvoice = async (req: Request, res: Response, company: ICo
 
             return next(Status.QBUnauthorized, Messages.QBUnAuthorized, null);
         }
-    // Populate the invoice to have customer and item object
-    await invoice
-        .populate({ path: 'customer' })
-        .populate({ path: 'jobLocation' })
-        .populate({ path: 'paymentTerm' })
-        .populate({
-            path: 'job',
-            populate: [{
-                path: 'ticket',
-                populate: [{ path: 'customerContactId' }]
-            }, { path: 'jobLocation' }]
-        })
-        .populate({ path: 'items.item' })
-        .populate({ path: 'customerContactId' })
-        .execPopulate();
+        // Populate the invoice to have customer and item object
+        await invoice
+            .populate({ path: 'customer' })
+            .populate({ path: 'jobLocation' })
+            .populate({ path: 'paymentTerm' })
+            .populate({
+                path: 'job',
+                populate: [{
+                    path: 'ticket',
+                    populate: [{ path: 'customerContactId' }]
+                }, { path: 'jobLocation' }]
+            })
+            .populate({ path: 'items.item' })
+            .populate({ path: 'customerContactId' })
+            .execPopulate();
 
-    // Customer of the invoice
-    const customer = <ICustomer>invoice.customer;
-    const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
-    const job = <IJob>invoice.job;
-    const serviceTicket = <IServiceTicket>job?.ticket;
-    const jobLocation = <IJobLocation>invoice?.jobLocation ?? job?.jobLocation;
-    const invCustContact = <IContact>invoice.customerContactId;
-    const customerContact = <IContact>serviceTicket?.customerContactId;
+        // Customer of the invoice
+        const customer = <ICustomer>invoice.customer;
+        const paymentTerm = <IPaymentTerm>invoice.paymentTerm;
+        const job = <IJob>invoice.job;
+        const serviceTicket = <IServiceTicket>job?.ticket;
+        const jobLocation = <IJobLocation>invoice?.jobLocation ?? job?.jobLocation;
+        const invCustContact = <IContact>invoice.customerContactId;
+        const customerContact = <IContact>serviceTicket?.customerContactId;
 
-    // Initiate node-quickbooks object with the refreshed company token
-    const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
+        // Initiate node-quickbooks object with the refreshed company token
+        const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
-    const qbInvoiceLines: IQBInvoiceLine[] = [];
-    const taxCode = await _createTaxService(company);
+        const qbInvoiceLines: IQBInvoiceLine[] = [];
+        const taxCode = await _createTaxService(company);
     
-    // Iterate all items in the invoice and construct is to QB Inv Lines
-    const tempNullDesc = "Temporary value is $0.1 - actual value is $0 (please update it manually to $0)";
-    for (const invItem of invoice.items) {
-        const item = <IItem>invItem.item;
+        // Iterate all items in the invoice and construct is to QB Inv Lines
+        const tempNullDesc = 'Temporary value is $0.1 - actual value is $0 (please update it manually to $0)';
+        for (const invItem of invoice.items) {
+            const item = <IItem>invItem.item;
 
-        const qbInvoiceLinesEntry: any = {
-            DetailType: LineDetailTypes.SalesItemLineDetail,
-            Amount: invItem.subTotal == 0 ? 0.1 : invItem.subTotal,
-            Description: invItem.subTotal == 0 ? tempNullDesc : "", 
-            SalesItemLineDetail: {
-                ItemRef: {
-                    value: item?.quickbookId
+            const qbInvoiceLinesEntry: any = {
+                DetailType: LineDetailTypes.SalesItemLineDetail,
+                Amount: invItem.subTotal == 0 ? 0.1 : invItem.subTotal,
+                Description: invItem.subTotal == 0 ? tempNullDesc : '', 
+                SalesItemLineDetail: {
+                    ItemRef: {
+                        value: item?.quickbookId
+                    },
+                    Qty: invItem?.quantity,
+                    UnitPrice: invItem.price == 0 ? 0.1 : invItem.price
+                }
+            };
+
+            // Input tax of the item line if any
+            if (invItem.taxAmount) {
+                qbInvoiceLinesEntry.SalesItemLineDetail.TaxInclusiveAmt = invItem?.taxAmount;
+                qbInvoiceLinesEntry.SalesItemLineDetail.TaxCodeRef = { value: 'TAX' };
+            }
+
+            qbInvoiceLines.push(qbInvoiceLinesEntry);
+        }
+
+        if (invoice.subTotal) {
+            qbInvoiceLines.push({
+                DetailType: LineDetailTypes.SubTotalLineDetail,
+                Amount: invoice.subTotal,
+                SalesItemLineDetail: {}
+            });
+        }
+
+        // QB Invoice Object
+        const qbInvoiceEntry: IQBInvoice = {
+            DocNumber: invoice.invoiceId,
+            TxnDate: invoice.issuedDate?.toString(),
+            DueDate: invoice.dueDate?.toString() || invoice.createdAt?.toString(),
+            Line: qbInvoiceLines,
+            SalesTermRef: {
+                value: paymentTerm?.quickbookId
+            },
+            CustomerRef: {
+                value: jobLocation?.quickbookId || customer.quickbookId
+            },
+            BillEmail: { Address: customer.info?.email },
+            BillAddr: {
+                Line1: customer?.address?.street,
+                Line2: customer?.address?.unit,
+                City: customer?.address?.city,
+                CountrySubDivisionCode: customer?.address?.state,
+                PostalCode: customer?.address?.zipCode,
+                Long: customer?.location?.coordinates[0]?.toString(),
+                Lat: customer?.location?.coordinates[1]?.toString(),
+            },
+            ShipAddr: {
+                Line1: customer?.address?.street,
+                Line2: customer?.address?.unit,
+                City: customer?.address?.city,
+                CountrySubDivisionCode: customer?.address?.state,
+                PostalCode: customer?.address?.zipCode,
+                Long: customer?.location?.coordinates[0]?.toString(),
+                Lat: customer?.location?.coordinates[1]?.toString(),
+            },
+            CustomField: [
+                {
+                    DefinitionId: '1',
+                    Name: 'Customer PO',
+                    Type: 'StringType',
+                    StringValue: invoice.customerPO || serviceTicket?.customerPO
                 },
-                Qty: invItem?.quantity,
-                UnitPrice: invItem.price == 0 ? 0.1 : invItem.price
+                {
+                    DefinitionId: '2',
+                    Name: 'Vendor Number',
+                    Type: 'StringType',
+                    StringValue: invoice.vendorId || customer.vendorId
+                }
+            ],
+            TxnTaxDetail: {
+                TotalTax: invoice.taxAmount,
+                TxnTaxCodeRef: {
+                    value: taxCode.Id
+                }
             }
         };
 
-        // Input tax of the item line if any
-        if (invItem.taxAmount) {
-            qbInvoiceLinesEntry.SalesItemLineDetail.TaxInclusiveAmt = invItem?.taxAmount;
-            qbInvoiceLinesEntry.SalesItemLineDetail.TaxCodeRef = { value: 'TAX' };
+        if (jobLocation) {
+            qbInvoiceEntry.ShipAddr.Line1 = jobLocation.address?.street || null;
+            qbInvoiceEntry.ShipAddr.Line2 = null;
+            qbInvoiceEntry.ShipAddr.City = jobLocation.address?.city || null;
+            qbInvoiceEntry.ShipAddr.CountrySubDivisionCode = jobLocation.address?.state || null;
+            qbInvoiceEntry.ShipAddr.PostalCode = jobLocation.address?.zipcode || null;
+            qbInvoiceEntry.ShipAddr.Long = jobLocation.location?.coordinates[0]?.toString() || null;
+            qbInvoiceEntry.ShipAddr.Lat = jobLocation.location?.coordinates[1]?.toString() || null;
         }
 
-        qbInvoiceLines.push(qbInvoiceLinesEntry);
-    }
-
-    if (invoice.subTotal) {
-        qbInvoiceLines.push({
-            DetailType: LineDetailTypes.SubTotalLineDetail,
-            Amount: invoice.subTotal,
-            SalesItemLineDetail: {}
-        });
-    }
-
-    // QB Invoice Object
-    const qbInvoiceEntry: IQBInvoice = {
-        DocNumber: invoice.invoiceId,
-        TxnDate: invoice.issuedDate?.toString(),
-        DueDate: invoice.dueDate?.toString() || invoice.createdAt?.toString(),
-        Line: qbInvoiceLines,
-        SalesTermRef: {
-            value: paymentTerm?.quickbookId
-        },
-        CustomerRef: {
-            value: jobLocation?.quickbookId || customer.quickbookId
-        },
-        BillEmail: { Address: customer.info?.email },
-        BillAddr: {
-            Line1: customer?.address?.street,
-            Line2: customer?.address?.unit,
-            City: customer?.address?.city,
-            CountrySubDivisionCode: customer?.address?.state,
-            PostalCode: customer?.address?.zipCode,
-            Long: customer?.location?.coordinates[0]?.toString(),
-            Lat: customer?.location?.coordinates[1]?.toString(),
-        },
-        ShipAddr: {
-            Line1: customer?.address?.street,
-            Line2: customer?.address?.unit,
-            City: customer?.address?.city,
-            CountrySubDivisionCode: customer?.address?.state,
-            PostalCode: customer?.address?.zipCode,
-            Long: customer?.location?.coordinates[0]?.toString(),
-            Lat: customer?.location?.coordinates[1]?.toString(),
-        },
-        CustomField: [
-            {
-                DefinitionId: '1',
-                Name: 'Customer PO',
-                Type: 'StringType',
-                StringValue: invoice.customerPO || serviceTicket?.customerPO
-            },
-            {
-                DefinitionId: '2',
-                Name: 'Vendor Number',
-                Type: 'StringType',
-                StringValue: invoice.vendorId || customer.vendorId
-            }
-        ],
-        TxnTaxDetail: {
-            TotalTax: invoice.taxAmount,
-            TxnTaxCodeRef: {
-                value: taxCode.Id
-            }
+        // Fill in Customer Contact associated if any
+        if (invCustContact || customerContact) {
+            qbInvoiceEntry.CustomerMemo = {
+                value: `ORDERED BY:\n${invCustContact?.name || customerContact?.name}`
+            };
         }
-    };
 
-    if (jobLocation) {
-        qbInvoiceEntry.ShipAddr.Line1 = jobLocation.address?.street || null;
-        qbInvoiceEntry.ShipAddr.Line2 = null;
-        qbInvoiceEntry.ShipAddr.City = jobLocation.address?.city || null;
-        qbInvoiceEntry.ShipAddr.CountrySubDivisionCode = jobLocation.address?.state || null;
-        qbInvoiceEntry.ShipAddr.PostalCode = jobLocation.address?.zipcode || null;
-        qbInvoiceEntry.ShipAddr.Long = jobLocation.location?.coordinates[0]?.toString() || null;
-        qbInvoiceEntry.ShipAddr.Lat = jobLocation.location?.coordinates[1]?.toString() || null;
-    }
+        // // Create QB Invoice
+        // qbo.createInvoice(qbInvoiceEntry, async (err: any, qbInvoice: IQBInvoice) => {
+        //     if (err) {
+        //         console.log('== _createQBInvoice > qbo.createInvoice > ERROR ==');
+        //         console.log('== err.Fault:', err.Fault);
+        //         console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+        //         console.log('== err.fault:', err.fault);
+        //         console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+        //         console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+        //         console.log('== invoiceId:', invoice._id);
 
-    // Fill in Customer Contact associated if any
-    if (invCustContact || customerContact) {
-        qbInvoiceEntry.CustomerMemo = {
-            value: `ORDERED BY:\n${invCustContact?.name || customerContact?.name}`
-        }
-    }
+        //         return next(
+        //             Status.Error,
+        //             err.Fault?.Error[0]?.Detail
+        //             || err.Fault?.Error[0]?.Message
+        //             || err.fault?.error[0]?.detail
+        //             || err.fault?.error[0]?.message
+        //             || Messages.GenericError,
+        //             null
+        //         );
+        //     }
 
-    // // Create QB Invoice
-    // qbo.createInvoice(qbInvoiceEntry, async (err: any, qbInvoice: IQBInvoice) => {
-    //     if (err) {
-    //         console.log('== _createQBInvoice > qbo.createInvoice > ERROR ==');
-    //         console.log('== err.Fault:', err.Fault);
-    //         console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
-    //         console.log('== err.fault:', err.fault);
-    //         console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
-    //         console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
-    //         console.log('== invoiceId:', invoice._id);
+        //     return next(null, null, qbInvoice);
+        // });
 
-    //         return next(
-    //             Status.Error,
-    //             err.Fault?.Error[0]?.Detail
-    //             || err.Fault?.Error[0]?.Message
-    //             || err.fault?.error[0]?.detail
-    //             || err.fault?.error[0]?.message
-    //             || Messages.GenericError,
-    //             null
-    //         );
-    //     }
+        // Create QB Invoice
+        return new Promise((resolve, reject) => {
+            qbo.createInvoice(qbInvoiceEntry, (err: any, qbInvoice: IQBInvoice) => {
 
-    //     return next(null, null, qbInvoice);
-    // });
+                if (err) {
+                    console.log('== _createQBInvoice > qbo.createInvoice > ERROR ==');
+                    console.log('== err.Fault:', err.Fault);
+                    console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                    console.log('== err.fault:', err.fault);
+                    console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                    console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                    console.log('== invoiceId:', invoice._id);
 
-    // Create QB Invoice
-    return new Promise((resolve, reject) => {
-        qbo.createInvoice(qbInvoiceEntry, (err: any, qbInvoice: IQBInvoice) => {
-
-            if (err) {
-                console.log('== _createQBInvoice > qbo.createInvoice > ERROR ==');
-                console.log('== err.Fault:', err.Fault);
-                console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
-                console.log('== err.fault:', err.fault);
-                console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
-                console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
-                console.log('== invoiceId:', invoice._id);
-
-                reject(err.Fault?.Error[0]?.Detail
+                    reject(err.Fault?.Error[0]?.Detail
                     || err.Fault?.Error[0]?.Message
                     || err.fault?.error[0]?.detail
                     || err.fault?.error[0]?.message
                     || Messages.GenericError);
-            }
+                }
 
-            const isNullAmount = qbInvoiceLines?.filter(res => res.Description == tempNullDesc);
-            if (isNullAmount.length) {
-                qbInvoice.Line = qbInvoice.Line.map((res) => {
-                    if (res.Description == tempNullDesc) {
-                        res.Description = "";
-                        res.Amount = 0;
-                        res.SalesItemLineDetail.UnitPrice = 0;
-                    }
-                    return res
-                })
+                const isNullAmount = qbInvoiceLines?.filter(res => res.Description == tempNullDesc);
+                if (isNullAmount.length) {
+                    qbInvoice.Line = qbInvoice.Line.map((res) => {
+                        if (res.Description == tempNullDesc) {
+                            res.Description = '';
+                            res.Amount = 0;
+                            res.SalesItemLineDetail.UnitPrice = 0;
+                        }
+                        return res;
+                    });
 
-                qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => {
-                    if (err) {
-                        console.log('== _createQBInvoice > qbo.createInvoice > ERROR ==');
-                        console.log('== err.Fault:', err.Fault);
-                        console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
-                        console.log('== err.fault:', err.fault);
-                        console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
-                        console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
-                        console.log('== invoiceId:', invoice._id);
+                    qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => {
+                        if (err) {
+                            console.log('== _createQBInvoice > qbo.createInvoice > ERROR ==');
+                            console.log('== err.Fault:', err.Fault);
+                            console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
+                            console.log('== err.fault:', err.fault);
+                            console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
+                            console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
+                            console.log('== invoiceId:', invoice._id);
         
-                        reject(err.Fault?.Error[0]?.Detail
+                            reject(err.Fault?.Error[0]?.Detail
                             || err.Fault?.Error[0]?.Message
                             || err.fault?.error[0]?.detail
                             || err.fault?.error[0]?.message
                             || Messages.GenericError);
-                    }
-                });
-            }
+                        }
+                    });
+                }
 
-            resolve(qbInvoice);
-        })
+                resolve(qbInvoice);
+            });
 
-    }).then((qbInvoice: IQBInvoice) => {
+        }).then((qbInvoice: IQBInvoice) => {
         // QBooks Invoice sync successfully
-        return next(null, null, qbInvoice);
-    }).catch((errMsg) => {
-        Sentry.captureException(errMsg);
-        // QBooks Invoice sync failed
-        return next(Status.Error, errMsg, null);
-    })
-});
+            return next(null, null, qbInvoice);
+        }).catch((errMsg) => {
+            Sentry.captureException(errMsg);
+            // QBooks Invoice sync failed
+            return next(Status.Error, errMsg, null);
+        });
+    });
 
-}
+};
 
 /**
  * Generic function to update QuickBooks Invoice,
@@ -309,14 +309,14 @@ export const _updateQBInvoice = async (req: Request, res: Response, company: ICo
         const taxCode = await _createTaxService(company);
 
         // Iterate all items in the invoice and construct is to QB Inv Lines
-        const tempNullDesc = "Temporary value is $0.1 - actual value is $0 (please update it manually to $0)";
+        const tempNullDesc = 'Temporary value is $0.1 - actual value is $0 (please update it manually to $0)';
         for (const invItem of invoice.items) {
             const item = <IItem>invItem.item;
 
             const qbInvoiceLinesEntry: any = {
                 DetailType: LineDetailTypes.SalesItemLineDetail,
                 Amount: invItem.subTotal == 0 ? 0.1 : invItem.subTotal,
-                Description: invItem.subTotal == 0 ? tempNullDesc : "", 
+                Description: invItem.subTotal == 0 ? tempNullDesc : '', 
                 SalesItemLineDetail: {
                     ItemRef: {
                         value: item.quickbookId
@@ -347,15 +347,15 @@ export const _updateQBInvoice = async (req: Request, res: Response, company: ICo
         qbo.getInvoice(invoice.quickbookId, async (err: any, qbInvoice: IQBInvoice) => {
 
             // Set the new value from the updated invoice object
-            qbInvoice.TxnDate = moment(invoice.issuedDate).format("YYYY-MM-DD");
-            qbInvoice.DueDate = moment(invoice.dueDate).format("YYYY-MM-DD");
+            qbInvoice.TxnDate = moment(invoice.issuedDate).format('YYYY-MM-DD');
+            qbInvoice.DueDate = moment(invoice.dueDate).format('YYYY-MM-DD');
             qbInvoice.Line = qbInvoiceLines;
             qbInvoice.TxnTaxDetail = {
                 TotalTax: invoice?.taxAmount,
                 TxnTaxCodeRef: {
                     value: taxCode.Id
                 }
-            }
+            };
 
             if (qbInvoice.SalesTermRef) {
                 qbInvoice.SalesTermRef.value = paymentTerm?.quickbookId;
@@ -396,12 +396,12 @@ export const _updateQBInvoice = async (req: Request, res: Response, company: ICo
                 if (isNullAmount.length) {
                     qbInvoice.Line = qbInvoice.Line.map((res) => {
                         if (res.Description == tempNullDesc) {
-                            res.Description = "";
+                            res.Description = '';
                             res.Amount = 0;
                             res.SalesItemLineDetail.UnitPrice = 0;
                         }
-                        return res
-                    })
+                        return res;
+                    });
 
                     qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => {
                         if (err) {
@@ -431,7 +431,7 @@ export const _updateQBInvoice = async (req: Request, res: Response, company: ICo
         });
     });
 
-}
+};
 
 /**
  * Generic function to tranfers ownership of QuickBooks Invoices,
@@ -500,11 +500,11 @@ export const _transferQBInvoices = async (req: Request, res: Response, company: 
                     }
                 }
 
-                return next(null, null)
-            })
+                return next(null, null);
+            });
         });
-    })
-}
+    });
+};
 
 /**
  * Generic function to delete QuickBooks Invoice,
@@ -548,7 +548,7 @@ export const _deleteQBInvoice = async (req: Request, res: Response, company: ICo
         });
     });
 
-}
+};
 
 /**
 * To manually create single BClerk Invoice to QBooks
@@ -581,9 +581,9 @@ export const createQBInvoice = async (req: Request, res: Response) => {
         await invoice.save();
 
         return res.json({ status: Status.Success, message: 'QuickBooks Invoice successfully created', invoice, quickbookInvoice: qbInvoice });
-    })
+    });
 
-}
+};
 
 /**
  * To manually create multiple BClerk Invoices to QBooks
@@ -594,7 +594,7 @@ export const createQBInvoices = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
     const invoiceSynced: any[] = [];
     const invoiceUnsynced: any[] = [];
-    let paramInvoiceIds: any = []
+    let paramInvoiceIds: any = [];
 
     try {
         paramInvoiceIds = params.invoiceIds;
@@ -629,7 +629,7 @@ export const createQBInvoices = async (req: Request, res: Response) => {
 
                 invoiceSynced.push(invoice);
             }
-        })
+        });
 
         // Wait for one second for each transaction
         await waitTimer(1000);
@@ -643,7 +643,7 @@ export const createQBInvoices = async (req: Request, res: Response) => {
         invoiceUnsynced
     });
 
-}
+};
 
 /**
 * To syncing payments from BC to QB only
@@ -685,7 +685,7 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
                         || err.fault?.error[0]?.detail
                         || err.fault?.error[0]?.message
                         || Messages.GenericError
-                })
+                });
             }
 
             const qbInvoices: IQBInvoice[] = data?.QueryResponse?.Invoice;
@@ -701,7 +701,7 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
                             // QB Invoice created, updated DB Invoice quickbookId
                             Invoice.findByIdAndUpdate(invoice, { quickbookId: qbInvoice.Id }).exec();
                         }
-                    })
+                    });
                 } else {
                     if (invoice.quickbookId !== existQBInvoice.Id) {
                         // QB Invoice exist, update DB Invoice quickbookId directly
@@ -718,9 +718,9 @@ export const syncQBInvoices = async (req: Request, res: Response) => {
 
             return res.json({ status: Status.Success, message: 'Invoices synced successfully.', updatedInvoices });
         });
-    })
+    });
 
-}
+};
 
 /**
 * Kris' remark (July 21st, 2021):
@@ -883,7 +883,7 @@ export const _getQBInvoices = async (req: Request, res: Response, company: IComp
             resolve(<IQBInvoice[]>data?.QueryResponse?.Invoice);
         });
     });
-}
+};
 
 /**
  * Generic function to tranfers ownership of QuickBooks Invoices,
@@ -950,23 +950,23 @@ export const _transferQBInvoiceItem = async (
                                                     || err.fault?.error[0]?.detail
                                                     || err.fault?.error[0]?.message
                                                     || Messages.GenericError
-                                                )
+                                                );
                                             }
                                         });
 
                                         // return next(null, null);
                                     }
-                                })
+                                });
                             }
                         });
                     }
                 }
 
                 return next(null, null);
-            })
+            });
         });
-    })
-}
+    });
+};
 
 export const _countQBInvoices = async (company: ICompany, customer: ICustomer): Promise<boolean> => {
     return new Promise((resolve, reject) => {
@@ -991,7 +991,7 @@ export const _countQBInvoices = async (company: ICompany, customer: ICustomer): 
             resolve(<boolean>qbInvoice ? true : false);
         });
     });
-}
+};
 
 export const _createTaxService = async (company: ICompany): Promise<any> => {
     return new Promise((resolve, reject) => {
@@ -1014,7 +1014,7 @@ export const _createTaxService = async (company: ICompany): Promise<any> => {
                             TaxRateName: 'Alaska',
                             TaxAgencyId: taxAgency.Id
                         }],
-                    }
+                    };
 
                     // create a new tax service when tax code is not found
                     qbo.createTaxService(taxServiceEntry, async (err: any, taxService: any) => {
@@ -1026,7 +1026,7 @@ export const _createTaxService = async (company: ICompany): Promise<any> => {
                             console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
                             console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
 
-                            reject(err)
+                            reject(err);
                         }
 
                         resolve(taxService);
@@ -1039,7 +1039,7 @@ export const _createTaxService = async (company: ICompany): Promise<any> => {
             });
         });
     });
-}
+};
 
 export const _createTaxAgency = async (company: ICompany, taxAgencies: any[]): Promise<any> => {
     return new Promise((resolve, reject) => {
@@ -1057,9 +1057,9 @@ export const _createTaxAgency = async (company: ICompany, taxAgencies: any[]): P
                     console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
                     console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
 
-                    reject(err)
+                    reject(err);
                 }
-                console.log("err",err);
+                console.log('err',err);
 
                 resolve(qbTaxAgency);
             });
@@ -1067,8 +1067,8 @@ export const _createTaxAgency = async (company: ICompany, taxAgencies: any[]): P
         } else {
             resolve(taxAgency);
         }
-    })
-}
+    });
+};
 
 export const _voidQBInvoice = async (req: Request, res: Response, company: ICompany, invoice: IInvoice) => {
 
@@ -1122,7 +1122,7 @@ export const _voidQBInvoice = async (req: Request, res: Response, company: IComp
         });
     });
 
-}
+};
 
 export const updateBCInvoice = async (req: Request, res: Response, company: ICompany, qbInvoiceId: string) => {
     _refreshToken(req, res, company, async (err, errMsg, company) => {
@@ -1184,7 +1184,7 @@ export const updateBCInvoice = async (req: Request, res: Response, company: ICom
                                     quantity: qbInvoiceLine?.SalesItemLineDetail?.Qty,
                                     item: item._id,
                                     subTotal: qbInvoiceLine?.SalesItemLineDetail?.Qty * qbInvoiceLine?.SalesItemLineDetail?.UnitPrice,
-                                }
+                                };
 
                                 const subTotalLine = itemEntry.price * itemEntry.quantity;
                                 subTotal += subTotalLine;
@@ -1215,7 +1215,7 @@ export const updateBCInvoice = async (req: Request, res: Response, company: ICom
             return;
         });
     });
-}
+};
 
 export const voidBCInvoice = async (req: Request, res: Response, company: ICompany, qbInvoiceId: string) => {
     _refreshToken(req, res, company, async (err, errMsg, company) => {
@@ -1257,9 +1257,9 @@ export const voidBCInvoice = async (req: Request, res: Response, company: ICompa
             }
 
             return;
-        })
-    })
-}
+        });
+    });
+};
 
 export const deleteBCInvoice = async (req: Request, res: Response, company: ICompany, qbInvoiceId: string) => {
     const invoice = await Invoice.findOne({ company: company._id, quickbookId: qbInvoiceId });
@@ -1289,12 +1289,12 @@ export const deleteBCInvoice = async (req: Request, res: Response, company: ICom
     }
 
     return;
-}
+};
 
 export const getQBInvoice = async (req: Request, res: Response) => {
     return new Promise((resolve, reject) => {
         const params = req.query;
-        const company = <ICompany>req.company
+        const company = <ICompany>req.company;
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
         qbo.getInvoice(params.quickbookId, async (err: any, qbInvoice: IQBInvoice) => {
@@ -1305,32 +1305,32 @@ export const getQBInvoice = async (req: Request, res: Response) => {
                 console.log('== err.fault:', err.fault);
                 console.log('== err.fault?.error[0]?.detail:', err.fault?.error[0]?.detail);
                 console.log('== err.fault?.error[0]?.message:', err.fault?.error[0]?.message);
-                reject(err)
+                reject(err);
             } else {
-                resolve(qbInvoice)
+                resolve(qbInvoice);
             }
         });
     })
         .then((response: any) => {
-            return res.json({ 'status': Status.Success, 'message': response })
+            return res.json({ 'status': Status.Success, 'message': response });
         })
         .catch((error: any) => {
             Sentry.captureException(error);
             return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
-        })
-}
+        });
+};
 
 export const findQBInvoice = async (req: Request, res: Response) => {
     return new Promise((resolve, reject) => {
         const params = req.query;
-        const company = <ICompany>req.company
+        const company = <ICompany>req.company;
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
         qbo.findInvoices([
             { field: 'DocNumber', value: params.docNumber },
         ], async (err: any, data: any) => {
             if (err) {
-                reject(err)
+                reject(err);
             } else {
                 resolve(data?.QueryResponse?.Invoice);
             }
@@ -1342,13 +1342,13 @@ export const findQBInvoice = async (req: Request, res: Response) => {
         .catch((error: any) => {
             Sentry.captureException(error);
             return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
-        })
-}
+        });
+};
 
 export const updateQBInvoice = async (req: Request, res: Response) => {
     return new Promise((resolve, reject) => {
         const params = req.body;
-        const company = <ICompany>req.company
+        const company = <ICompany>req.company;
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
         qbo.getInvoice(params.quickbookId, async (err: any, qbInvoice: IQBInvoice) => {
@@ -1358,8 +1358,8 @@ export const updateQBInvoice = async (req: Request, res: Response) => {
 
             qbo.updateInvoice(qbInvoice, async (err: any, qbInvoice: IQBInvoice) => {
                 resolve(qbInvoice);
-            })
-        })
+            });
+        });
     })
         .then((data: any) => {
             return res.json({ status: Status.Success, data: data ?? null });
@@ -1367,5 +1367,5 @@ export const updateQBInvoice = async (req: Request, res: Response) => {
         .catch((error: any) => {
             Sentry.captureException(error);
             return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
-        })
-}
+        });
+};

@@ -1,9 +1,9 @@
-import mongoose, {Document, Mongoose, Schema} from 'mongoose'
-import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken'
-import { Role, AccountTypes } from '../common/constants'
-import bcrypt from "bcrypt-nodejs"
-import moment from 'moment'
+import mongoose, {Document, Schema} from 'mongoose';
+import { Request } from 'express';
+import jwt from 'jsonwebtoken';
+import { Role, AccountTypes } from '../common/constants';
+import bcrypt from 'bcrypt-nodejs';
+import moment from 'moment';
 import * as Sentry from '@sentry/node';
 
 export interface IUser extends Document {
@@ -43,9 +43,9 @@ export interface IUser extends Document {
         extra: [string]
     },
     emailPreferences: {
-        preferences: Number,
+        preferences: number,
         time: Date,
-        timeZone: String
+        timeZone: string
     },
     balance: number,
     credit: number,
@@ -86,41 +86,41 @@ const UserSchema = new Schema({
         lastName: String,
         displayName: {
             type: String,
-            index: "text"
+            index: 'text'
         },
         imageUrl: String,
     },
     address: {
         street: {
             type: String,
-            index: "text"
+            index: 'text'
         },
         unit: {
             type: String,
-            index: "text"
+            index: 'text'
         },
         city: {
             type: String,
-            index: "text"
+            index: 'text'
         },
         state: {
             type: String,
-            index: "text"
+            index: 'text'
         },
         zipCode: {
             type: String,
-            index: "text"
+            index: 'text'
         },
     },
     location: {
         type: {
-          type: String,
-          enum: ['Point'],
-          required: false
+            type: String,
+            enum: ['Point'],
+            required: false
         },
         coordinates: {
-          type: [Number],
-          required: false
+            type: [Number],
+            required: false
         }
     },
     contact: {
@@ -171,37 +171,37 @@ const UserSchema = new Schema({
         createdAt: Date,
         updatedAt: Date
     }],
-}, { timestamps: { createdAt: true, updatedAt: true } })
+}, { timestamps: { createdAt: true, updatedAt: true } });
 
 UserSchema.pre('save', async function(next) {
 
-    const user = this as IUser
+    const user = this as IUser;
 
     if(!user.isModified('auth.password')) {
-        return next()
+        return next();
     }
 
     user.hashPassword(user.auth.password, (err?: any, hash?: string)=>{
 
-        if (err || !hash) return next(err)
+        if (err || !hash) return next(err);
 
-        user.auth.password = hash
-        next()
+        user.auth.password = hash;
+        next();
 
-    })
+    });
 
-})
+});
 
 UserSchema.methods.hashPassword = function(password: string, next: (err?: any, hash?: string)=>void) {
 
-    const saltRounds = 12
+    const saltRounds = 12;
 
     try {
         bcrypt.genSalt(
             saltRounds,
             (err, salt) => {
 
-                if (err) return next(err)
+                if (err) return next(err);
 
                 bcrypt.hash(
                     password,
@@ -209,41 +209,41 @@ UserSchema.methods.hashPassword = function(password: string, next: (err?: any, h
                     undefined,
                     (err: mongoose.Error, hash) => {
 
-                        if (err) return next(err)
+                        if (err) return next(err);
 
-                        next(null, hash)
+                        next(null, hash);
 
                     }
-                )
+                );
             }
-        )
+        );
     } catch (err) {
         Sentry.captureException(err);
-        return next(err)
+        return next(err);
     }
 
-}
+};
 
 UserSchema.methods.comparePassword = function(password: string, next: (isMatch: boolean)=>void) {
 
-    const user = this as IUser
+    const user = this as IUser;
 
     bcrypt.compare(
         password,
         user.auth.password,
         (err: mongoose.Error, isMatch: boolean) => {
-            next(isMatch)
+            next(isMatch);
         }
-    )
+    );
 
-}
+};
 
 UserSchema.methods.jwt = function(req: Request) {
 
-    const user = this as IUser
+    const user = this as IUser;
     const token = jwt.sign(
         {
-            iss: "http://api.blueclerk.com",
+            iss: 'http://api.blueclerk.com',
             id: user._id,
             sessionID: req.sessionID
         },
@@ -251,11 +251,11 @@ UserSchema.methods.jwt = function(req: Request) {
         {
             expiresIn: parseInt(process.env.jwt_expiration)
         }
-    )
+    );
 
-    return `Bearer ${token}`
+    return `Bearer ${token}`;
 
-}
+};
 
 //Indexes
 UserSchema.index({ contacts: 1 });
@@ -263,4 +263,4 @@ UserSchema.index({ 'profile.displayName': 1 });
 UserSchema.index({ 'auth.email': 1 });
 UserSchema.index({ 'auth.socialId': 1, 'auth.connectorType': 1 });
 
-export const User = mongoose.model<IUser>('User', UserSchema)
+export const User = mongoose.model<IUser>('User', UserSchema);
