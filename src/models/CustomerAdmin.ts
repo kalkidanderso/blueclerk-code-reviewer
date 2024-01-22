@@ -1,5 +1,5 @@
-import mongoose, { Schema } from 'mongoose'
-import { User, IUser } from './User'
+import mongoose, { Schema } from 'mongoose';
+import { User, IUser } from './User';
 
 export interface ICustomerAdmin extends IUser {
 
@@ -21,6 +21,6 @@ const CustomerAdminSchema = new Schema({
     info: {
         email: String
     },
-})
+});
 
-export const CustomerAdmin = User.discriminator<ICustomerAdmin>('CustomerAdmin', CustomerAdminSchema)
+export const CustomerAdmin = User.discriminator<ICustomerAdmin>('CustomerAdmin', CustomerAdminSchema);

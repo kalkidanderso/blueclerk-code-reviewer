@@ -1,5 +1,5 @@
-import mongoose, { Document, Schema } from 'mongoose'
-import { IUser } from '../models/User'
+import mongoose, { Document, Schema } from 'mongoose';
+import { IUser } from '../models/User';
 
 export interface IContact extends Document {
     name: string,

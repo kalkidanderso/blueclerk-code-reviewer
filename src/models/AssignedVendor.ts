@@ -14,7 +14,7 @@ export const AssignedVendorSchema = new Schema({
         required: true
     },
     workTypes: [{ type: Schema.Types.ObjectId, ref: 'WorkType' }]
-})
+});
 
 AssignedVendorSchema.index({ vendor: 1 });
 

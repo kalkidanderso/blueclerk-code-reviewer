@@ -20,8 +20,8 @@ export interface ICompanyLocation extends Document {
         state?: string
         zipCode?: string
         coordinates?: {
-            lng: Number,
-            lat: Number
+            lng: number,
+            lat: number
         }
     }
     isAddressAsBillingAddress: boolean
@@ -94,7 +94,7 @@ const CompanyLocationSchema = new Schema({
     assignedVendors: [AssignedVendorSchema],
     assignedEmployees: [AssignedEmployeeSchema],
     poRequestEmailSender: String
-})
+});
 
 //Indexes
 CompanyLocationSchema.index({ company: 1 });

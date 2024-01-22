@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ICompanyPrefix extends Document {
 
@@ -16,6 +16,6 @@ const CompanyPrefixSchema = new Schema({
         ref: 'Company',
         required: true
     }
-})
+});
 
-export const CompanyPrefix = mongoose.model<ICompanyPrefix>('CompanyPrefix', CompanyPrefixSchema)
+export const CompanyPrefix = mongoose.model<ICompanyPrefix>('CompanyPrefix', CompanyPrefixSchema);

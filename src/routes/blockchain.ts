@@ -11,21 +11,21 @@ router.post(
     '/login',
     validate(Validations.login),
     blockchainController.login
-)
+);
 
 router.get(
     '/getAllAssets',
     blockchainController.getAllAssets
-)
+);
 
 router.get(
     '/getAllCompanies',
     blockchainController.getAllCompanies
-)
+);
 
 router.post(
     '/approveCompany',
     blockchainController.approveCompany
-)
+);
 
 export default router;

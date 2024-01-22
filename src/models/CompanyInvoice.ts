@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 import { ICompany } from '../models/Company';
 
 export interface ICompanyInvoice extends Document {
@@ -8,7 +8,7 @@ export interface ICompanyInvoice extends Document {
     admins: number;
     contractors: number;
     company: Schema.Types.ObjectId | ICompany;
-    note : String;
+    note : string;
     charges: number;
     tax: number;
     total: number;
@@ -98,4 +98,4 @@ const CompanyInvoiceSchema = new Schema({
 CompanyInvoiceSchema.index({ company: 1 });
 CompanyInvoiceSchema.index({ isDraft: 1 });
 
-export const CompanyInvoice = mongoose.model<ICompanyInvoice>('CompanyInvoice', CompanyInvoiceSchema)
+export const CompanyInvoice = mongoose.model<ICompanyInvoice>('CompanyInvoice', CompanyInvoiceSchema);

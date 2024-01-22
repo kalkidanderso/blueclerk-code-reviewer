@@ -1,4 +1,4 @@
-import mongoose, {Document, Schema} from 'mongoose'
+import mongoose, {Document, Schema} from 'mongoose';
 import {InvoiceStatus} from '../common/constants';
 import {ICustomer, IQBAddress} from '../models/Customer';
 import {IContact} from '../common/contact';
@@ -406,20 +406,20 @@ InvoiceSchema.index({vendorId: 1});
 InvoiceSchema.index({jobLocation: 1});
 InvoiceSchema.index({jobSite: 1});
 InvoiceSchema.index({company: 1});
-InvoiceSchema.index({customerContactId: 1})
+InvoiceSchema.index({customerContactId: 1});
 InvoiceSchema.index({customer: 1, isDraft: 1});
 InvoiceSchema.index({job: 1, isDraft: 1});
-InvoiceSchema.index({issuedDate: 1, isDraft: 1})
+InvoiceSchema.index({issuedDate: 1, isDraft: 1});
 InvoiceSchema.index({job: 1, company: 1, isVoid: 1});
-InvoiceSchema.index({customer: 1, company: 1, isVoid: 1})
-InvoiceSchema.index({company: 1, job: 1, isDraft: 1, issuedDate: 1})
-InvoiceSchema.index({company: 1, 'technicians.contractor': 1, isDraft: 1})
-InvoiceSchema.index({company: 1, 'technicians.technician': 1, isDraft: 1})
-InvoiceSchema.index({company: 1, quickbookId: 1, isDraft: 1, isVoid: 1})
-InvoiceSchema.index({company: 1, createdAt: -1, _id: -1, isDraft: 1, isVoid: 1})
-InvoiceSchema.index({company: 1, job: 1, issuedDate: 1, note: 1, vendorId: 1, invoiceId: 1})
-InvoiceSchema.index({company: 1, job: 1, isDraft: 1, issuedDate: 1})
-InvoiceSchema.index({company: 1,createdAt: -1,isDraft: 1,isVoid: 1,invoiceId: 1,status: 1,customerPO: 1,vendorId: 1})
+InvoiceSchema.index({customer: 1, company: 1, isVoid: 1});
+InvoiceSchema.index({company: 1, job: 1, isDraft: 1, issuedDate: 1});
+InvoiceSchema.index({company: 1, 'technicians.contractor': 1, isDraft: 1});
+InvoiceSchema.index({company: 1, 'technicians.technician': 1, isDraft: 1});
+InvoiceSchema.index({company: 1, quickbookId: 1, isDraft: 1, isVoid: 1});
+InvoiceSchema.index({company: 1, createdAt: -1, _id: -1, isDraft: 1, isVoid: 1});
+InvoiceSchema.index({company: 1, job: 1, issuedDate: 1, note: 1, vendorId: 1, invoiceId: 1});
+InvoiceSchema.index({company: 1, job: 1, isDraft: 1, issuedDate: 1});
+InvoiceSchema.index({company: 1,createdAt: -1,isDraft: 1,isVoid: 1,invoiceId: 1,status: 1,customerPO: 1,vendorId: 1});
 
 
-export const Invoice = mongoose.model<IInvoice>('Invoice', InvoiceSchema)
+export const Invoice = mongoose.model<IInvoice>('Invoice', InvoiceSchema);

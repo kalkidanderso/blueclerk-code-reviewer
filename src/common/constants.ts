@@ -14,7 +14,7 @@ export const Status = {
     QBUnauthorized: 4,
     InvalidEquipment: 5,
     TimeOut: 503
-}
+};
 
 export const enum TagType {
     CustomerEquipmentTag,
@@ -39,15 +39,15 @@ export const Messages = {
     InternalServerError: 'There was an internal server error. Please try again later.',
     Required: 'is required',
     WrongId: 'Id passed must be a single String of 12 bytes or a string of 24 hex characters',
-    NotificationNotFound: "Notification not found",
-    JobCannotBeStarted: `You can't start this job, it is already`,
-    TaskCannotBeStarted: `You can't start this task/job type, it is already`,
-    TaskCannotBeUpdated: `You can't update this task/job type, it is already`,
+    NotificationNotFound: 'Notification not found',
+    JobCannotBeStarted: 'You can\'t start this job, it is already',
+    TaskCannotBeStarted: 'You can\'t start this task/job type, it is already',
+    TaskCannotBeUpdated: 'You can\'t update this task/job type, it is already',
     TaskNotFound: 'Task/job type not found in this Job.',
     InvalidAMPM: 'ScheduleTimeAMPM has to be 0 (none), 1 (AM), 2 (PM) or 3 (Both AM and PM)',
     EmptyString: 'Must not be empty',
     ReportNotFound: 'Job report not found'
-}
+};
 
 export const enum Role {
     OFFICE_ADMIN,
@@ -362,7 +362,7 @@ export const ContractorPermissions = {
         Permissions.Get_Ticket_Detail,
         Permissions.Get_Customer_Detail
     ]
-}
+};
 export const UserPermissions = {
     0: {
         on: [
@@ -848,10 +848,10 @@ export const UserPermissions = {
         ],
         off: [Permissions.None],
     }
-}
+};
 
 export const payrollPaymentTypes = {
     PayrollPayments : 'Payroll Payments',
     AdvancePayments : 'Advance Payments',
     All : 'All',
-}
+};

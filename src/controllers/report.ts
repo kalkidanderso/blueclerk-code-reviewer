@@ -34,14 +34,14 @@ export const generateIncomeReport = async (req: Request, res: Response) => {
 
     // Generate the income report based on which that requests by user
     switch (params.reportData) {
-        case ReportData.CUSTOM:
-            incomeReport = await _customIncomeReport(companyId, params);
-            break;
+    case ReportData.CUSTOM:
+        incomeReport = await _customIncomeReport(companyId, params);
+        break;
 
-        case ReportData.STANDARD:
-        default:
-            incomeReport = await _standardIncomeReport(companyId, params);
-            break;
+    case ReportData.STANDARD:
+    default:
+        incomeReport = await _standardIncomeReport(companyId, params);
+        break;
     }
 
     return res.json({
@@ -55,7 +55,7 @@ export const generateIncomeReport = async (req: Request, res: Response) => {
         }
     });
 
-}
+};
 
 /**
  * Generate Report with reportType 2 (ACCOUNT_RECEIVABLE)
@@ -68,14 +68,14 @@ export const generateAccountReceivableReport = async (req: Request, res: Respons
 
     // Generate the income report based on which that requests by user
     switch (params.reportData) {
-        case ReportData.CUSTOM:
-            accountReceivableReport = await _customAccountReceivableReport(companyId, params);
-            break;
+    case ReportData.CUSTOM:
+        accountReceivableReport = await _customAccountReceivableReport(companyId, params);
+        break;
 
-        case ReportData.STANDARD:
-        default:
-            accountReceivableReport = await _standardAccountReceivableReport(companyId, params);
-            break;
+    case ReportData.STANDARD:
+    default:
+        accountReceivableReport = await _standardAccountReceivableReport(companyId, params);
+        break;
     }
 
     return res.json({
@@ -89,7 +89,7 @@ export const generateAccountReceivableReport = async (req: Request, res: Respons
         }
     });
 
-}
+};
 
 /**
  * Generate Report with reportType 2 (ACCOUNT_RECEIVABLE),
@@ -115,7 +115,7 @@ export const generateAccountReceivableDetail = async (req: Request, res: Respons
         filter: { ...params }
     });
 
-}
+};
 
 /**
  * Generate Report with reportType 2 (ACCOUNT_RECEIVABLE),
@@ -141,7 +141,7 @@ export const generateAccountReceivableInvoices = async (req: Request, res: Respo
         filter: { ...params }
     });
 
-}
+};
 
 /**
  * Retrieve all Memorized Reports by the Company
@@ -154,7 +154,7 @@ export const getMemorizedReports = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, memorizedReports });
 
-}
+};
 
 /**
  * Retrieve one detail Memorized Report by the ID
@@ -172,7 +172,7 @@ export const getMemorizedReport = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, memorizedReport });
 
-}
+};
 
 /**
  * Memorized a new Custom Report
@@ -205,16 +205,16 @@ export const createMemorizedReport = async (req: Request, res: Response) => {
 
     // Memorized the report by the Report Type
     switch (params.reportType) {
-        case ReportTypes.INCOME:
-        default:
-            // INCOME REPORT TYPE
-            memorizedReport = await new IncomeReport({
-                company: companyId,
-                reportType: ReportTypes.INCOME,
-                name: reportName,
-                ...params
-            }).save();
-            break;
+    case ReportTypes.INCOME:
+    default:
+        // INCOME REPORT TYPE
+        memorizedReport = await new IncomeReport({
+            company: companyId,
+            reportType: ReportTypes.INCOME,
+            name: reportName,
+            ...params
+        }).save();
+        break;
     }
 
     return res.json({
@@ -224,7 +224,7 @@ export const createMemorizedReport = async (req: Request, res: Response) => {
         memorizedReport
     });
 
-}
+};
 
 /**
  * Update one Memorized Report by the ID
@@ -235,7 +235,7 @@ export const updateMemorizedReport = async (req: Request, res: Response) => {
     const companyId = req.companyId;
 
     // Find and check the memorized report
-    let memorizedReport: IAllReport = await MemorizedReport.findOne({ company: companyId, _id: params.memorizedReportId });
+    const memorizedReport: IAllReport = await MemorizedReport.findOne({ company: companyId, _id: params.memorizedReportId });
     if (!memorizedReport) {
         return res.json({ status: Status.Error, message: 'Memorized report not found' });
     }
@@ -261,21 +261,21 @@ export const updateMemorizedReport = async (req: Request, res: Response) => {
 
     // Memorized the report by the Report Type
     switch (memorizedReport.reportType) {
-        case ReportTypes.INCOME:
-        default:
-            // INCOME REPORT TYPE
-            const memorizedIncomeReport = <IIncomeReport>memorizedReport;
+    case ReportTypes.INCOME:
+    default:
+        // INCOME REPORT TYPE
+        const memorizedIncomeReport = <IIncomeReport>memorizedReport;
 
-            memorizedIncomeReport.name = reportName;
-            memorizedIncomeReport.reportData = params.reportData;
-            memorizedIncomeReport.reportSource = params.reportSource;
-            memorizedIncomeReport.customerIds = params.customerIds;
-            memorizedIncomeReport.periodOption = params.periodOption;
-            memorizedIncomeReport.startDate = params.startDate;
-            memorizedIncomeReport.endDate = params.endDate;
-            await memorizedIncomeReport.save();
+        memorizedIncomeReport.name = reportName;
+        memorizedIncomeReport.reportData = params.reportData;
+        memorizedIncomeReport.reportSource = params.reportSource;
+        memorizedIncomeReport.customerIds = params.customerIds;
+        memorizedIncomeReport.periodOption = params.periodOption;
+        memorizedIncomeReport.startDate = params.startDate;
+        memorizedIncomeReport.endDate = params.endDate;
+        await memorizedIncomeReport.save();
 
-            break;
+        break;
     }
 
     return res.json({
@@ -285,7 +285,7 @@ export const updateMemorizedReport = async (req: Request, res: Response) => {
         memorizedReport
     });
 
-}
+};
 
 export const deleteMemorizedReport = async (req: Request, res: Response) => {
 
@@ -304,9 +304,9 @@ export const deleteMemorizedReport = async (req: Request, res: Response) => {
         status: Status.Success,
         message: 'Memorized report deleted successfully.',
         deletedMemorizedReport
-    })
+    });
 
-}
+};
 
 export const generateIncomeReportPdf = async (req: Request, res: Response) => {
     const params = req.query;
@@ -318,7 +318,7 @@ export const generateIncomeReportPdf = async (req: Request, res: Response) => {
         params
     });
 
-    const reportUrl = await uploadFileInS3(generatedIncomeReport.fullPath, 'pdf')
+    const reportUrl = await uploadFileInS3(generatedIncomeReport.fullPath, 'pdf');
 
     return res.json({
         status: Status.Success,
@@ -331,7 +331,7 @@ export const generateIncomeReportPdf = async (req: Request, res: Response) => {
             customerIds: params.customerIds && JSON.parse(params.customerIds)
         },
     });
-}
+};
 
 /**
  * General Generate Report PDF Endpoint,
@@ -350,24 +350,24 @@ export const generateReportPdf = async (req: Request, res: Response) => {
 
     // Generate and retrieve the report data PDF by the report type
     switch (reportType.toUpperCase()) {
-        case ReportTypesString.ACCOUNT_RECEIVABLE.toUpperCase():
-            generatedReport = await _generateAccountReceivableReportPdf({
-                user: <IUser>req.user,
-                company,
-                params
-            });
-            report = generatedReport.accountReceivableReport;
-            break;
+    case ReportTypesString.ACCOUNT_RECEIVABLE.toUpperCase():
+        generatedReport = await _generateAccountReceivableReportPdf({
+            user: <IUser>req.user,
+            company,
+            params
+        });
+        report = generatedReport.accountReceivableReport;
+        break;
 
-        case ReportTypesString.INCOME.toUpperCase():
-        default:
-            generatedReport = await _generateIncomeReportPdf({
-                user: <IUser>req.user,
-                company,
-                params
-            });
-            report = generatedReport.incomeReport;
-            break;
+    case ReportTypesString.INCOME.toUpperCase():
+    default:
+        generatedReport = await _generateIncomeReportPdf({
+            user: <IUser>req.user,
+            company,
+            params
+        });
+        report = generatedReport.incomeReport;
+        break;
     }
 
     // Upload the PDF to the AWS
@@ -385,7 +385,7 @@ export const generateReportPdf = async (req: Request, res: Response) => {
         }
     });
 
-}
+};
 
 // TODO: To be deprecated
 /**
@@ -408,7 +408,7 @@ export const getIncomeReportEmailTemplate = async (req: Request, res: Response) 
      * Transfrom the email default placeholder symbol to fit Javascript Template Literal,
      * '{{' become '${' & '}}' become '}'
      */
-    const dateRange = !(params.startDate && params.endDate) ? 'All Time' : `${moment(params.startDate).format('MMM. DD, YYYY')} - ${moment(params.endDate).format('MMM. DD, YYYY')}`
+    const dateRange = !(params.startDate && params.endDate) ? 'All Time' : `${moment(params.startDate).format('MMM. DD, YYYY')} - ${moment(params.endDate).format('MMM. DD, YYYY')}`;
     await transformPlaceholders(emailDefault);
     // Get available placeholder values for Invoice email template
     const { company_name, company_email, date_range } = await getPlaceholderValues({ company, dateRange });
@@ -421,7 +421,7 @@ export const getIncomeReportEmailTemplate = async (req: Request, res: Response) 
             message: eval('`' + emailDefault.message + '`')
         },
     });
-}
+};
 
 // TODO: To be deprecated
 /**
@@ -496,7 +496,7 @@ export const sendIncomeReportEmail = async (req: Request, res: Response) => {
 
     // Update email history and last email sent info
     return res.json({ status: Status.Success, message: 'Report has been sent successfully.' });
-}
+};
 
 export const getReportEmailTemplate = async (req: Request, res: Response) => {
 
@@ -506,15 +506,15 @@ export const getReportEmailTemplate = async (req: Request, res: Response) => {
     let emailType, dateRange = 'All Time';
 
     switch (reportType.toUpperCase()) {
-        case ReportTypesString.ACCOUNT_RECEIVABLE.toUpperCase():
-            emailType = EmailTypes.ACCOUNT_RECEIVABLE_REPORT;
-            break;
+    case ReportTypesString.ACCOUNT_RECEIVABLE.toUpperCase():
+        emailType = EmailTypes.ACCOUNT_RECEIVABLE_REPORT;
+        break;
 
-        case ReportTypesString.INCOME.toUpperCase():
-        default:
-            emailType = EmailTypes.INCOME_REPORT;
-            dateRange = !(params.startDate && params.endDate) ? 'All Time' : `${moment(params.startDate).format('MMM. DD, YYYY')} - ${moment(params.endDate).format('MMM. DD, YYYY')}`
-            break;
+    case ReportTypesString.INCOME.toUpperCase():
+    default:
+        emailType = EmailTypes.INCOME_REPORT;
+        dateRange = !(params.startDate && params.endDate) ? 'All Time' : `${moment(params.startDate).format('MMM. DD, YYYY')} - ${moment(params.endDate).format('MMM. DD, YYYY')}`;
+        break;
     }
 
     // Retrieve company email default
@@ -542,7 +542,7 @@ export const getReportEmailTemplate = async (req: Request, res: Response) => {
         }
     });
 
-}
+};
 
 export const sendReportEmail = async (req: Request, res: Response) => {
 
@@ -554,28 +554,28 @@ export const sendReportEmail = async (req: Request, res: Response) => {
 
     // Generate and retrieve the report data PDF by the report type
     switch (reportType) {
-        case ReportTypesString.ACCOUNT_RECEIVABLE:
-            generatedReport = await _generateAccountReceivableReportPdf({
-                user, company, params
-            });
-            report = generatedReport.accountReceivableReport;
-            emailType = EmailTypes.ACCOUNT_RECEIVABLE_REPORT;
-            break;
+    case ReportTypesString.ACCOUNT_RECEIVABLE:
+        generatedReport = await _generateAccountReceivableReportPdf({
+            user, company, params
+        });
+        report = generatedReport.accountReceivableReport;
+        emailType = EmailTypes.ACCOUNT_RECEIVABLE_REPORT;
+        break;
 
-        case ReportTypesString.INCOME:
-        default:
-            generatedReport = await _generateIncomeReportPdf({
-                user, company, params
-            });
-            report = generatedReport.incomeReport;
-            emailType = EmailTypes.INCOME_REPORT;
-            break;
+    case ReportTypesString.INCOME:
+    default:
+        generatedReport = await _generateIncomeReportPdf({
+            user, company, params
+        });
+        report = generatedReport.incomeReport;
+        emailType = EmailTypes.INCOME_REPORT;
+        break;
     }
 
     const filePath = req.file?.path ?? generatedReport.fullPath;
     let paramRecipients: string[];
     let recipientEmails: string[];
-    let copyToMyself: boolean = params.copyToMyself;
+    const copyToMyself: boolean = params.copyToMyself;
     try {
         // Handle the stringify array of recipients value
         if (params.recipients && !Array.isArray(params.recipients)) {
@@ -620,7 +620,7 @@ export const sendReportEmail = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, message: 'Report has been sent successfully.' });
 
-}
+};
 
 
 
@@ -644,7 +644,7 @@ const _standardIncomeReport = async (companyId: string, params: any): Promise<{ 
         jobCount: jobsAggregate[0]?.jobs ?? 0
     };
 
-}
+};
 
 /**
  * Generate custom income report,
@@ -700,7 +700,7 @@ const _customIncomeReport = async (companyId: string, params: any): Promise<{ to
         customers
     };
 
-}
+};
 
 /**
  * Generate basic income report,
@@ -736,44 +736,44 @@ const _generateIncomeReport = async (companyId: string, params: any) => {
         const endDate = moment(params.endDate).format('YYYY-MM-DD');
 
         switch (params.reportSource) {
-            // Handle if report source from generated jobs
-            case ReportSources.JOB:
-                query['jobObj.scheduleDate'] = { $gte: new Date(startDate), $lte: new Date(endDate) };
-                break;
+        // Handle if report source from generated jobs
+        case ReportSources.JOB:
+            query['jobObj.scheduleDate'] = { $gte: new Date(startDate), $lte: new Date(endDate) };
+            break;
 
             // Handle if report source from invoice only
-            case ReportSources.INVOICE:
-            default:
-                query.issuedDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
-                break;
+        case ReportSources.INVOICE:
+        default:
+            query.issuedDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
+            break;
         }
     }
 
     if (workType) {
         let workTypeIds: any[] = [];
         try {
-            let workTypeArr = JSON.parse(workType);
+            const workTypeArr = JSON.parse(workType);
             workTypeIds = workTypeArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
-        } catch (error) {};
-        query["workType"] = { $in : workTypeIds };
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
+        } catch (error) {}
+        query['workType'] = { $in : workTypeIds };
     }
     if (companyLocation) {
         let companyLocationIds: any[] = [];
         try {
-            let companyLocationArr = JSON.parse(companyLocation);
+            const companyLocationArr = JSON.parse(companyLocation);
             companyLocationIds = companyLocationArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
         } catch (error) {}
-        query["companyLocation"] = { $in : companyLocationIds };
+        query['companyLocation'] = { $in : companyLocationIds };
     }
 
     // Construct aggregate lookups to the Job collection
     const aggregateLookups = [
         { $lookup: { from: 'jobs', localField: 'job', foreignField: '_id', as: 'jobObj' } }
-    ]
+    ];
 
     // Get the total income based on filter
     const totalIncomeAggregate = await Invoice.aggregate([
@@ -781,8 +781,8 @@ const _generateIncomeReport = async (companyId: string, params: any) => {
         { $match: { ...query } },
         {
             $group: {
-                _id: { company: "$company" },
-                totalIncome: { $sum: "$total" }
+                _id: { company: '$company' },
+                totalIncome: { $sum: '$total' }
             }
         }
     ]);
@@ -791,15 +791,15 @@ const _generateIncomeReport = async (companyId: string, params: any) => {
     const customersAggregate = await Invoice.aggregate([
         ...aggregateLookups,
         { $match: { ...query } },
-        { $group: { _id: { customer: "$customer" } } },
-        { $count: "customers" }
+        { $group: { _id: { customer: '$customer' } } },
+        { $count: 'customers' }
     ]);
 
     // Get the total jobs based on filter
     const jobsAggregate = await Invoice.aggregate([
         ...aggregateLookups,
         { $match: { ...query, job: { $ne: null } } },
-        { $count: "jobs" }
+        { $count: 'jobs' }
     ]);
 
     return {
@@ -808,9 +808,9 @@ const _generateIncomeReport = async (companyId: string, params: any) => {
         totalIncomeAggregate,
         customersAggregate,
         jobsAggregate
-    }
+    };
 
-}
+};
 
 /**
  * Generate default report name,
@@ -832,7 +832,7 @@ const _generateDefaultReportName = async (companyId: string, name: string, memor
 
     return reportName;
 
-}
+};
 
 export const _generateIncomeReportPdf = async ({
     user,
@@ -848,19 +848,19 @@ export const _generateIncomeReportPdf = async ({
     let reportType: string;
 
     if (params.reportSource === ReportSources.JOB) {
-        reportType = 'Completed Jobs (Invoiced)'
+        reportType = 'Completed Jobs (Invoiced)';
     }
 
     // Generate the income report based on which that requests by user
     switch (params.reportData) {
-        case ReportData.CUSTOM:
-            incomeReport = await _customIncomeReport(company._id, params);
-            break;
+    case ReportData.CUSTOM:
+        incomeReport = await _customIncomeReport(company._id, params);
+        break;
 
-        case ReportData.STANDARD:
-        default:
-            incomeReport = await _standardIncomeReport(company._id, params);
-            break;
+    case ReportData.STANDARD:
+    default:
+        incomeReport = await _standardIncomeReport(company._id, params);
+        break;
     }
 
     const fonts = {
@@ -874,9 +874,9 @@ export const _generateIncomeReportPdf = async ({
 
     // Initialize PDF Make
     const pdfMake = new pdfmake(fonts);
-    const generatePdf = await _handleReportPdf({ company, user, startDate: params.startDate, endDate: params.endDate, incomeReport, reportType })
+    const generatePdf = await _handleReportPdf({ company, user, startDate: params.startDate, endDate: params.endDate, incomeReport, reportType });
 
-    const fullPath = `${INCOME_REPORT_PDF_PATH}/${Date.now()}.pdf`
+    const fullPath = `${INCOME_REPORT_PDF_PATH}/${Date.now()}.pdf`;
     return new Promise((resolve) => {
         // Check if folder path exist, create if not
         if (!fs.existsSync(INCOME_REPORT_PDF_PATH)) {
@@ -893,9 +893,9 @@ export const _generateIncomeReportPdf = async ({
         pdfDoc.end();
         writeStream.on('finish', resolve);
     }).then(() => {
-        return { fullPath, incomeReport }
-    })
-}
+        return { fullPath, incomeReport };
+    });
+};
 
 const _handleReportPdf = async ({
     company,
@@ -919,13 +919,13 @@ const _handleReportPdf = async ({
         city: company.address?.city ? `, ${company.address?.city}` : '',
         state: company.address?.state ? `, ${company.address?.state}` : '',
         zipCode: company.address?.zipCode ? `, ${company.address?.zipCode}` : '',
-    }
+    };
 
     // Construct default Company Logo image
     let companyImage: any = {
         text: '',
         fillColor: '#cccccc'
-    }
+    };
 
     let companyLogoFilePath = '';
 
@@ -937,7 +937,7 @@ const _handleReportPdf = async ({
             image: 'companyLogo',
             width: 67,
             height: 52,
-        }
+        };
     }
 
     // Construct the header for the Invoice Items
@@ -945,14 +945,14 @@ const _handleReportPdf = async ({
         headerRows: 1,
         widths: [44, 202, 40, 86, 40, 86, 35],
         body: [],
-    }
+    };
 
     // Add Invoice's Items to table template
     const bodyTable: any = [];
     if (incomeReport?.customers?.length) {
         for (const customer of incomeReport.customers) {
-            const customerName = [{ text: " ", style: "lineFontBold", alignment: "right" }, { text: `${customer.customer?.profile?.displayName ?? ''}`, style: "lineFontBold", alignment: "left" }];
-            const incomeTotal = [{ text: " ", style: "lineFontBold", alignment: "right" }, { text: `${delimiterEnUs(customer.total)}`, style: "lineFont", alignment: "right" }];
+            const customerName = [{ text: ' ', style: 'lineFontBold', alignment: 'right' }, { text: `${customer.customer?.profile?.displayName ?? ''}`, style: 'lineFontBold', alignment: 'left' }];
+            const incomeTotal = [{ text: ' ', style: 'lineFontBold', alignment: 'right' }, { text: `${delimiterEnUs(customer.total)}`, style: 'lineFont', alignment: 'right' }];
             bodyTable.push([
                 {},
                 customerName,
@@ -972,13 +972,13 @@ const _handleReportPdf = async ({
 
     // INITIALIZE PDF TEMPLATE
     const docDefinition: any = {
-        pageSize: "A4",
+        pageSize: 'A4',
         pageMargins: [0, 0, 70, 30],
         footer: {
             columns: [
                 [{
                     alignment: 'right',
-                    text: ['Report generated by ', { text: user.profile?.displayName, style: "smallFontBold" }, ' at ', { text: moment(new Date()).format('MMM. DD, YYYY'), style: 'smallFontBold' }],
+                    text: ['Report generated by ', { text: user.profile?.displayName, style: 'smallFontBold' }, ' at ', { text: moment(new Date()).format('MMM. DD, YYYY'), style: 'smallFontBold' }],
                     style: 'smallFont'
                 }],
             ],
@@ -997,11 +997,11 @@ const _handleReportPdf = async ({
                             [{
                                 text: `${company.info?.companyName}`,
                                 fontSize: 8,
-                                alignment: "left",
+                                alignment: 'left',
                                 bold: true,
                             }, {
                                 text: `\n${company.contact?.phone ?? ''}\n${company.info?.companyEmail ?? ''}\n${companyAddress.street}${companyAddress.city}${companyAddress.state}${companyAddress.zipCode}`,
-                                style: "defaultFont",
+                                style: 'defaultFont',
                             }],
                             {},
                             [{
@@ -1037,13 +1037,13 @@ const _handleReportPdf = async ({
                             {},
                             {
                                 //   border: [false, false, false, false],
-                                text: "REVENUE FROM",
-                                style: "smallFont",
+                                text: 'REVENUE FROM',
+                                style: 'smallFont',
                             },
                             {
-                                text: "PERIOD",
-                                style: "smallFont",
-                                alignment: "left"
+                                text: 'PERIOD',
+                                style: 'smallFont',
+                                alignment: 'left'
                             },
                             {},
                             {},
@@ -1058,8 +1058,8 @@ const _handleReportPdf = async ({
                             },
                             {
                                 text: !(startDate && endDate) ? 'All Time' : `${moment(startDate).format('MMM. DD, YYYY')} - ${moment(endDate).format('MMM. DD, YYYY')}`,
-                                style: "defaultFont",
-                                alignment: "left",
+                                style: 'defaultFont',
+                                alignment: 'left',
                             },
                             {},
                             {},
@@ -1088,29 +1088,29 @@ const _handleReportPdf = async ({
                             {},
                             [{
                                 //   border: [false, false, false, false],
-                                text: "INVOICED",
-                                style: "smallFont",
+                                text: 'INVOICED',
+                                style: 'smallFont',
                             }, {
-                                text: `${delimiterEnUs(incomeReport.totalIncome)}`, style: "lineFontBold", align: "left"
+                                text: `${delimiterEnUs(incomeReport.totalIncome)}`, style: 'lineFontBold', align: 'left'
                             }],
                             [{
-                                text: "CUSTOMERS",
-                                style: "smallFont",
-                                alignment: "left",
+                                text: 'CUSTOMERS',
+                                style: 'smallFont',
+                                alignment: 'left',
                             }, {
                                 text: `${incomeReport.customerCount}`,
-                                style: "lineFontBold",
-                                alignment: "left",
+                                style: 'lineFontBold',
+                                alignment: 'left',
                             }],
                             [{
-                                text: "JOBS",
-                                style: "smallFont",
-                                alignment: "left"
+                                text: 'JOBS',
+                                style: 'smallFont',
+                                alignment: 'left'
 
                             }, {
                                 text: `${incomeReport.jobCount}`,
-                                style: "lineFontBold",
-                                alignment: "left",
+                                style: 'lineFontBold',
+                                alignment: 'left',
                             }],
                             {}, {}, {}, {}
                         ],
@@ -1125,12 +1125,12 @@ const _handleReportPdf = async ({
                         return i === 0 || i === node.table.widths.length ? 0 : 1;
                     },
                     vLineColor: function (i: number, node: { table: { widths: string | any[]; }; }) {
-                        return i === 0 || i === node.table.widths.length ? "black" : "white";
+                        return i === 0 || i === node.table.widths.length ? 'black' : 'white';
                     },
                     hLineColor: function (i: number, node: { table: { body: string | any[]; }; }) {
                         return i === 0 || i === node.table.body.length
-                            ? "#d0d3dc"
-                            : "#eeeeee";
+                            ? '#d0d3dc'
+                            : '#eeeeee';
                     },
                 },
             },
@@ -1144,12 +1144,12 @@ const _handleReportPdf = async ({
                         return i === 0 || i === node.table.widths.length ? 0 : 1;
                     },
                     vLineColor: function (i: number, node: { table: { widths: string | any[]; }; }) {
-                        return i === 0 || i === node.table.widths.length ? "black" : "white";
+                        return i === 0 || i === node.table.widths.length ? 'black' : 'white';
                     },
                     hLineColor: function (i: number, node: { table: { body: string | any[]; }; }) {
                         return i === 0 || i === node.table.body.length
-                            ? "#d0d3dc"
-                            : "#eeeeee";
+                            ? '#d0d3dc'
+                            : '#eeeeee';
                     },
                 },
             }
@@ -1214,12 +1214,12 @@ const _handleReportPdf = async ({
             tableHeader: {
                 bold: true,
                 fontSize: 13,
-                color: "black",
+                color: 'black',
             },
         },
         defaultStyle: {
             columnGap: 10,
-            font: "Roboto",
+            font: 'Roboto',
         },
         images: {
             companyLogo: companyLogoFilePath
@@ -1227,4 +1227,4 @@ const _handleReportPdf = async ({
     };
 
     return docDefinition;
-}
+};

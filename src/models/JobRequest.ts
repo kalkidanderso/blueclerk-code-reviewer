@@ -127,7 +127,7 @@ const JobRequestSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'CompanyLocation',
     },
-}, { timestamps: { createdAt: true, updatedAt: true } })
+}, { timestamps: { createdAt: true, updatedAt: true } });
 
 //Indexes
 JobRequestSchema.index({ company: 1 });

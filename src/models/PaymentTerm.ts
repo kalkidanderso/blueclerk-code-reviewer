@@ -31,7 +31,7 @@ export const DefaultPaymentTerms = [
         name: PaymentTermNames.NET_30,
         dueDays: 30
     }
-]
+];
 
 export interface IQBPaymentTerm {
 
@@ -75,7 +75,7 @@ const PaymentTermSchema = new Schema(
     },
     { timestamps: { createdAt: true, updatedAt: true } }
 
-)
+);
 
 //Indexes
 PaymentTermSchema.index({ company: 1 });

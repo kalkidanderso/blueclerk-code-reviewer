@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { Messages, Status } from '../common/constants';
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'mongodb';
 
 import { IUser } from '../models/User';
 import { ICompany } from '../models/Company';
@@ -38,9 +38,9 @@ export const getItems = (req: Request, res: Response) => {
     }
     if(params.includeInactiveItems){
         delete query.isActive;
-    query["$or"]?.map((queryItem:any)=>{
-        delete queryItem.isActive;
-    })
+        query['$or']?.map((queryItem:any)=>{
+            delete queryItem.isActive;
+        });
     }
     
     Item.find(query)
@@ -49,14 +49,14 @@ export const getItems = (req: Request, res: Response) => {
         .exec((err: any, items: IItem[]) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
 
-            return res.json({ 'status': Status.Success, 'items': items })
+            return res.json({ 'status': Status.Success, 'items': items });
 
         });
 
-}
+};
 
 export const createItem = async (req: Request, res: Response, next: NextFunction) => {
 
@@ -69,7 +69,7 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
     for (const t of company.itemTier.list) {
         itemTiers.push({ tier: t.tier });
     }
-    const isProduct=params.itemType=="Product";
+    const isProduct=params.itemType=='Product';
     const item = new Item(
         {
             name: params.title,
@@ -84,7 +84,7 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
             isFixed:isProduct?true:params.isFixed,
             IncomeAccountRef:{ name: account?.Name, value: account?.Id }
         }
-    )
+    );
 
     await item.save();
 
@@ -94,56 +94,56 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
 
         if(account?.Id){
         // Create the new Item in QuickBooks
-        _createQBItemWithAccount(req, res, company, item,account, async (err: any, errMsg: any, qbItem: IQBItem) => {
-            let qbSync=false;
-            if (err) {
-                console.log('== createItem > _createQBItem');
-                console.log('== errMsg:', errMsg);
-                return res.json({ status: Status.Error, message: errMsg });
-            }
-
-            if (qbItem) {
-                item.quickbookId = qbItem.Id;
-                await item.save();
-                qbSync=true;
-
-                // If company's items already synced, update the synced date
-                if (company.qbSync?.itemsSynced) {
-                    company.qbSync.itemsSyncedAt = new Date();
-                    await company.save();
+            _createQBItemWithAccount(req, res, company, item,account, async (err: any, errMsg: any, qbItem: IQBItem) => {
+                let qbSync=false;
+                if (err) {
+                    console.log('== createItem > _createQBItem');
+                    console.log('== errMsg:', errMsg);
+                    return res.json({ status: Status.Error, message: errMsg });
                 }
-            }
-            res.json({ status: Status.Success, message: 'Item created successfully.', item,qbSync });
 
-            return next();
-        })
-    }else
+                if (qbItem) {
+                    item.quickbookId = qbItem.Id;
+                    await item.save();
+                    qbSync=true;
+
+                    // If company's items already synced, update the synced date
+                    if (company.qbSync?.itemsSynced) {
+                        company.qbSync.itemsSyncedAt = new Date();
+                        await company.save();
+                    }
+                }
+                res.json({ status: Status.Success, message: 'Item created successfully.', item,qbSync });
+
+                return next();
+            });
+        }else
     
-    {
-        _createQBItem(req, res, company, item, async (err: any, errMsg: any, qbItem: IQBItem) => {
-            let qbSync=false;
-            if (err) {
-                console.log('== createItem > _createQBItem');
-                console.log('== errMsg:', errMsg);
-                return res.json({ status: Status.Error, message: errMsg });
-            }
-
-            if (qbItem) {
-                item.quickbookId = qbItem.Id;
-                await item.save();
-                qbSync=true;
-
-                // If company's items already synced, update the synced date
-                if (company.qbSync?.itemsSynced) {
-                    company.qbSync.itemsSyncedAt = new Date();
-                    await company.save();
+        {
+            _createQBItem(req, res, company, item, async (err: any, errMsg: any, qbItem: IQBItem) => {
+                let qbSync=false;
+                if (err) {
+                    console.log('== createItem > _createQBItem');
+                    console.log('== errMsg:', errMsg);
+                    return res.json({ status: Status.Error, message: errMsg });
                 }
-            }
-            res.json({ status: Status.Success, message: 'Item created successfully.', item,qbSync });
 
-            return next();
-        })  
-    }
+                if (qbItem) {
+                    item.quickbookId = qbItem.Id;
+                    await item.save();
+                    qbSync=true;
+
+                    // If company's items already synced, update the synced date
+                    if (company.qbSync?.itemsSynced) {
+                        company.qbSync.itemsSyncedAt = new Date();
+                        await company.save();
+                    }
+                }
+                res.json({ status: Status.Success, message: 'Item created successfully.', item,qbSync });
+
+                return next();
+            });  
+        }
         
 
     } else {
@@ -152,7 +152,7 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
         return next();
     }
 
-}
+};
 export const disabledItemExists = (req: Request, res: Response) => {
     
     const params = req.body;
@@ -161,22 +161,22 @@ export const disabledItemExists = (req: Request, res: Response) => {
         (err: any, item: IItem) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
 
             if (item == null || item == undefined) {
-                return res.json({ 'status': Status.Error, 'message': 'Item does not exist' })
+                return res.json({ 'status': Status.Error, 'message': 'Item does not exist' });
             }
             if(item){
-                return res.json({ 'status': Status.Success, 'message': 'Item Exist',item })
+                return res.json({ 'status': Status.Success, 'message': 'Item Exist',item });
 
             }
 
         
 
         }
-    )
-}
+    );
+};
 
 export const toggleItemStatus = (req: Request, res: Response) => {
     
@@ -185,25 +185,25 @@ export const toggleItemStatus = (req: Request, res: Response) => {
         (err: any, item: IItem) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
 
             if (item == null || item == undefined) {
-                return res.json({ 'status': Status.Error, 'message': 'Invalid item id' })
+                return res.json({ 'status': Status.Error, 'message': 'Invalid item id' });
             }
 
             item.updateOne({ isActive:!item.isActive},
                 (err: any, raw: any) => {
                     if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                     }
 
-                    return res.json({ 'status': Status.Success, 'message': 'Item status changed successfully', itemStatus:item.isActive })
-                })
+                    return res.json({ 'status': Status.Success, 'message': 'Item status changed successfully', itemStatus:item.isActive });
+                });
 
         }
-    )
-}
+    );
+};
 
 export const updateItem = (req: Request, res: Response) => {
     
@@ -215,33 +215,33 @@ export const updateItem = (req: Request, res: Response) => {
         (err: any, item: IItem) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
 
             if (item == null || item == undefined) {
-                return res.json({ 'status': Status.Error, 'message': 'Invalid item id' })
+                return res.json({ 'status': Status.Error, 'message': 'Invalid item id' });
             }
 
             item.updateOne({ charges: params.charges, tax: params.tax, isFixed: isProduct?true:params.isFixed ,itemType:params.itemType,  productCost:params.productCost,salePrice:params.salePrice, 
-            IncomeAccountRef:{ name: account?.Name, value: account?.Id }
+                IncomeAccountRef:{ name: account?.Name, value: account?.Id }
             },
-                (err: any, raw: any) => {
-                    if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
-                    }
+            (err: any, raw: any) => {
+                if (err) {
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
+                }
 
-                    return res.json({ 'status': Status.Success, 'message': 'Item updated successfully' })
-                })
+                return res.json({ 'status': Status.Success, 'message': 'Item updated successfully' });
+            });
 
         }
-    )
-}
+    );
+};
 
 // To update all items' charges
 export const updateItems = async (req: Request, res: Response) => {
 
     const params = req.body;
-    const user = <IUser>req.user
+    const user = <IUser>req.user;
     const company = <ICompany>req.company;
     // To save any error itemIds and/or tierIds
     const errorWrongIds = [];
@@ -304,7 +304,7 @@ export const updateItems = async (req: Request, res: Response) => {
                 // Find the tier to be updated
                 itemObj.costing.forEach(itemTier => {
                     if (itemTier.tier.toString() === productCost.tierId) {
-                        itemTier.charge = productCost.charge
+                        itemTier.charge = productCost.charge;
                     }
                 });
             }
@@ -322,7 +322,7 @@ export const updateItems = async (req: Request, res: Response) => {
         itemObj.description = i.description;
         itemObj.isJobType = i.isJobType ?? itemObj.isJobType;
         itemObj.isFixed = i.isFixed ?? itemObj.isFixed;
-        itemObj.tax = i.tax ?? itemObj.tax
+        itemObj.tax = i.tax ?? itemObj.tax;
         itemObj.isActive = i.isActive ?? itemObj.isActive;
         itemObj.jobType = jobType?._id;
         itemObj.productCost=i.productCost ?? itemObj.productCost;
@@ -350,7 +350,7 @@ export const updateItems = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, message: 'Items updated successfully' });
 
-}
+};
 
 export const searchDuplicatedItems = async (req: Request, res: Response) => {
 
@@ -373,7 +373,7 @@ export const searchDuplicatedItems = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, items });
 
-}
+};
 
 export const mergeItems = async (req: Request, res: Response) => {
     const params = req.body;
@@ -420,20 +420,20 @@ export const mergeItems = async (req: Request, res: Response) => {
 
     Item.findById(params.itemId).exec(async (err: any, item: IItem) => {
         if (err || !item) {
-            return res.json({ status: Status.NotFound, message: 'Item Not Found' })
+            return res.json({ status: Status.NotFound, message: 'Item Not Found' });
         }
 
         const isActive = params.isActive === undefined || params.isActive === null
             ? false
             : params.isActive === 'false'
                 ? false
-                : !!params.isActive
+                : !!params.isActive;
 
         const isFixed = params.isFixed === undefined || params.isFixed === null
             ? false
             : params.isFixed === 'false'
                 ? false
-                : !!params.isFixed
+                : !!params.isFixed;
 
         const mergeItemEntry: any = {
             isFixed: isFixed ?? item.isFixed,
@@ -444,7 +444,7 @@ export const mergeItems = async (req: Request, res: Response) => {
             name: params.name ?? item.name,
             description: params.description ?? item.description,
             tiers: tierObject ?? item.tiers
-        }
+        };
 
         // Handle item without quickbookId
         if (!item.quickbookId) {
@@ -455,7 +455,7 @@ export const mergeItems = async (req: Request, res: Response) => {
                 }
 
                 mergeItemEntry.quickbookId = qbItem.Id;
-            })
+            });
         }
 
         // Merge item only
@@ -504,7 +504,7 @@ export const mergeItems = async (req: Request, res: Response) => {
                             // update job
                             await JobCharges.updateMany({ jobType: unusedItem.jobType }, { $set: { jobType: item.jobType } }).exec();
                             // await JobType.deleteMany({_id: unusedJobType}).exec()
-                        })
+                        });
                     }
                 }
 
@@ -514,8 +514,8 @@ export const mergeItems = async (req: Request, res: Response) => {
 
             return res.json({ status: Status.Success, item });
         });
-    })
-}
+    });
+};
 
 // ==========================================
 // ============[ DISCOUNT ITEM ]=============
@@ -540,19 +540,19 @@ export const getDiscountItems = async (req: Request, res: Response, next: NextFu
 
     // Handle query isActive to query
     switch (queryParams.isActive) {
-        case 'true':
-        case true:
-            query = { ...query, isActive: { $ne: false } };
-            break;
+    case 'true':
+    case true:
+        query = { ...query, isActive: { $ne: false } };
+        break;
 
-        case 'false':
-        case false:
-            query = { ...query, isActive: false };
-            break;
+    case 'false':
+    case false:
+        query = { ...query, isActive: false };
+        break;
 
-        default:
-            // Retrieve all discount items, query is good at this point
-            break;
+    default:
+        // Retrieve all discount items, query is good at this point
+        break;
     }
 
     // Retrieve all items with isDiscountItem is true
@@ -568,7 +568,7 @@ export const getDiscountItems = async (req: Request, res: Response, next: NextFu
 
     return res.json({ status: Status.Success, discountItems });
 
-}
+};
 
 export const createDiscountItem = async (req: Request, res: Response, next: NextFunction) => {
 
@@ -598,7 +598,7 @@ export const createDiscountItem = async (req: Request, res: Response, next: Next
             customer: customer?._id,
             noOfItems: params.noOfItems
         }
-    )
+    );
     await item.save();
 
     try {
@@ -635,7 +635,7 @@ export const createDiscountItem = async (req: Request, res: Response, next: Next
         return next();
     });
 
-}
+};
 
 export const updateDiscountItem = async (req: Request, res: Response, next: NextFunction) => {
 
@@ -712,7 +712,7 @@ export const updateDiscountItem = async (req: Request, res: Response, next: Next
         return next();
     });
 
-}
+};
 
 // ==========================================
 // ===========[ PRIVATE FUNCTION ]===========
@@ -722,7 +722,7 @@ export const updateDiscountItem = async (req: Request, res: Response, next: Next
  * To handle params jobTypes that comes on JSON format
  * and check if the job types are valid
  */
- export const _handleJobTypesJson = (customerId: string, paramJobTypes: string, jobTypes: IJobTypes[]): Promise<{ jobTypes: IJobTypes[] | any, invalidJobTypes: string[] }> => {
+export const _handleJobTypesJson = (customerId: string, paramJobTypes: string, jobTypes: IJobTypes[]): Promise<{ jobTypes: IJobTypes[] | any, invalidJobTypes: string[] }> => {
 
     return new Promise(async (resolve, reject) => {
 
@@ -769,7 +769,7 @@ export const updateDiscountItem = async (req: Request, res: Response, next: Next
                         const item = await Item.findOne({ jobType: parsedJobType.jobTypeId });
                         if (item) {
                             if (isFixed !== undefined && isFixed !== item.isFixed) {
-                                reject({ message: `Can't add an hourly and fixed price item to the same service ticket/job` });
+                                reject({ message: 'Can\'t add an hourly and fixed price item to the same service ticket/job' });
                             }
                             isFixed = item.isFixed;
 
@@ -799,8 +799,8 @@ export const updateDiscountItem = async (req: Request, res: Response, next: Next
 
         resolve({ jobTypes, invalidJobTypes });
 
-    })
-}
+    });
+};
 
 const _handleItemJobType = async (oldItem: IItem, newItem: IItem, userId: string): Promise<IJobType> => {
 
@@ -831,7 +831,7 @@ const _handleItemJobType = async (oldItem: IItem, newItem: IItem, userId: string
     }
 
     return jobType;
-}
+};
 
 /**
  * Configure and save Customer's discount prices
@@ -868,7 +868,7 @@ const _saveCustomerDiscountItem = async (params: any, customer: ICustomer, custD
 
     return;
 
-}
+};
 
 /**
  * Check if customer already have discount item for that quantity of items
@@ -901,4 +901,4 @@ const _checkCustomerDiscountItem = async (params: any, company: ICompany, custom
 
     return { customer, custDiscountPrice };
 
-}
+};

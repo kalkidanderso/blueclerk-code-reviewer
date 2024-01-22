@@ -1,21 +1,21 @@
-import { Request, Response } from 'express'
-import { Status, Messages, Role } from '../common/constants'
+import { Request, Response } from 'express';
+import { Status, Messages, Role } from '../common/constants';
 
 import { IContact } from '../common/contact';
 import { Contact } from '../models/Contact';
 import { IUser } from '../models/User';
-import { ICompany, Company } from '../models/Company'
-import { Customer, ICustomer, IQBCustomer } from '../models/Customer'
+import { ICompany, Company } from '../models/Company';
+import { Customer, ICustomer, IQBCustomer } from '../models/Customer';
 import { JobLocation, IJobLocation } from '../models/JobLocation';
-import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
+import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer';
 import { _getQbo, _refreshToken } from '../controllers/quickbook';
 import { NotificationServiceTicket } from '../models/NotificationDiscriminator';
 import { NotificationTypes } from '../models/Notification';
 import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin';
 import * as Sentry from '@sentry/node';
 
-var QuickBooks = require('node-quickbooks')
-var OAuthClient = require("intuit-oauth");
+const QuickBooks = require('node-quickbooks');
+const OAuthClient = require('intuit-oauth');
 
 // =====================================
 // =======[ QUICKBOOKS CUSTOMER ]=======
@@ -36,16 +36,16 @@ const _getQBCustomers = (qbo: any): Promise<IQBCustomer[]> => {
             }
 
             resolve(<IQBCustomer[]>data?.QueryResponse?.Customer);
-        })
-    })
+        });
+    });
 
-}
+};
 
 const _getCustomers = (req: Request, res: Response, company: ICompany, next: (req: Request, res: Response, error: number, errorMessage: string, customers: any) => void) => {
 
     const { QB_ENVIRONMENT, QB_CLIENT_ID, QB_CLIENT_SECRET, QB_REDIRECT_URI } = process.env;
 
-    var qbo = new QuickBooks(QB_CLIENT_ID,
+    let qbo = new QuickBooks(QB_CLIENT_ID,
         QB_CLIENT_SECRET,
         company.qbAccessToken,
         false, // no token secret for oAuth 2.0
@@ -60,23 +60,23 @@ const _getCustomers = (req: Request, res: Response, company: ICompany, next: (re
     qbo.findCustomers([{ field: 'fetchAll', value: true }],
         function (qbError: any, customers: any) {
 
-            var errorMessage: string
+            let errorMessage: string;
             if (qbError != null && Object.keys(qbError).length != 0) {
 
-                if (qbError.hasOwnProperty("fault")) {
+                if (qbError.hasOwnProperty('fault')) {
 
                     if (qbError.fault.error[0].message.length != 0 && qbError.fault.error[0].message.split('; ')[2].replace('statusCode=', '') == 401) {
 
                         _refreshToken(req, res, company, (error: number, newErrorMessage: string, newCompany: ICompany) => {
 
                             if (error == 0) {
-                                next(req, res, error, newErrorMessage, [])
-                                return
+                                next(req, res, error, newErrorMessage, []);
+                                return;
                             }
 
                             if (error == 400) {
-                                next(req, res, error, newErrorMessage, [])
-                                return
+                                next(req, res, error, newErrorMessage, []);
+                                return;
                             }
 
                             qbo = new QuickBooks(QB_CLIENT_ID,
@@ -95,56 +95,56 @@ const _getCustomers = (req: Request, res: Response, company: ICompany, next: (re
                                 function (qbErrorNew: any, customers2: any) {
                                     if (qbErrorNew != null && Object.keys(qbErrorNew).length != 0) {
 
-                                        if (qbErrorNew.hasOwnProperty("fault")) {
+                                        if (qbErrorNew.hasOwnProperty('fault')) {
                                             if (qbErrorNew.fault.error[0].detail.length != 0) {
-                                                errorMessage = qbErrorNew.fault.error[0].message
+                                                errorMessage = qbErrorNew.fault.error[0].message;
 
                                             } else {
-                                                errorMessage = qbErrorNew.fault.error[0].detail
+                                                errorMessage = qbErrorNew.fault.error[0].detail;
                                             }
 
-                                            next(req, res, 0, errorMessage, [])
-                                            return
+                                            next(req, res, 0, errorMessage, []);
+                                            return;
 
-                                        } else if (qbErrorNew.hasOwnProperty("Fault")) {
-                                            errorMessage = qbErrorNew.Fault.Error[0].Message
-                                            next(req, res, 0, errorMessage, [])
-                                            return
+                                        } else if (qbErrorNew.hasOwnProperty('Fault')) {
+                                            errorMessage = qbErrorNew.Fault.Error[0].Message;
+                                            next(req, res, 0, errorMessage, []);
+                                            return;
                                         }
 
                                     } else {
-                                        next(req, res, 1, '', customers2)
-                                        return
+                                        next(req, res, 1, '', customers2);
+                                        return;
                                     }
                                 }
-                            )
-                        })
+                            );
+                        });
 
                     } else if (qbError.fault.error[0].detail.length != 0) {
-                        errorMessage = qbError.fault.error[0].message
-                        next(req, res, 0, errorMessage, [])
-                        return
+                        errorMessage = qbError.fault.error[0].message;
+                        next(req, res, 0, errorMessage, []);
+                        return;
 
                     } else {
-                        errorMessage = qbError.fault.error[0].detail
-                        next(req, res, 0, errorMessage, [])
-                        return
+                        errorMessage = qbError.fault.error[0].detail;
+                        next(req, res, 0, errorMessage, []);
+                        return;
                     }
 
-                } else if (qbError.hasOwnProperty("Fault")) {
-                    errorMessage = qbError.Fault.Error[0].Message
-                    next(req, res, 0, errorMessage, [])
-                    return
+                } else if (qbError.hasOwnProperty('Fault')) {
+                    errorMessage = qbError.Fault.Error[0].Message;
+                    next(req, res, 0, errorMessage, []);
+                    return;
 
                 }
 
             } else {
-                next(req, res, 1, '', customers)
-                return
+                next(req, res, 1, '', customers);
+                return;
             }
         }
-    )
-}
+    );
+};
 
 /**
 * Generic function to create QuickBooks Customer,
@@ -229,7 +229,7 @@ export const _createQBCustomer = async (req: Request, res: Response, company: IC
                         Long: customer?.location?.coordinates[0]?.toString(),
                         Lat: customer?.location?.coordinates[1]?.toString(),
                     }
-                }
+                };
 
                 // Create QB Customer
                 qbo.createCustomer(qbCustomerEntry, async (err: any, qbCustomer: IQBCustomer) => {
@@ -257,13 +257,13 @@ export const _createQBCustomer = async (req: Request, res: Response, company: IC
                     }
 
                     return next(null, null, qbCustomer);
-                })
+                });
             }
-        })
+        });
 
-    })
+    });
 
-}
+};
 
 /**
  * Generic function to check QuickBooks Customer,
@@ -332,7 +332,7 @@ export const _checkQBCustomerJobLocation = async (req: Request, res: Response, c
             // Create QB Customer
             qbo.createCustomer(qbCustomerEntry, async (err: any, qbCustomer: IQBCustomer) => {
                 if (err) {
-                    console.log("err",err);
+                    console.log('err',err);
                     console.log('== _createQBCustomerJobLocation > qbo.createCustomer > ERROR ==');
                     console.log('== err.Fault:', err.Fault);
                     console.log('== err.Fault?.Error[0]?.Message:', err.Fault?.Error[0]?.Message);
@@ -365,9 +365,9 @@ export const _checkQBCustomerJobLocation = async (req: Request, res: Response, c
                 return next(null, null, qbCustomer);
             });
         }
-    })
+    });
 
-}
+};
 
 /**
 * Generic function to update QuickBooks Customer,
@@ -405,7 +405,7 @@ export const _updateQBCustomer = async (req: Request, res: Response, company: IC
                     || err.fault?.error[0]?.message
                     || Messages.GenericError,
                     null
-                )
+                );
             }
 
             qbCustomer.Active = customer.isActive;
@@ -416,21 +416,21 @@ export const _updateQBCustomer = async (req: Request, res: Response, company: IC
             qbCustomer.PrimaryEmailAddr = qbCustomer.PrimaryEmailAddr ?? { Address: '' };
             qbCustomer.PrimaryEmailAddr.Address = customer?.info?.email;
             qbCustomer.PrimaryPhone = qbCustomer.PrimaryPhone ?? {};
-            qbCustomer.PrimaryPhone.FreeFormNumber = customer?.contact?.phone
+            qbCustomer.PrimaryPhone.FreeFormNumber = customer?.contact?.phone;
 
             qbCustomer.BillAddr = qbCustomer.BillAddr ?? {};
             qbCustomer.BillAddr.Line1 = customer?.address?.street,
-                qbCustomer.BillAddr.Line2 = customer?.address?.unit,
-                qbCustomer.BillAddr.City = customer?.address?.city,
-                qbCustomer.BillAddr.CountrySubDivisionCode = customer?.address?.state,
-                qbCustomer.BillAddr.PostalCode = customer?.address?.zipCode,
-                qbCustomer.BillAddr.Long = customer?.location?.coordinates[0]?.toString(),
-                qbCustomer.BillAddr.Lat = customer?.location?.coordinates[1]?.toString(),
+            qbCustomer.BillAddr.Line2 = customer?.address?.unit,
+            qbCustomer.BillAddr.City = customer?.address?.city,
+            qbCustomer.BillAddr.CountrySubDivisionCode = customer?.address?.state,
+            qbCustomer.BillAddr.PostalCode = customer?.address?.zipCode,
+            qbCustomer.BillAddr.Long = customer?.location?.coordinates[0]?.toString(),
+            qbCustomer.BillAddr.Lat = customer?.location?.coordinates[1]?.toString(),
 
-                qbCustomer.ShipAddr = qbCustomer.ShipAddr ?? {};
+            qbCustomer.ShipAddr = qbCustomer.ShipAddr ?? {};
             qbCustomer.ShipAddr.Line1 = customer?.address?.street;
             qbCustomer.ShipAddr.Line2 = customer?.address?.unit,
-                qbCustomer.ShipAddr.City = customer?.address?.city;
+            qbCustomer.ShipAddr.City = customer?.address?.city;
             qbCustomer.ShipAddr.CountrySubDivisionCode = customer?.address?.state;
             qbCustomer.ShipAddr.PostalCode = customer?.address?.zipCode;
             qbCustomer.ShipAddr.Long = customer?.location?.coordinates[0]?.toString();
@@ -454,7 +454,7 @@ export const _updateQBCustomer = async (req: Request, res: Response, company: IC
         });
     });
 
-}
+};
 
 /**
  * Generic function to inactivate/disable Customers in QB,
@@ -491,7 +491,7 @@ export const _inactivateQBCustomers = async (req: Request, res: Response, compan
 
     return next(null, null);
 
-}
+};
 
 /**
  * Generic function to process Customer's Job Locations,
@@ -534,7 +534,7 @@ const _processJobLocations = async (req: Request, res: Response, qbo: any, compa
                             // QB Customer Job created, update DB Job Location quickbookId
                             await JobLocation.findByIdAndUpdate(jobLocation, { quickbookId: qbCustomerJob.Id }).exec();
                         }
-                    })
+                    });
 
                     return;
                 } else {
@@ -550,15 +550,15 @@ const _processJobLocations = async (req: Request, res: Response, qbo: any, compa
                         // QB Customer Job created, update DB Job Location quickbookId
                         await JobLocation.findByIdAndUpdate(jobLocation, { quickbookId: qbCustomerJob.Id }).exec();
                     }
-                })
+                });
 
                 return;
             }
-        })
+        });
 
     }
 
-}
+};
 
 /**
 * Generic function to create QuickBooks Customer Job,
@@ -629,7 +629,7 @@ export const _createQBCustomerJob = async (req: Request, res: Response, company:
                 Long: jobLocation?.location?.coordinates[0]?.toString(),
                 Lat: jobLocation?.location?.coordinates[1]?.toString(),
             }
-        }
+        };
 
         // Create QB Customer
         qbo.createCustomer(qbCustomerEntry, async (err: any, qbCustomer: IQBCustomer) => {
@@ -648,14 +648,14 @@ export const _createQBCustomerJob = async (req: Request, res: Response, company:
                     || err.fault?.error[0]?.message
                     || Messages.GenericError,
                     null
-                )
+                );
             }
 
             return next(null, null, qbCustomer);
-        })
-    })
+        });
+    });
 
-}
+};
 
 /**
  * Generic function to update QuickBooks Customer Job,
@@ -735,7 +735,7 @@ export const _updateQBCustomerJob = async (req: Request, res: Response, company:
         });
     });
 
-}
+};
 
 /**
 * To find if exist and/or create customer in QuickBooks,
@@ -823,7 +823,7 @@ export const createQBCustomer = async (req: Request, res: Response) => {
                                     jobLocation.quickbookId = qbCustomerJob.Id;
                                     await jobLocation.save();
                                 }
-                            })
+                            });
                         } else {
                             // SUB CUSTOMER FOUND, update DB Job Location quickbookId directly
                             jobLocation.quickbookId = qbCustomerJob.Id;
@@ -837,9 +837,9 @@ export const createQBCustomer = async (req: Request, res: Response) => {
                                 jobLocation.quickbookId = qbCustomerJob.Id;
                                 await jobLocation.save();
                             }
-                        })
+                        });
                     }
-                })
+                });
             }
 
             return res.json({ status: Status.Error, qbCustomer });
@@ -930,7 +930,7 @@ export const createQBCustomer = async (req: Request, res: Response) => {
                                             jobLocation.quickbookId = qbCustomerJob.Id;
                                             await jobLocation.save();
                                         }
-                                    })
+                                    });
                                 } else {
                                     // SUB CUSTOMER FOUND, update DB Job Location quickbookId directly
                                     jobLocation.quickbookId = qbCustomerJob.Id;
@@ -944,18 +944,18 @@ export const createQBCustomer = async (req: Request, res: Response) => {
                                         jobLocation.quickbookId = qbCustomerJob.Id;
                                         jobLocation.save();
                                     }
-                                })
+                                });
                             }
-                        })
+                        });
                     }
                 }
 
                 return res.json({ status: Status.Error, qbCustomer });
-            })
+            });
         }
-    })
+    });
 
-}
+};
 
 export const syncQBCustomers = async (req: Request, res: Response) => {
 
@@ -965,9 +965,9 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
         const user = <IUser>req.user;
         const createdCustomers: { _id: string, name: string }[] = [];
         const updatedCustomers: { _id: string, name: string }[] = [];
-        let custsToCreate: ICustomer[] = [];
-        let compCustsToCreate: ICompanyCustomer[] = [];
-        let jobLocationToCreate: IJobLocation[] = [];
+        const custsToCreate: ICustomer[] = [];
+        const compCustsToCreate: ICompanyCustomer[] = [];
+        const jobLocationToCreate: IJobLocation[] = [];
 
         // Always refresh the token first because token valid only for 60 minutes
         _refreshToken(req, res, req.company, async (err, errMsg, company) => {
@@ -1010,7 +1010,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                             || err.fault?.error[0]?.detail
                             || err.fault?.error[0]?.message
                             || Messages.GenericError
-                    })
+                    });
                 }
 
                 const qbCustomers: IQBCustomer[] = data?.QueryResponse?.Customer;
@@ -1033,7 +1033,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
 
                                     await _processJobLocations(req, res, qbo, company, customer);
                                 }
-                            })
+                            });
                         }, 1000);
                     } else {
                         // QB Customer exist, update DB Customer quickbookId directly
@@ -1113,7 +1113,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                             customer: custEntry._id
                         }).save();
 
-                        customerAdmin.customer = custEntry._id
+                        customerAdmin.customer = custEntry._id;
                         custEntry.admin = customerAdmin._id;
 
                         custsToCreate.push(custEntry);
@@ -1131,7 +1131,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                                 customer: customer._id,
                                 createdAt: Date.now()
                             })
-                        )
+                        );
                     }
 
                     // Create all company customers to DB at once
@@ -1228,8 +1228,8 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
                  * after refreshing the QB token above
                  */
                 // return res.json({ status: Status.Success, message: 'Customer synced successfully.', createdCustomers, updatedCustomers });
-            })
-        })
+            });
+        });
     } catch (error) {
         console.log('== error:', error);
         Sentry.captureException(error);
@@ -1247,7 +1247,7 @@ export const syncQBCustomers = async (req: Request, res: Response) => {
         // await notification.save();
     }
 
-}
+};
 
 /**
  * Called by quickbook controller when handle webhook from Quickbooks
@@ -1338,7 +1338,7 @@ export const updateBCCustomer = async (req: Request, res: Response, company: ICo
         });
     });
 
-}
+};
 
 export const createBCCustomer = async (req: Request, res: Response, company: ICompany, qbCustomerId: string) => {
 
@@ -1509,30 +1509,30 @@ export const createBCCustomer = async (req: Request, res: Response, company: ICo
         });
     });
 
-}
+};
 
 export const getQBCustomer = async (req: Request, res: Response) => {
     return new Promise((resolve, reject) => {
         const params = req.query;
-        const company = <ICompany>req.company
+        const company = <ICompany>req.company;
         const qbo = _getQbo(company.qbAccessToken, company.realmId, company.qbRefreshToken);
 
         qbo.getCustomer(params.quickbookId, async (err: any, qbCustomer: IQBCustomer) => {
             if (err) {
-                reject(err)
+                reject(err);
             } else {
-                resolve(qbCustomer)
+                resolve(qbCustomer);
             }
         });
     })
-    .then((response: any) => {
-        return res.json({ 'status': Status.Success, 'message': response })
-    })
-    .catch((error: any) => {
-        Sentry.captureException(error);
-        return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
-    })
-}
+        .then((response: any) => {
+            return res.json({ 'status': Status.Success, 'message': response });
+        })
+        .catch((error: any) => {
+            Sentry.captureException(error);
+            return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
+        });
+};
 
 export const findQBCustomers = async (req: Request, res: Response) => {
     return new Promise((resolve, reject) => {
@@ -1545,20 +1545,20 @@ export const findQBCustomers = async (req: Request, res: Response) => {
             // { field: 'Job', value: true }
         ], async (err: any, data: any) => {
             if (err) {
-                reject(err)
+                reject(err);
             } else {
                 resolve(data?.QueryResponse?.Customer);
             }
+        });
+    })
+        .then((data: any) => {
+            return res.json({ status: Status.Success, data: data ?? null });
         })
-    })
-    .then((data: any) => {
-        return res.json({ status: Status.Success, data: data ?? null });
-    })
-    .catch((error: any) => {
-        Sentry.captureException(error);
-        return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
-    })
-}
+        .catch((error: any) => {
+            Sentry.captureException(error);
+            return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
+        });
+};
 
 export const findQBCustomersByEmail = async (req: Request, res: Response) => {
     return new Promise((resolve, reject) => {
@@ -1570,20 +1570,20 @@ export const findQBCustomersByEmail = async (req: Request, res: Response) => {
             { field: 'PrimaryEmailAddr', value: params.email },
         ], async (err: any, data: any) => {
             if (err) {
-                reject(err)
+                reject(err);
             } else {
                 resolve(data?.QueryResponse?.Customer);
             }
+        });
+    })
+        .then((data: any) => {
+            return res.json({ status: Status.Success, data: data ?? null });
         })
-    })
-    .then((data: any) => {
-        return res.json({ status: Status.Success, data: data ?? null });
-    })
-    .catch((error: any) => {
-        Sentry.captureException(error);
-        return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
-    })
-}
+        .catch((error: any) => {
+            Sentry.captureException(error);
+            return res.json({ status: Status.Error, message: error ?? Messages.GenericError });
+        });
+};
 
 /**
  * Partial method to generate QBooks Customer entry
@@ -1624,4 +1624,4 @@ const _getQbCustomerEntry = async (customer: ICustomer): Promise<IQBCustomer> =>
 
     return qbCustomerEntry;
 
-}
+};

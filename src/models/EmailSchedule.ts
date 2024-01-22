@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 import {IUser} from './User';
 import {IJob} from './Job';
 
@@ -25,19 +25,19 @@ const EmailScheduleSchema = new Schema({
     },
     jobs: [
         {
-                type: Schema.Types.ObjectId,
-                ref: 'Job'
+            type: Schema.Types.ObjectId,
+            ref: 'Job'
         }
     ],
     pulled: {
         type: Boolean,
         default: false
     }
-})
+});
 
 //Indexes
 EmailScheduleSchema.index({ user: 1 });
 EmailScheduleSchema.index({ jobs: 1 });
 EmailScheduleSchema.index({ pulled: 1 });
 
-export const EmailSchedule = mongoose.model<IEmailSchedule>('EmailSchedule', EmailScheduleSchema)
+export const EmailSchedule = mongoose.model<IEmailSchedule>('EmailSchedule', EmailScheduleSchema);

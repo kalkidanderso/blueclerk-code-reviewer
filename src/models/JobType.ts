@@ -1,5 +1,5 @@
-import mongoose, { Document, Schema } from 'mongoose'
-import { IItem } from './Item'
+import mongoose, { Document, Schema } from 'mongoose';
+import { IItem } from './Item';
 
 export interface IJobType extends Document {
 
@@ -25,7 +25,7 @@ export interface IJobTypes {
 
 const JobTypeSchema = new Schema({
 
-    title: { type: String, index: "text" },
+    title: { type: String, index: 'text' },
     description: String,
     sku: String,
     industry: {
@@ -44,7 +44,7 @@ const JobTypeSchema = new Schema({
     quickbookId: String
 
 }, { timestamps: { createdAt: true, updatedAt: true } }
-)
+);
 
 //Indexes
 JobTypeSchema.index({ industry: 1 });
@@ -53,4 +53,4 @@ JobTypeSchema.index({ title: 1, industry: 1, createdBy: 1 });
 JobTypeSchema.index({ createdBy: 1, industry: 1, isActive: 1 });
 
 
-export const JobType = mongoose.model<IJobType>('JobType', JobTypeSchema)
+export const JobType = mongoose.model<IJobType>('JobType', JobTypeSchema);

@@ -67,7 +67,7 @@ const JobRouteSchema = new Schema(
         timestamps: { createdAt: true, updatedAt: true }
     }
 
-)
+);
 
 //Indexes
 JobRouteSchema.index({ company: 1 });

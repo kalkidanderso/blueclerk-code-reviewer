@@ -4,12 +4,12 @@ import { validate, Validations } from '../middleware/validator';
 
 import {
     checkUserPermissions,
-} from '../middleware/permissions'
+} from '../middleware/permissions';
 import { getCompanyId } from '../middleware/company';
 import { isLogin } from '../middleware/session';
 import { Permissions } from '../common/constants';
-import { isObjectIdValid } from '../middleware/isObjectIdValid'
-import { isLambdaRequest } from '../middleware/isLamdaRequest'
+import { isObjectIdValid } from '../middleware/isObjectIdValid';
+import { isLambdaRequest } from '../middleware/isLamdaRequest';
 
 import * as invoiceController from '../controllers/v2/invoice';
 import * as jobController from '../controllers/v2/job';
@@ -24,7 +24,7 @@ import { uploadImageInS3 } from '../middleware/multer';
 
 export default function (sio: any) {
 
-    const router: express.Router = express.Router()
+    const router: express.Router = express.Router();
 
 
     router.post(
@@ -35,7 +35,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.getInvoices),
         invoiceController.getInvoices
-    )
+    );
 
     router.post(
         '/exportInvoices',
@@ -45,7 +45,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Invoices),
         validate(Validations.getInvoices),
         invoiceController.exportInvoicesToExcel
-    )
+    );
 
     // Bounced Emails for invoices
     router.post(
@@ -53,7 +53,7 @@ export default function (sio: any) {
         validate(Validations.bounceEmail),
         isLambdaRequest,
         bouncedEmails.storeforInvoices
-    )
+    );
 
     // Bounced Emails for PO
     router.post(
@@ -61,7 +61,7 @@ export default function (sio: any) {
         validate(Validations.bounceEmail),
         isLambdaRequest,
         bouncedEmails.storeforPO
-    )
+    );
 
     //mark-bounced-emails-as-read-for-invoices
     router.post(
@@ -70,7 +70,7 @@ export default function (sio: any) {
         isLogin(),
         isObjectIdValid,
         bouncedEmails.markReadInvoiceNBounce
-    )
+    );
 
     //mark-bounced-emails-as-read-for-PO
     router.post(
@@ -79,7 +79,7 @@ export default function (sio: any) {
         isLogin(),
         isObjectIdValid,
         bouncedEmails.markReadPOBounce
-    )
+    );
 
     router.post(
         '/getJobs',
@@ -89,7 +89,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Job_Get_All),
         validate(Validations.getJobs),
         jobController.getJobs
-    )
+    );
 
     router.get(
         '/getAllJobReports',
@@ -99,7 +99,7 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Get_Job_Report),
         validate(Validations.getAllJobReports),
         jobController.getAllJobReports
-    )
+    );
 
     router.post(
         '/getServiceTickets',
@@ -108,7 +108,7 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Service_Tickets),
         serviceTicketController.getServiceTickets
-    )
+    );
 
     router.post(
         '/getPORequest',
@@ -117,7 +117,7 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Get_Service_Tickets),
         serviceTicketController.getPORequest
-    )
+    );
 
     router.get(
         '/getPORequestEmailTemplate',
@@ -125,7 +125,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         serviceTicketController.getPORequestEmailTemplate
-    )
+    );
 
     router.post(
         '/sendPORequest',
@@ -133,7 +133,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         serviceTicketController.sendPORequest
-    )
+    );
     
     router.get(
         '/getUserPermission/:userId',
@@ -141,7 +141,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         userPermissionController.getUserPermission
-    )
+    );
 
     router.post(
         '/updateUserPermission/:userId',
@@ -149,7 +149,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         userPermissionController.updateUserPermission
-    )
+    );
 
     router.post(
         '/updatePartialJob',
@@ -159,9 +159,9 @@ export default function (sio: any) {
         checkUserPermissions(Permissions.Job_Update),
         uploadImageInS3.fields([{ name: 'image' }, { name: 'images' }]),
         (req, res) => {
-            jobController.updatePartialJob(req, res, sio)
+            jobController.updatePartialJob(req, res, sio);
         }
-    )
+    );
 
     router.get(
         '/getJobInvoice/:jobId',
@@ -170,9 +170,9 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserPermissions(Permissions.Job_Detail),
         jobController.getJobInvoice
-    )
+    );
 
-    return router
+    return router;
 
 }
 

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ObjectId } from 'mongodb'
+import { ObjectId } from 'mongodb';
 
 import { Status } from '../common/constants';
 import { ICustomer } from '../models/Customer';
@@ -61,6 +61,6 @@ export const createServiceTicket = (req: Request, res: Response, sio: any) => {
 
             return res.json({ status: Status.Success, message: 'Service ticket created successfully.', customer, serviceTicket });
         });
-    })
+    });
 
-}
+};

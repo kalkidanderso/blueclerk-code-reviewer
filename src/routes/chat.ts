@@ -15,7 +15,7 @@ router.get(
     getCompanyId(),
     validate(Validations.getJobRequestChats),
     chatController.getChats
-)
+);
 
 router.post(
     '/:chatChannel/:id',
@@ -24,7 +24,7 @@ router.post(
     uploadImageInS3.fields([{ name: 'images' }]),
     validate(Validations.createJobRequestChat),
     chatController.createChat
-)
+);
 
 router.post(
     '/:chatChannel/:id/markRead',
@@ -32,6 +32,6 @@ router.post(
     getCompanyId(),
     validate(Validations.markReadJobRequestChat),
     chatController.markRead
-)
+);
 
 export default router;

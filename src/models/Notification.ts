@@ -32,8 +32,8 @@ export interface INotification extends Document {
     customerContact: Schema.Types.ObjectId
     notificationType: string
     message: {
-        title: String
-        body: String
+        title: string
+        body: string
     }
     readStatus: {
         isRead: boolean
@@ -48,7 +48,7 @@ export interface INotification extends Document {
     createdAt: Date
     updatedAt: Date
 
-};
+}
 
 const NotificationSchema = new Schema(
 

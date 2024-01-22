@@ -1,6 +1,6 @@
-import { Strategy, ExtractJwt, VerifiedCallback } from 'passport-jwt'
-import { User, IUser } from '../models/User'
-import { PassportStatic } from 'passport'
+import { Strategy, ExtractJwt, VerifiedCallback } from 'passport-jwt';
+import { User, IUser } from '../models/User';
+import { PassportStatic } from 'passport';
 
 export default (passport: PassportStatic) => {
 
@@ -13,7 +13,7 @@ export default (passport: PassportStatic) => {
             (payload: any, done: VerifiedCallback) => {
 
                 if (!payload.id) {
-                    return done(null, false)
+                    return done(null, false);
                 }
 
                 User.findOne(
@@ -21,15 +21,15 @@ export default (passport: PassportStatic) => {
                     (err: any, user: IUser) => {
 
                         if (err || !user) {
-                            return done(err, false)
+                            return done(err, false);
                         }
 
-                        done(null, user, payload.sessionID)
+                        done(null, user, payload.sessionID);
                     }
-                )
+                );
 
             }
         )
-    )
+    );
 
-}
+};

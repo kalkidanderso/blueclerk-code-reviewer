@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IPart extends Document {
 
@@ -50,10 +50,10 @@ const PartSchema = new Schema({
     createdAt: {
         type: Date
     }
-})
+});
 
 //Indexes
 PartSchema.index({ company: 1 });
 PartSchema.index({ company: 1, itemCode: 1 });
 
-export const Part = mongoose.model<IPart>('Part', PartSchema)
+export const Part = mongoose.model<IPart>('Part', PartSchema);

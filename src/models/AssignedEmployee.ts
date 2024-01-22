@@ -14,6 +14,6 @@ export const AssignedEmployeeSchema = new Schema({
         required: true
     },
     workTypes: [{ type: Schema.Types.ObjectId, ref: 'WorkType' }]
-})
+});
 
 export const AssignedEmployee = mongoose.model<IAssignedEmployee>('AssignedEmployee', AssignedEmployeeSchema);

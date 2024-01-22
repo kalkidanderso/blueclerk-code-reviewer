@@ -21,7 +21,7 @@ export const getWorkTypes = async (req: Request, res: Response) => {
         Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message});
     }
-}
+};
 
 export const getWorkTypeById = async (req: Request, res: Response) => {
     try {
@@ -34,7 +34,7 @@ export const getWorkTypeById = async (req: Request, res: Response) => {
         Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message});
     }
-}
+};
 
 export const deleteWorkType = async (req: Request, res: Response) => {
     try {
@@ -45,7 +45,7 @@ export const deleteWorkType = async (req: Request, res: Response) => {
     } catch (error) {
         return res.json({ status: Status.Error, message: error.message});
     }
-}
+};
 
 export const updateWorkType = async (req: Request, res: Response) => {
     try {
@@ -61,7 +61,7 @@ export const updateWorkType = async (req: Request, res: Response) => {
     } catch (error) {
         return res.json({ status: Status.Error, message: error.message});
     }
-}
+};
 
 export const createWorkType = async (req: Request, res: Response) => {
     try {
@@ -75,4 +75,4 @@ export const createWorkType = async (req: Request, res: Response) => {
     } catch (error) {
         return res.json({ status: Status.Error, message: error.message});
     }
-}
+};

@@ -1,7 +1,7 @@
 // src/controllers/advancePayment.controller.ts
 
 import { Controller, Get, Post, Path, Body, Route, Tags, Query, Security, Response, Patch, Request, Put } from 'tsoa';
-import { Request as RequestExpress, Response as ResponseExpress } from "express";
+import { Request as RequestExpress, Response as ResponseExpress } from 'express';
 import { AdvancePaymentService } from '../../services/v3/advancePayment';
 import { ICreateAdvancePaymentInput, ICreateAdvancePaymentRequestBody, IUpdateAdvancePaymentInput, IVoidAdvancePaymentInput } from '../../types/v3/advancePayment';
 import * as Sentry from '@sentry/node';
@@ -10,7 +10,7 @@ import * as Sentry from '@sentry/node';
 /**
  * @tags Advance Payment - For advance payments
  */
-@Tags("Advance Payment")
+@Tags('Advance Payment')
 @Route('advance-payment')
 
 export class AdvancePaymentController extends Controller {
@@ -23,13 +23,13 @@ export class AdvancePaymentController extends Controller {
     public async createAdvancePaymentContractor( @Body() body: ICreateAdvancePaymentRequestBody
     ) : Promise<any> {
         try {
-            const userId = 2 // TODO: req.user;
-            const companyId = 2 // TODO: req.company;
+            const userId = 2; // TODO: req.user;
+            const companyId = 2; // TODO: req.company;
 
             const advancePaymentService = new AdvancePaymentService();  
             return await advancePaymentService.createAdvancePayment( body, userId, companyId );
         } catch (err) {
-            throw new Error(err.message)
+            throw new Error(err.message);
         }
     }
       
@@ -41,20 +41,20 @@ export class AdvancePaymentController extends Controller {
     @Get()
     // @Security('jwt')
     public async getAdvancePaymentsByContractor(
-        @Query('type') type?: "vendor" | "employee",
-        @Query('isActive') isActive?: "ALL" | "active" | "void",
+        @Query('type') type?: 'vendor' | 'employee',
+        @Query('isActive') isActive?: 'ALL' | 'active' | 'void',
         @Query('id') id?: number,
         @Query('startDate') startDate?: string,
         @Query('endDate') endDate?: string,
         @Query('offset') offset?: string,
-        // @Request() req: Request
+            // @Request() req: Request
     ): Promise<any> {
         
         try {
             const advancePaymentService = new AdvancePaymentService(); 
 
-            const companyId = 2 // TODO: req.company;
-            let query:any = {}
+            const companyId = 2; // TODO: req.company;
+            const query:any = {};
             const paramObj = {
                 type,
                 isActive,
@@ -63,7 +63,7 @@ export class AdvancePaymentController extends Controller {
                 endDate,
                 offset,
                 
-            }
+            };
 
             return await advancePaymentService.getAdvancePayment(paramObj, query, companyId);
         } catch (err) {
@@ -83,17 +83,17 @@ export class AdvancePaymentController extends Controller {
         @Request() req: Request
     ): Promise<any> {
         try {
-            const userId = 2 // TODO: req.user;
-            const companyId = 2 // TODO: req.company;
+            const userId = 2; // TODO: req.user;
+            const companyId = 2; // TODO: req.company;
 
             const advancePaymentService = new AdvancePaymentService();  
             return await advancePaymentService.updateAdvancePayment( body, userId, companyId );
         } catch (err) {
-            throw new Error(err.message)
+            throw new Error(err.message);
         }
     }
 
-        /**
+    /**
    * @summary To void advance payment contractor
    */
 
@@ -106,13 +106,13 @@ export class AdvancePaymentController extends Controller {
         
     ): Promise<any> {
         try {
-            const userId = 2 // TODO: req.user;
-            const companyId = 2 // TODO: req.company;\
+            const userId = 2; // TODO: req.user;
+            const companyId = 2; // TODO: req.company;\
 
             const advancePaymentService = new AdvancePaymentService();  
             return await advancePaymentService.voidAdvancePayment( body, userId, companyId );
         } catch (err) {
-            throw new Error(err.message)
+            throw new Error(err.message);
         }
     }
 

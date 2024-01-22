@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 import { ICustomer } from './Customer';
 import {IJobLocation} from './JobLocation';
 import {IJobSite} from './JobSite';
@@ -71,7 +71,7 @@ const CustomerEquipmentSchema = new Schema({
     //     ref: 'Job'
     // }]
 
-})
+});
 
 //Indexes
 CustomerEquipmentSchema.index({ type: 1 });
@@ -80,4 +80,4 @@ CustomerEquipmentSchema.index({ customer: 1 });
 CustomerEquipmentSchema.index({ jobLocation: 1 });
 CustomerEquipmentSchema.index({ 'info.nfcTag': 1, customer: 1 });
 
-export const CustomerEquipment = mongoose.model<ICustomerEquipment>('CustomerEquipment', CustomerEquipmentSchema)
+export const CustomerEquipment = mongoose.model<ICustomerEquipment>('CustomerEquipment', CustomerEquipmentSchema);

@@ -50,9 +50,9 @@ const JobCommissionSchema = new Schema({
         },
         paidAt: Date
     }]
-}, { timestamps: { createdAt: true, updatedAt: true } })
+}, { timestamps: { createdAt: true, updatedAt: true } });
 
 //Indexes
 JobCommissionSchema.index({ invoice: 1 });
 
-export const JobCommission = mongoose.model<IJobCommission>('JobCommission', JobCommissionSchema)
+export const JobCommission = mongoose.model<IJobCommission>('JobCommission', JobCommissionSchema);
