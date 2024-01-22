@@ -46,7 +46,7 @@ export const login = async (req: Request, res: Response) => {
         user: null
     });
 
-}
+};
 
 export const getAllAssets = async (req: Request, res: Response) => {
     // const { queryChaincode } = require('./blockchain/query');
@@ -56,32 +56,32 @@ export const getAllAssets = async (req: Request, res: Response) => {
     return res.json({
         status: Status.Success,
         data
-    })
-}
+    });
+};
 
 export const getAllCompanies = async (req: Request, res: Response) => {
 
     const params = req.query;
 
-    let filterQuery: any = { $and: [] };
+    const filterQuery: any = { $and: [] };
     let query = {};
 
     switch (params.isVerified) {
-        case 'true':
-        case true:
-            filterQuery['$and'].push({ 'blockchain.verified': true });
-            query = { ...query, 'blockchain.verified': true };
-            break;
+    case 'true':
+    case true:
+        filterQuery['$and'].push({ 'blockchain.verified': true });
+        query = { ...query, 'blockchain.verified': true };
+        break;
 
-        case 'false':
-        case false:
-            filterQuery['$and'].push({ $or: [{ 'blockchain.verified': false }, { 'blockchain.verified': null }] });
-            query = { ...query, $or: [{ 'blockchain.verified': false }, { 'blockchain.verified': null }] };
-            break;
+    case 'false':
+    case false:
+        filterQuery['$and'].push({ $or: [{ 'blockchain.verified': false }, { 'blockchain.verified': null }] });
+        query = { ...query, $or: [{ 'blockchain.verified': false }, { 'blockchain.verified': null }] };
+        break;
 
-        default:
-            // Retrieve all companies, query is good at this point
-            break;
+    default:
+        // Retrieve all companies, query is good at this point
+        break;
     }
 
 
@@ -134,14 +134,14 @@ export const getAllCompanies = async (req: Request, res: Response) => {
         .find({ ...query }, { info: 1, address: 1, contact: 1, blockchain: 1, admin: 1 })
         .collation({ locale: 'en' })
         .sort({ 'info.companyName': 1 })
-        .populate({ path: 'admin', select: 'profile info contact location' })
+        .populate({ path: 'admin', select: 'profile info contact location' });
 
     return res.json({
         status: Status.Success,
         companies
     });
 
-}
+};
 
 export const approveCompany = async (req: Request, res: Response) => {
 
@@ -178,7 +178,7 @@ export const approveCompany = async (req: Request, res: Response) => {
 
         if (!invokationResult.isValid) {
             console.log('== NOT VALID');
-            return res.json({ status: Status.Error, message: invokationResult.transaction })
+            return res.json({ status: Status.Error, message: invokationResult.transaction });
         }
 
         company.blockchain.verified = true;
@@ -198,4 +198,4 @@ export const approveCompany = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: err.message });
     }
 
-}
+};

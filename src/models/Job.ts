@@ -1,6 +1,6 @@
-import mongoose, { Document, Schema } from 'mongoose'
-import { IUser } from './User'
-import { IJobType, IJobTypes } from './JobType'
+import mongoose, { Document, Schema } from 'mongoose';
+import { IUser } from './User';
+import { IJobType, IJobTypes } from './JobType';
 import { ICompany } from '../models/Company';
 import { IHomeOwner } from '../models/HomeOwner';
 import { IJobLocation } from '../models/JobLocation';
@@ -142,7 +142,7 @@ const JobSchema = new Schema({
     },
     jobId: {
         type: String,
-        index: "text"
+        index: 'text'
     },
     parentJob: {
         type: Schema.Types.ObjectId,
@@ -481,7 +481,7 @@ const JobSchema = new Schema({
         default: false,
         required: false
     },
-}, { timestamps: { updatedAt: true } })
+}, { timestamps: { updatedAt: true } });
 
 //Indexes
 JobSchema.index({ parentJob: 1 });
@@ -500,7 +500,7 @@ JobSchema.index({ homeJobLocation: 1 });
 JobSchema.index({ homeJobSite: 1 });
 JobSchema.index({ customerContactId: 1 });
 JobSchema.index({ company: 1, 'tasks.technician': 1});
-JobSchema.index({"tasks.contractor": 1})
+JobSchema.index({'tasks.contractor': 1});
 JobSchema.index({ 'tasks.technician': 1, technician: 1});
 JobSchema.index({ contractor: 1, 'tasks.contractor': 1, company: 1, customer: 1});
 JobSchema.index({ contractor: 1, 'tasks.contractor': 1, company: 1, updatedAt: -1 });
@@ -509,4 +509,4 @@ JobSchema.index({ contractor: 1, 'tasks.contractor': 1, company: 1, scheduleDate
 JobSchema.index({ contractor: 1, 'tasks.contractor': 1, company: 1, scheduleDate: 1, customer: 1, jobId: 1, _id: -1});
 
 
-export const Job = mongoose.model<IJob>('Job', JobSchema)
+export const Job = mongoose.model<IJob>('Job', JobSchema);

@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 import { IPriceTier } from './PriceTier';
 import { IJobCosting } from './JobCosting';
 
@@ -8,8 +8,8 @@ export const enum ItemTypes{
     PRODUCT='Product'
 }
 export interface IncomeAccountRef {
-    name:String,
-    value:String
+    name:string,
+    value:string
 }
 export interface IItem extends Document {
     IncomeAccountRef: any;
@@ -175,7 +175,7 @@ const ItemSchema = new Schema({
     quickbookId: String
 
 }, { timestamps: { createdAt: true, updatedAt: true } }
-)
+);
 
 //Indexes
 ItemSchema.index({ company: 1, isActive: 1 });
@@ -184,4 +184,4 @@ ItemSchema.index({ company: 1, name: 1 });
 ItemSchema.index({ company: 1, isActive: 1, isDiscountItem: 1 });
 ItemSchema.index({ jobType: 1 });
 
-export const Item = mongoose.model<IItem>('Item', ItemSchema)
+export const Item = mongoose.model<IItem>('Item', ItemSchema);

@@ -5,9 +5,9 @@ import { ICustomer } from '../models/Customer';
 export interface IDiscountItem extends IItem {
 
     customer?: Schema.Types.ObjectId | ICustomer
-    noOfItems?: Number
+    noOfItems?: number
 
-};
+}
 
 const DiscountItemSchema = new Schema({
 

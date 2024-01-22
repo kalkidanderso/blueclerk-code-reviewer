@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IIndustry extends Document {
 
@@ -15,10 +15,10 @@ const IndustrySchema = new Schema({
         ref: 'User'
     }
 
-})
+});
 
 //Indexes
 IndustrySchema.index({ title: 1 });
 IndustrySchema.index({ createdBy: 1 });
 
-export const Industry = mongoose.model<IIndustry>('Industry', IndustrySchema)
+export const Industry = mongoose.model<IIndustry>('Industry', IndustrySchema);

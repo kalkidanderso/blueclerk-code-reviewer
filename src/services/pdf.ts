@@ -6,7 +6,7 @@ import { downloadFileToPath } from '../controllers/invoice';
 
 // Partial method to generate the PDF content of A/R Report
 export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> => {
-    const blueclerkLogo = 'assets/images/logo_blue.png'
+    const blueclerkLogo = 'assets/images/logo_blue.png';
     const separator : any = {
         text: '_____________________________________________________________________________________________\n\n',
         style: 'separatorStyle'
@@ -28,14 +28,14 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
         text: '',
         fillColor: '#cccccc',
         width: '5%',
-    }
+    };
     if (jobReport.job.company?.info?.logoUrl) {
         // Check and download Company Logo to /tmp file
         companyLogoFilePath = await downloadFileToPath(jobReport.job.company, jobReport.job.company.info.logoUrl, '/' + INVOICE_IMAGE_PATH, true);
         companyImage = {
             image: 'companyLogo',
             width: 60,
-        }
+        };
     }
     const technicianNotes = jobReport.job?.tasks?.length ?  jobReport.job.tasks.filter((task: any) => task.comment).map((task: any) => {
         return task.comment;
@@ -57,18 +57,18 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
         })) : [];
     
     const endTime = jobReport.job?.scheduledEndTime? `:${moment.utc(jobReport.job?.scheduledEndTime).format('hh:mma')}` : '';
-    const specificTime = `${moment.utc(jobReport.job?.scheduledStartTime).format('hh:mma')}${endTime}`
+    const specificTime = `${moment.utc(jobReport.job?.scheduledStartTime).format('hh:mma')}${endTime}`;
     let time = 'N/A';
     switch (jobReport.job?.scheduleTimeAMPM) {
-        case 0:
-            time = specificTime;
-            break;
-        case 1: 
-            time = 'AM';
-            break;
-        case 2:
-            time = 'PM';
-            break;
+    case 0:
+        time = specificTime;
+        break;
+    case 1: 
+        time = 'AM';
+        break;
+    case 2:
+        time = 'PM';
+        break;
        
     }
     const serviceTicketNotes = jobReport.job.request?.requests?.filter((request: any) => request.note).map((request: any) => request.note).join('\n\n') || jobReport.job.ticket?.note;
@@ -107,28 +107,28 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                                                 {
                                                     width: '15%',
                                                     stack: [{
-                                                            text: '\n',
-                                                            style: 'footerText'
-                                                        },
-                                                        {
-                                                            ...companyImage
-                                                        },
+                                                        text: '\n',
+                                                        style: 'footerText'
+                                                    },
+                                                    {
+                                                        ...companyImage
+                                                    },
                                                     ],
                                                 },
                                                 {
                                                     stack: [{
-                                                            text: (jobReport.job?.company.info?.companyName || 'N/A') + '\n',
-                                                            style: 'header',
-                                                        },
-                                                        {
-                                                            text: (jobReport.job.company?.address?.street ? jobReport.job.company?.address?.street + '\n' : '') +
+                                                        text: (jobReport.job?.company.info?.companyName || 'N/A') + '\n',
+                                                        style: 'header',
+                                                    },
+                                                    {
+                                                        text: (jobReport.job.company?.address?.street ? jobReport.job.company?.address?.street + '\n' : '') +
                                                                 (jobReport.job.company?.address?.city ? jobReport.job.company?.address?.city + ', ' : '') +
                                                                 (jobReport.job.company?.address?.state ? jobReport.job.company?.address?.state + ', ' : '') +
                                                                 (jobReport.job.company?.address?.zipCode || '') + '\n' +
                                                                 (jobReport.job.company?.contact?.phone ? jobReport.job.company?.contact?.phone + '\n' : '') +
                                                                 (jobReport.job.company?.info?.companyEmail ? jobReport.job.company?.info?.companyEmail : ''),
-                                                            style: 'boldGrey',
-                                                        }
+                                                        style: 'boldGrey',
+                                                    }
                                                     ]
                                                 },
                                                 {
@@ -142,7 +142,7 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                                                         text: moment.utc(jobReport.job?.scheduleDate).format('ll') || 'N/A',
                                                         style: 'boldGreyRight'
                                                     }, {
-                                                        text: jobReport.job.rescheduled ? "(Rescheduled)" : "",
+                                                        text: jobReport.job.rescheduled ? '(Rescheduled)' : '',
                                                         style: 'fieldLabelRight'
                                                     }]
                                                 }
@@ -182,27 +182,27 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                                 stack: [
                                     {
                                         stack: [{
-                                                columns: [{
-                                                    text: 'JOB DETAILS',
-                                                    style: 'subTitle',
-                                                }, ]
+                                            columns: [{
+                                                text: 'JOB DETAILS',
+                                                style: 'subTitle',
+                                            }, ]
+                                        }, {
+                                            columns: [{
+                                                ...generateField('SUBDIVISION', jobReport.job.jobLocation?.name, '25%')
                                             }, {
-                                                columns: [{
-                                                    ...generateField('SUBDIVISION', jobReport.job.jobLocation?.name, '25%')
+                                                ...generateField('JOB ADDRESS', jobReport.job.jobSite?.name, '25%')
+                                            }, {
+                                                stack: [{
+                                                    text: '\nHOUSE STATUS',
+                                                    style: 'fieldLabel'
                                                 }, {
-                                                    ...generateField('JOB ADDRESS', jobReport.job.jobSite?.name, '25%')
-                                                }, {
-                                                    stack: [{
-                                                        text: '\nHOUSE STATUS',
-                                                        style: 'fieldLabel'
-                                                    }, {
-                                                        text: jobReport.job.isHomeOccupied ? 'Occupied' : 'Not occupied',
-                                                        style: jobReport.job.isHomeOccupied ? 'boldGreen' : 'boldGrey'
-                                                    }],
-                                                    width: '25%',
-                                                },{
-                                                    ...generateField('TIME', time, '20,5%')
-                                                } 
+                                                    text: jobReport.job.isHomeOccupied ? 'Occupied' : 'Not occupied',
+                                                    style: jobReport.job.isHomeOccupied ? 'boldGreen' : 'boldGrey'
+                                                }],
+                                                width: '25%',
+                                            },{
+                                                ...generateField('TIME', time, '20,5%')
+                                            } 
                                                 
                                                 
                                                 // {
@@ -211,55 +211,55 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
                                                 //     ...generateField('END TIME', moment.utc(jobReport.job?.scheduledEndTime).format('hh:mm A'), '12.5%')
                                                 // }, 
                                             ],
-                                            },
-                                            jobReport.job.customerContactId ? {
-                                                columns: [{
-                                                    ...generateField('CONTACT', jobReport.job.customerContactId?.name, '25%')
-                                                }, {
-                                                    ...generateField('PHONE NUMBER', jobReport.job.customerContactId?.phone, '25%')
-                                                }, {
-                                                    ...generateField('EMAIL', jobReport.job.customerContactId?.email, '50%')
-                                                }, ],
-                                            } : {}, {
-                                                columns: [{
-                                                    ...generateField('PURCHASE ORDER', jobReport.job.customerPO, '25%')
-                                                }, {
-                                                    ...generateField('TECHNICIAN(S) NAME(S)', 
-                                                        jobReport.job.tasks.map((task: any, idx: number) => task.technician?.profile?.displayName ? task.technician?.profile?.displayName + '\n' : '').flat(), 
-                                                        '25%')
-                                                }, {
-                                                    stack: [{
-                                                        text: '\n' + "JOB TYPE(S)",
-                                                        style: 'fieldLabel'
-                                                    }, 
-                                                    ...jobReport.job.tasks.map((task: any) => {
-                                                            return task.jobTypes.map((jobType: any) => {
-                                                                return {
-                                                                    text: jobType.jobType?.title || 'N/A',
-                                                                    style: 'boldGrey'
-                                                                }
-                                                            })
-                                                        }), 
-                                                    ],
-                                                    width: "25%"
-                                                }, {
-                                                    stack: [{
-                                                        text: '\n' + "QUANTITY",
-                                                        style: 'fieldLabel'
-                                                    }, 
-                                                    ...jobReport.job.tasks.map((task: any) => {
-                                                            return task.jobTypes.map((jobType: any) => {
-                                                                return {
-                                                                    text: jobType.quantity || '1',
-                                                                    style: 'boldGrey'
-                                                                }
-                                                            })
-                                                        }), 
-                                                    ],
-                                                    width: "25%"
+                                        },
+                                        jobReport.job.customerContactId ? {
+                                            columns: [{
+                                                ...generateField('CONTACT', jobReport.job.customerContactId?.name, '25%')
+                                            }, {
+                                                ...generateField('PHONE NUMBER', jobReport.job.customerContactId?.phone, '25%')
+                                            }, {
+                                                ...generateField('EMAIL', jobReport.job.customerContactId?.email, '50%')
+                                            }, ],
+                                        } : {}, {
+                                            columns: [{
+                                                ...generateField('PURCHASE ORDER', jobReport.job.customerPO, '25%')
+                                            }, {
+                                                ...generateField('TECHNICIAN(S) NAME(S)', 
+                                                    jobReport.job.tasks.map((task: any, idx: number) => task.technician?.profile?.displayName ? task.technician?.profile?.displayName + '\n' : '').flat(), 
+                                                    '25%')
+                                            }, {
+                                                stack: [{
+                                                    text: '\n' + 'JOB TYPE(S)',
+                                                    style: 'fieldLabel'
                                                 }, 
+                                                ...jobReport.job.tasks.map((task: any) => {
+                                                    return task.jobTypes.map((jobType: any) => {
+                                                        return {
+                                                            text: jobType.jobType?.title || 'N/A',
+                                                            style: 'boldGrey'
+                                                        };
+                                                    });
+                                                }), 
+                                                ],
+                                                width: '25%'
+                                            }, {
+                                                stack: [{
+                                                    text: '\n' + 'QUANTITY',
+                                                    style: 'fieldLabel'
+                                                }, 
+                                                ...jobReport.job.tasks.map((task: any) => {
+                                                    return task.jobTypes.map((jobType: any) => {
+                                                        return {
+                                                            text: jobType.quantity || '1',
+                                                            style: 'boldGrey'
+                                                        };
+                                                    });
+                                                }), 
+                                                ],
+                                                width: '25%'
+                                            }, 
                                             ],
-                                            },
+                                        },
                                         ],
                                     },
                                     jobReport.job.isHomeOccupied ? {...separator} : {},
@@ -338,15 +338,15 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
         ],
         footer: {
             columns: [{
-                    image: blueclerkLogo,
-                    width: 10,
-                    margin: [40, 0, 0, 0],
-                },
-                {
-                    text: 'GENERATED BY BLUECLERK',
-                    style: 'footerText',
-                    margin: [43, 0, 0, 0],
-                },
+                image: blueclerkLogo,
+                width: 10,
+                margin: [40, 0, 0, 0],
+            },
+            {
+                text: 'GENERATED BY BLUECLERK',
+                style: 'footerText',
+                margin: [43, 0, 0, 0],
+            },
             ]
         },
         styles: {
@@ -423,4 +423,4 @@ export const handleJobReportPdf = async (jobReport : IJobReport) : Promise<any> 
         pageMargins: [0, 0,0, 40]
     };
     return docDefinition;
-}
+};

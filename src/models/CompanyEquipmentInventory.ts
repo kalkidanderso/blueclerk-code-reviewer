@@ -1,9 +1,9 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ICompanyEquipmentInventory extends Document {
 
     dateTime: Date
-    noOfItems:Number
+    noOfItems:number
     createdBy: Schema.Types.ObjectId
     companyEquipments: [Schema.Types.ObjectId]
     
@@ -23,10 +23,10 @@ const CompanyEquipmentInventorySchema = new Schema({
         ref: 'CompanyEquipment'
     }]
 
-})
+});
 
 //Indexes
 CompanyEquipmentInventorySchema.index({ createdBy: 1 });
 CompanyEquipmentInventorySchema.index({ companyEquipments: 1 });
 
-export const CompanyEquipmentInventory = mongoose.model<ICompanyEquipmentInventory>('CompanyEquipmentInventory', CompanyEquipmentInventorySchema)
+export const CompanyEquipmentInventory = mongoose.model<ICompanyEquipmentInventory>('CompanyEquipmentInventory', CompanyEquipmentInventorySchema);

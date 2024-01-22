@@ -1,5 +1,5 @@
-import mongoose, { Schema } from 'mongoose'
-import { User, IUser } from './User'
+import { Schema } from 'mongoose';
+import { User, IUser } from './User';
 
 // COMPANY ADMIN DISCRIMINATOR
 export interface ICompanyAdmin extends IUser {

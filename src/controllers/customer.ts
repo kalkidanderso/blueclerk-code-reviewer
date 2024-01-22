@@ -1,30 +1,30 @@
-import { Request, Response } from 'express'
-import { ObjectId } from 'mongodb'
-import { Status, Messages, Role, AccountTypes } from '../common/constants'
+import { Request, Response } from 'express';
+import { ObjectId } from 'mongodb';
+import { Status, Messages, Role, AccountTypes } from '../common/constants';
 
-import { Company, ICompany } from '../models/Company'
-import { User, IUser } from '../models/User'
-import { Contact } from '../models/Contact'
-import { Customer, ICustomer, IQBCustomer } from '../models/Customer'
-import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer'
-import { Estimate } from '../models/Estimate'
-import { PurchaseOrder } from '../models/PurchaseOrder'
-import { Tag } from '../models/Tag'
-import { CustomerEquipment } from '../models/CustomerEquipment'
-import { JobLocation } from '../models/JobLocation'
-import { JobSite } from '../models/JobSite'
-import { ServiceTicket } from '../models/ServiceTicket'
-import { Job } from '../models/Job'
-import { IPriceTier } from '../models/PriceTier'
-import { Invoice } from '../models/Invoice'
-import { Payment } from '../models/Payment'
-import { _createQBCustomer, _updateQBCustomer, _inactivateQBCustomers } from '../controllers/quickbook.customer'
-import { _getQBInvoices, _updateQBInvoice, _transferQBInvoices, _countQBInvoices } from '../controllers/quickbook.invoice'
-import { _getQBPayments, _updateQBPayment, _transferQBPayments, _countQBPayments } from '../controllers/quickbook.payment'
-import { _refreshToken } from './quickbook'
-import { createCustomerContact } from './contact'
-import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin'
-import { SupplierBuilder, ISupplierBuilder } from '../models/SupplierBuilder'
+import { Company, ICompany } from '../models/Company';
+import { User, IUser } from '../models/User';
+import { Contact } from '../models/Contact';
+import { Customer, ICustomer, IQBCustomer } from '../models/Customer';
+import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer';
+import { Estimate } from '../models/Estimate';
+import { PurchaseOrder } from '../models/PurchaseOrder';
+import { Tag } from '../models/Tag';
+import { CustomerEquipment } from '../models/CustomerEquipment';
+import { JobLocation } from '../models/JobLocation';
+import { JobSite } from '../models/JobSite';
+import { ServiceTicket } from '../models/ServiceTicket';
+import { Job } from '../models/Job';
+import { IPriceTier } from '../models/PriceTier';
+import { Invoice } from '../models/Invoice';
+import { Payment } from '../models/Payment';
+import { _createQBCustomer, _updateQBCustomer, _inactivateQBCustomers } from '../controllers/quickbook.customer';
+import { _getQBInvoices, _updateQBInvoice, _transferQBInvoices, _countQBInvoices } from '../controllers/quickbook.invoice';
+import { _getQBPayments, _updateQBPayment, _transferQBPayments, _countQBPayments } from '../controllers/quickbook.payment';
+import { _refreshToken } from './quickbook';
+import { createCustomerContact } from './contact';
+import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin';
+import { SupplierBuilder, ISupplierBuilder } from '../models/SupplierBuilder';
 import * as Sentry from '@sentry/node';
 
 /**
@@ -40,16 +40,16 @@ export const _resetCustomerQB = (company: ICompany): void => {
 
     return;
 
-}
+};
 
 export const createCustomer = async (req: Request, res: Response) => {
 
-    const params = req.body
+    const params = req.body;
     const company = <ICompany>req.company;
-    var companyId = req.companyId;
+    let companyId = req.companyId;
     let companyTier: { tier: any };
     if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
+        companyId = req.otherCompanyId;
     }
 
     /**
@@ -61,15 +61,15 @@ export const createCustomer = async (req: Request, res: Response) => {
         companyTier = company.itemTier.list.find(t => {
             const tier = <IPriceTier>t.tier;
             // Check for the active company item tier
-            return (tier._id.toString() === params.itemTierId && tier.isActive)
-        })
+            return (tier._id.toString() === params.itemTierId && tier.isActive);
+        });
 
         if (!companyTier) {
-            return res.json({ status: Status.Error, message: 'itemTierId is either not found on the Company or itemTier is not active' })
+            return res.json({ status: Status.Error, message: 'itemTierId is either not found on the Company or itemTier is not active' });
         }
     }
 
-    var data: any = {
+    const data: any = {
         info: {
             email: params.email,
         },
@@ -104,26 +104,26 @@ export const createCustomer = async (req: Request, res: Response) => {
     if (params.latitude && params.longitude) {
         data.location = {
             coordinates: [params.longitude, params.latitude]
-        }
+        };
     }
-    const customer = new Customer(data)
+    const customer = new Customer(data);
 
     CompanyCustomer.find({ company: companyId },
         (err: any, companyCustomers: ICompanyCustomer[]) => {
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
 
             const customerIds = companyCustomers.length !== 0 ? companyCustomers.map((obj: any) => {
-                return obj.customer
-            }) : []
+                return obj.customer;
+            }) : [];
 
             User.find({ _id: { $in: customerIds } },
                 'info.email',
                 async (err: any, users: IUser[]) => {
 
                     if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                     }
                     if (users.length === 0 || (users.findIndex((element: any) => element?.info?.email === customer?.info?.email) < 0)) {
                         // Create contact customer
@@ -146,7 +146,7 @@ export const createCustomer = async (req: Request, res: Response) => {
                         customer.save((err: any) => {
 
                             if (err) {
-                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err })
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError, 'error': err });
                             }
 
                             // create company customer here
@@ -154,12 +154,12 @@ export const createCustomer = async (req: Request, res: Response) => {
                                 company: companyId,
                                 customer: customer._id,
                                 createdAt: Date.now()
-                            })
+                            });
 
                             companyCustomer.save((err: any) => {
 
                                 if (err) {
-                                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                                 }
 
                                 if (company.qbAuthorized) {
@@ -182,22 +182,22 @@ export const createCustomer = async (req: Request, res: Response) => {
                                         }
 
                                         return res.json({ status: Status.Success, message: 'Customer created successfully.', customer, quickbookCustomer: qbCustomer });
-                                    })
+                                    });
                                 } else {
                                     return res.json({ status: Status.Success, message: 'Customer created successfully.', customer });
                                 }
 
-                            })
-                        })
+                            });
+                        });
                     } else {
-                        return res.json({ 'status': Status.Error, 'message': 'This email is already registered so please try with other email again' })
+                        return res.json({ 'status': Status.Error, 'message': 'This email is already registered so please try with other email again' });
                     }
 
-                })
+                });
 
-        })
+        });
 
-}
+};
 
 /**
  * Reusable create Customer function to be used anywhere
@@ -255,7 +255,7 @@ export const _createCustomer = async (req: Request, res: Response, next: (err: a
         if (params.latitude && params.longitude) {
             customer.location = {
                 coordinates: [params.longitude, params.latitude]
-            }
+            };
         }
 
         await customer.save();
@@ -265,7 +265,7 @@ export const _createCustomer = async (req: Request, res: Response, next: (err: a
             company: companyId,
             customer: customer._id,
             createdAt: Date.now()
-        })
+        });
         await companyCustomer.save();
 
     } catch (error) {
@@ -275,39 +275,39 @@ export const _createCustomer = async (req: Request, res: Response, next: (err: a
 
     return next(null, <ICustomer>customer);
 
-}
+};
 
 
 export const getCustomers = async (req: Request, res: Response) => {
-    const params = req.body
-    var companyId = req.companyId;
+    const params = req.body;
+    let companyId = req.companyId;
     if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
+        companyId = req.otherCompanyId;
     }
-    var filter = {}
+    let filter = {};
     if (params.includeActive == 'true' && params.includeNonActive == 'true') {
-        filter = {}
+        filter = {};
     } else if (params.includeActive == 'true') {
-        filter = { 'isActive': { $eq: true } }
+        filter = { 'isActive': { $eq: true } };
     } else {
-        filter = { 'isActive': { $eq: false } }
+        filter = { 'isActive': { $eq: false } };
     }
 
     const customers = await Customer.aggregate([
         {
             $lookup: {
-                from: "companycustomers",
-                localField: "_id",
-                foreignField: "customer",
-                as: "companycustomers"
+                from: 'companycustomers',
+                localField: '_id',
+                foreignField: 'customer',
+                as: 'companycustomers'
             }
         },
         {
             $lookup: {
-                from: "pricetiers",
-                localField: "itemTier",
-                foreignField: "_id",
-                as: "itemTierObj"
+                from: 'pricetiers',
+                localField: 'itemTier',
+                foreignField: '_id',
+                as: 'itemTierObj'
             }
         },
         {
@@ -321,22 +321,22 @@ export const getCustomers = async (req: Request, res: Response) => {
         {
             $project: {
                 _id: 1,
-                "profile.displayName": 1,
-                "contact.phone": 1,
-                "info.email": 1,
-                "isActive": 1,
-                "quickbookId": 1,
-                "isPORequired": 1,
-                "notes": 1,
-                "itemTier": 1,
-                "itemTierObj": 1,
-                "discountPrices": 1
+                'profile.displayName': 1,
+                'contact.phone': 1,
+                'info.email': 1,
+                'isActive': 1,
+                'quickbookId': 1,
+                'isPORequired': 1,
+                'notes': 1,
+                'itemTier': 1,
+                'itemTierObj': 1,
+                'discountPrices': 1
             }
         },
-    ]).exec()
+    ]).exec();
 
-    return res.json({ 'status': Status.Success, 'customers': customers })
-}
+    return res.json({ 'status': Status.Success, 'customers': customers });
+};
 
 /**
  * To retrieve the builders of the supplier,
@@ -360,18 +360,18 @@ export const getSupplierBuilders = async (req: Request, res: Response) => {
 
     // Construct isActive filter query
     switch (params.isActive) {
-        case false:
-        case 'false':
-            filter['$and'].push({ isActive: false });
-            break;
+    case false:
+    case 'false':
+        filter['$and'].push({ isActive: false });
+        break;
 
-        case 'all':
-            break;
+    case 'all':
+        break;
 
-        case true:
-        default:
-            filter['$and'].push({ isActive: { $ne: false } });
-            break;
+    case true:
+    default:
+        filter['$and'].push({ isActive: { $ne: false } });
+        break;
     }
 
     // Finally, get the builder aka customer information
@@ -379,37 +379,37 @@ export const getSupplierBuilders = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, builders });
 
-}
+};
 
 export const getAllCustomers = async (req: Request, res: Response) => {
     const { ENVIRONMENT } = process.env;
     const params = req.query;
     const query: any = {};
-    const customerName = ["Westin Homes", "Shea Homes", "Perry Homes", "Toll Brothers, Inc."]
+    const customerName = ['Westin Homes', 'Shea Homes', 'Perry Homes', 'Toll Brothers, Inc.'];
     const customerIds = ['615365a5cae446268ec35c07', '60244e3a9b846d6018bfdd99', '615365a3cae446a8bbc35b5f', '615365a4cae4462e66c35bdd'];
 
     switch (ENVIRONMENT) {
-        case 'production':
-            // query['$or'] = [{ 'profile.displayName': { $in: customerName } }];
-            query['$or'] = [{ _id: { $in: customerIds } }];
-            break;
+    case 'production':
+        // query['$or'] = [{ 'profile.displayName': { $in: customerName } }];
+        query['$or'] = [{ _id: { $in: customerIds } }];
+        break;
 
-        case 'staging':
-        default:
-            if (params.keyword) {
-                const keywordRegex = { $regex: params.keyword, $options: '$i' };
-                query['$or'] = [
-                    { 'profile.displayName': keywordRegex },
-                    { 'info.email': keywordRegex },
-                ]
-            }
+    case 'staging':
+    default:
+        if (params.keyword) {
+            const keywordRegex = { $regex: params.keyword, $options: '$i' };
+            query['$or'] = [
+                { 'profile.displayName': keywordRegex },
+                { 'info.email': keywordRegex },
+            ];
+        }
 
-            break;
+        break;
     }
 
     const customers = await Customer.find({ ...query }, 'profile info contact address').sort({ 'profile.displayName': 1 });
-    return res.json({ status: Status.Success, customers })
-}
+    return res.json({ status: Status.Success, customers });
+};
 
 export const updateCustomer = (req: Request, res: Response) => {
 
@@ -420,7 +420,7 @@ export const updateCustomer = (req: Request, res: Response) => {
     Customer.findById(params.customerId)
         .exec(async (err: any, customer: ICustomer) => {
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
 
             /**
@@ -432,11 +432,11 @@ export const updateCustomer = (req: Request, res: Response) => {
                 companyTier = company.itemTier.list.find(t => {
                     const tier = <IPriceTier>t.tier;
                     // Check for the active company item tier
-                    return (tier._id.toString() === params.itemTierId && tier.isActive)
+                    return (tier._id.toString() === params.itemTierId && tier.isActive);
                 });
 
                 if (!companyTier) {
-                    return res.json({ status: Status.Error, message: 'itemTierId is either not found on the Company or itemTier is not active' })
+                    return res.json({ status: Status.Error, message: 'itemTierId is either not found on the Company or itemTier is not active' });
                 }
             }
 
@@ -451,7 +451,7 @@ export const updateCustomer = (req: Request, res: Response) => {
             // Check if customer has customPrices or not when isCustomPrice set to true
             const warningMessage = isCustomPrice && customer.customPrices.length <= 0 ? 'Customer will use custom price, but no custom price is configured currently.' : undefined;
 
-            var data: any = {
+            const data: any = {
                 'info.email': params.email,
                 'auth.email': params.email,
                 'profile.firstName': params.name,
@@ -474,7 +474,7 @@ export const updateCustomer = (req: Request, res: Response) => {
                 inactiveBy: null,
                 isPORequired: params.isPORequired,
                 notes: params.notes
-            }
+            };
 
             if (customer.isActive && !isActive) {
                 data.inactiveAt = new Date();
@@ -482,7 +482,7 @@ export const updateCustomer = (req: Request, res: Response) => {
             }
 
             if (params.latitude && params.longitude) {
-                data['location.coordinates'] = [params.longitude, params.latitude]
+                data['location.coordinates'] = [params.longitude, params.latitude];
             }
 
             await CustomerAdmin.findOneAndUpdate({ _id: customer.admin }, data);
@@ -522,8 +522,8 @@ export const updateCustomer = (req: Request, res: Response) => {
                     }
                 });
             });
-        })
-}
+        });
+};
 
 export const updateCustomPrices = async (req: Request, res: Response) => {
 
@@ -560,7 +560,7 @@ export const updateCustomPrices = async (req: Request, res: Response) => {
         // Check if quantity is in sequence
         for (let i = 0; i < parsedCustomPrices.length; i++) {
             if (parsedCustomPrices[i].quantity !== i + 1) {
-                isValid = false
+                isValid = false;
                 break;
             }
         }
@@ -579,18 +579,18 @@ export const updateCustomPrices = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, message: 'Nothing to do.' });
 
-}
+};
 
 export const customerDetail = (req: Request, res: Response) => {
 
-    const params = req.body
+    const params = req.body;
 
     let companyId = req.companyId;
     if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
+        companyId = req.otherCompanyId;
     }
 
-    if (params.accountType == "Supplier") {
+    if (params.accountType == 'Supplier') {
         SupplierBuilder.findOne({ builder: params.customerId, supplier: companyId })
             .populate({
                 path: 'builder',
@@ -599,9 +599,9 @@ export const customerDetail = (req: Request, res: Response) => {
             .exec().then((supplierCustomer: ISupplierBuilder) => {
                 const customer: any = supplierCustomer?.builder;
                 if (!supplierCustomer || customer?.permissions?.role != Role.CUSTOMER) {
-                    return res.json({ 'status': Status.Error, 'message': 'No customer found' })
+                    return res.json({ 'status': Status.Error, 'message': 'No customer found' });
                 }
-                return res.json({ 'status': Status.Success, 'customer': customer })
+                return res.json({ 'status': Status.Success, 'customer': customer });
             }).catch((err) => {
                 Sentry.captureException(err);
                 return res.json({ 'status': Status.Error, 'message': err.message });
@@ -616,15 +616,15 @@ export const customerDetail = (req: Request, res: Response) => {
             .exec().then((companyCustomer: ICompanyCustomer) => {
                 const customer: any = companyCustomer?.customer;
                 if (!companyCustomer || customer?.permissions?.role != Role.CUSTOMER) {
-                    return res.json({ 'status': Status.Error, 'message': 'No customer found' })
+                    return res.json({ 'status': Status.Error, 'message': 'No customer found' });
                 }
-                return res.json({ 'status': Status.Success, 'customer': customer })
+                return res.json({ 'status': Status.Success, 'customer': customer });
             }).catch((err) => {
                 Sentry.captureException(err);
                 return res.json({ 'status': Status.Error, 'message': err.message });
             });
     }
-}
+};
 
 export const searchDuplicatedCustomers = async (req: Request, res: Response) => {
 
@@ -661,7 +661,7 @@ export const searchDuplicatedCustomers = async (req: Request, res: Response) => 
             const customerWithInvoicesPayments = await _getCustomerInvoicesPayments(customers, company);
             return res.json({ status: Status.Success, customers: customerWithInvoicesPayments });
         });
-}
+};
 
 export const mergeCustomers = async (req: Request, res: Response) => {
 
@@ -682,7 +682,7 @@ export const mergeCustomers = async (req: Request, res: Response) => {
     const customerEquipmentIds = customerEquipments.map(customerEquipment => customerEquipment.id);
     const jobLocationIds = jobLocations.map(jobLocation => jobLocation.id);
 
-    const qbCustomerPayments: string[] = []
+    const qbCustomerPayments: string[] = [];
 
 
     _refreshToken(req, res, company, async (err, errMsg, company) => {
@@ -718,18 +718,18 @@ export const mergeCustomers = async (req: Request, res: Response) => {
             }
 
         }
-    })
+    });
 
     // Return error when unused user have deposited payment
     if (qbCustomerPayments.length) {
-        return res.json({ status: Status.Error, message: `You cannot merge this customer(s): ${[...new Set(qbCustomerPayments)].toString()}. Because they already have a payments on Quickbooks. Either remove the payments of those customers or merge the other customers instead.` })
+        return res.json({ status: Status.Error, message: `You cannot merge this customer(s): ${[...new Set(qbCustomerPayments)].toString()}. Because they already have a payments on Quickbooks. Either remove the payments of those customers or merge the other customers instead.` });
     }
 
     const { credit: mergedCredit, balance: mergedBalance } = await _sumMergedCreditBalance(unusedCustomerIds);
 
     Customer.findById(params.customerId).exec(async (err: any, customer: ICustomer) => {
         if (err || !customer) {
-            return res.json({ status: Status.NotFound, message: 'Customer not found' })
+            return res.json({ status: Status.NotFound, message: 'Customer not found' });
         }
 
         const mergeEntry: any = {
@@ -756,7 +756,7 @@ export const mergeCustomers = async (req: Request, res: Response) => {
             balance: (customer.balance ?? 0) + mergedBalance,
             inactiveAt: null,
             inactiveBy: null,
-        }
+        };
 
         if (!customer.quickbookId) {
             await _createQBCustomer(req, res, company, customer, async (err: any, errMsg: any, qbCustomer: IQBCustomer) => {
@@ -766,7 +766,7 @@ export const mergeCustomers = async (req: Request, res: Response) => {
 
                 // Create new Customer in QuickBooks
                 mergeEntry.quickbookId = qbCustomer.Id;
-            })
+            });
         }
 
         // Save the updated data to customer
@@ -796,13 +796,13 @@ export const mergeCustomers = async (req: Request, res: Response) => {
                     await _inactivateQBCustomers(req, res, company, unusedCustomers, async (err, errMsg) => {
                         if (err) {
                             // return res.json({ status: err, message: errMsg });
-                            throw new Error(errMsg)
+                            throw new Error(errMsg);
                         }
 
                         await _updateQBCustomer(req, res, company, customer, async (err, errMsg, qbCustomer) => {
                             if (err) {
                                 // return res.json({ status: err, message: errMsg });
-                                throw new Error(errMsg)
+                                throw new Error(errMsg);
                             }
 
                             // Remove unused customer (Disable for development)
@@ -810,7 +810,7 @@ export const mergeCustomers = async (req: Request, res: Response) => {
                             await Customer.updateMany(
                                 { _id: { $in: unusedCustomerIds }, company: companyId },
                                 { $set: { isActive: false } }
-                            ).exec()
+                            ).exec();
                         });
                     });
                 });
@@ -820,7 +820,7 @@ export const mergeCustomers = async (req: Request, res: Response) => {
         });
     });
 
-}
+};
 
 export const _getCustomerInvoicesPayments = async (customers: ICustomer[], company: ICompany) => {
 
@@ -851,7 +851,7 @@ export const _getCustomerInvoicesPayments = async (customers: ICustomer[], compa
     }
     return customerWithInvoicesPayments;
 
-}
+};
 
 const _moveCustomer = async ({
     req,
@@ -935,7 +935,7 @@ const _moveCustomer = async ({
     ).exec();
 
     return;
-}
+};
 
 const _sumMergedCreditBalance = async (unusedCustomerIds: string[]): Promise<{ credit: number, balance: number }> => {
 
@@ -950,7 +950,7 @@ const _sumMergedCreditBalance = async (unusedCustomerIds: string[]): Promise<{ c
 
     return { credit, balance };
 
-}
+};
 
 /**
  * Export the customers linked to company to excel, with
@@ -961,21 +961,21 @@ const _sumMergedCreditBalance = async (unusedCustomerIds: string[]): Promise<{ c
  */
 export const exportCustomersToExcel = async (req: Request, res: Response) => {
     const company = req.otherCompanyId || req.companyId;
-    const customers = await _getDataCustomersToExport(company)
+    const customers = await _getDataCustomersToExport(company);
     const rows = customers.map((customer: any) => _converCustomerToRowExcel(customer))
         .filter((row: any) => row.name && row.name !== '');
-    const XLSX = require("xlsx");
+    const XLSX = require('xlsx');
     const worksheet = XLSX.utils.json_to_sheet(rows);
-    const headers = ["Customer Name", "Email", "Phone", "Street", "City", "State", "Zip", "Pricing Tier", "Payment Term", "Active", "PO Required"]
-    XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: "A1" });
+    const headers = ['Customer Name', 'Email', 'Phone', 'Street', 'City', 'State', 'Zip', 'Pricing Tier', 'Payment Term', 'Active', 'PO Required'];
+    XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: 'A1' });
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Dates");
-    const buf = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Dates');
+    const buf = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 
-    res.attachment("customers.xlsx");
+    res.attachment('customers.xlsx');
     res.header('Access-Control-Expose-Headers', 'Content-Type, Location, Content-Disposition');
     res.status(200).end(buf);
-}
+};
 
 /**
  * Get the customers linked to the company to be exported to excel
@@ -1003,7 +1003,7 @@ const _getDataCustomersToExport = async (company: string): Promise<any[]> => {
                             isActive: 1,
                             isPORequired: 1,
                             lowerName:{
-                                "$toLower": "$profile.displayName"
+                                '$toLower': '$profile.displayName'
                             }
                         },
                     },
@@ -1050,7 +1050,7 @@ const _getDataCustomersToExport = async (company: string): Promise<any[]> => {
         { $sort: { 'customerObj.lowerName': 1 } },
     ]);
     return customers;
-}
+};
 
 /**
  * Convert customer to row to be used one xcel
@@ -1093,7 +1093,7 @@ const _converCustomerToRowExcel = (customer: any): any => {
         row.addressCity = cust.address?.city;
         row.addressState = cust.address?.state;
         row.addressZipCode = cust.address?.zipCode;
-        row.isActive = cust.isActive ? 'Yes' : 'No'
+        row.isActive = cust.isActive ? 'Yes' : 'No';
         row.isPORequired = cust.isPORequired ? 'Yes' : 'No';
     }
     if (customer.tierObj.length > 0) {
@@ -1105,4 +1105,4 @@ const _converCustomerToRowExcel = (customer: any): any => {
         row.paymentTermName = payT.name;
     }
     return row;
-}
+};

@@ -5,7 +5,7 @@ import multerS3 from 'multer-s3';
 import uuid from 'uuid';
 
 // Initialize dotenv to be able to use environment variables here
-dotenv.config()
+dotenv.config();
 
 // Initialize AWS S3 for multer storage usage
 AWS.config.update({
@@ -32,7 +32,7 @@ export const uploadImageInS3 = multer({
         acl: 'public-read',
         contentType: multerS3.AUTO_CONTENT_TYPE,
         key: function (req, file, cb) {
-            cb(null, uuid())
+            cb(null, uuid());
         }
     })
 });

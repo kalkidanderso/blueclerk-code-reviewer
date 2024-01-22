@@ -42,12 +42,12 @@ export const createChat = async (req: Request, res: Response) => {
 
     try {
         switch (chatChannel) {
-            case ChatChannels.JOB_REQUEST:
-                chat = await _createJobRequestChat(params, id, user, company, repliedChat);
-                break;
+        case ChatChannels.JOB_REQUEST:
+            chat = await _createJobRequestChat(params, id, user, company, repliedChat);
+            break;
 
-            default:
-                break;
+        default:
+            break;
         }
     } catch (err) {
         Sentry.captureException(err);
@@ -56,7 +56,7 @@ export const createChat = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, message: 'Message sent successfully', chat });
 
-}
+};
 
 /**
  * To retrieve chats based on chat channel and the given ID
@@ -70,29 +70,29 @@ export const getChats = async (req: Request, res: Response) => {
     let unreadChat = 0;
 
     switch (chatChannel) {
-        case ChatChannels.JOB_REQUEST:
-            const jobRequest = await _findJobRequest(req.params, id, user, company);
+    case ChatChannels.JOB_REQUEST:
+        const jobRequest = await _findJobRequest(req.params, id, user, company);
 
-            chats = await Chat.find({ chatChannel: ChatChannels.JOB_REQUEST, jobRequest: jobRequest._id })
-                .populate({ path: 'jobRequest', select: '-__v -track' })
-                .populate({ path: 'replyTo', select: '-__v', populate: [{ path: 'user', select: 'profile info contact' }] })
-                .populate({ path: 'readStatus.readBy', select: 'profile info contact location' })
-                .populate({ path: 'user', select: 'profile info contact location' })
-                .populate({ path: 'company', select: 'info address contact' })
-                .populate({ path: 'customer', select: 'profile info address contact' });
+        chats = await Chat.find({ chatChannel: ChatChannels.JOB_REQUEST, jobRequest: jobRequest._id })
+            .populate({ path: 'jobRequest', select: '-__v -track' })
+            .populate({ path: 'replyTo', select: '-__v', populate: [{ path: 'user', select: 'profile info contact' }] })
+            .populate({ path: 'readStatus.readBy', select: 'profile info contact location' })
+            .populate({ path: 'user', select: 'profile info contact location' })
+            .populate({ path: 'company', select: 'info address contact' })
+            .populate({ path: 'customer', select: 'profile info address contact' });
 
-            // Retrieve unread chat count
-            unreadChat = await _getUnreadChatCount(company._id, jobRequest._id);
+        // Retrieve unread chat count
+        unreadChat = await _getUnreadChatCount(company._id, jobRequest._id);
 
-            break;
+        break;
     
-        default:
-            break;
+    default:
+        break;
     }
 
     return res.json({ status: Status.Success, unreadChat, chats });
 
-}
+};
 
 /**
  * To mark chats as read based on last given chat ID
@@ -140,7 +140,7 @@ export const markRead = async (req: Request, res: Response) => {
         lastReadChatId: lastChat._id,
         readBy: user?.profile?.displayName,
         saveToDb: false
-    })
+    });
 
     // Retrieve unread chat count
     const unreadChat = await _getUnreadChatCount(company._id, jobRequest._id);
@@ -151,7 +151,7 @@ export const markRead = async (req: Request, res: Response) => {
         unreadChat
     });
 
-}
+};
 
 // =======================================
 // ===== [ PARTIAL METHODS BELOW] ========
@@ -206,7 +206,7 @@ const _createJobRequestChat = async (params: any, id: string, user: IUser, compa
 
     return jobRequestChat;
 
-}
+};
 
 // Retrieve unread chat count
 const _getUnreadChatCount = async (companyId: string, jobRequestId: string) => {
@@ -218,7 +218,7 @@ const _getUnreadChatCount = async (companyId: string, jobRequestId: string) => {
     })?.countDocuments();
 
     return unreadChat;
-}
+};
 
 const _findJobRequest =  async (params: any, id: string, user: IUser, company: ICompany): Promise<IJobRequest> => {
 
@@ -234,4 +234,4 @@ const _findJobRequest =  async (params: any, id: string, user: IUser, company: I
     }
 
     return jobRequest;
-}
+};

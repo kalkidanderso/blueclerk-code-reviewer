@@ -1,6 +1,6 @@
-import mongoose, { Document, Schema } from "mongoose";
-import { ICompany } from "../models/Company";
-import { ICustomer } from "./Customer";
+import mongoose, { Document, Schema } from 'mongoose';
+import { ICompany } from '../models/Company';
+import { ICustomer } from './Customer';
 
 export enum ReportTypes {
     INCOME = 1,
@@ -93,7 +93,7 @@ const MemorizedReportSchema = new Schema(
         endDate: String
     },
     { timestamps: true }
-)
+);
 
 //Indexes
 MemorizedReportSchema.index({ company: 1 });
@@ -125,7 +125,7 @@ const IncomeReportSchema = new Schema({
     },
     customerIds: [String],
 
-})
+});
 
 export const IncomeReport = MemorizedReport.discriminator<IIncomeReport>('IncomeReport', IncomeReportSchema);
 

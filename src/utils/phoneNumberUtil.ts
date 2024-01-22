@@ -2,7 +2,7 @@ const {PhoneNumberFormat, PhoneNumberUtil} = require('google-libphonenumber');
 
 export const standarizePhoneNumberE164 = (phoneNumber: string): string => {
     if(!phoneNumber) {
-        return ''
+        return '';
     }
     const phoneUtil = new PhoneNumberUtil();
     try {
@@ -11,7 +11,7 @@ export const standarizePhoneNumberE164 = (phoneNumber: string): string => {
     }
     catch (e) {
         // If fails to standarize, try again with US country code
-        const standarizedPhone = phoneUtil.format(phoneUtil.parse("+1 " + phoneNumber), PhoneNumberFormat.E164);
+        const standarizedPhone = phoneUtil.format(phoneUtil.parse('+1 ' + phoneNumber), PhoneNumberFormat.E164);
         return standarizedPhone;
     }
-}
+};

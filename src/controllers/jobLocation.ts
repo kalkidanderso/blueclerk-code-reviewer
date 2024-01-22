@@ -1,11 +1,11 @@
-import { Request, Response } from 'express'
-import { Status, Messages } from '../common/constants'
+import { Request, Response } from 'express';
+import { Status, Messages } from '../common/constants';
 
 import { JobLocation, IJobLocation } from '../models/JobLocation';
 import { IUser } from '../models/User';
-import { ICompany } from '../models/Company'
-import { Customer } from '../models/Customer'
-import { Contact } from '../models/Contact'
+import { ICompany } from '../models/Company';
+import { Customer } from '../models/Customer';
+import { Contact } from '../models/Contact';
 import { _createQBCustomerJob, _updateQBCustomerJob } from './quickbook.customer';
 import { HomeOwner } from '../models/HomeOwner';
 import * as Sentry from '@sentry/node';
@@ -14,7 +14,7 @@ import * as Sentry from '@sentry/node';
  * To reset Job Location quickbookId,
  * used when /disconnectQB API called
  */
- export const _resetJobLocationQB = (company: ICompany): void => {
+export const _resetJobLocationQB = (company: ICompany): void => {
 
     JobLocation.updateMany(
         { companyId: company._id, quickbookId: { $ne: null } },
@@ -23,67 +23,67 @@ import * as Sentry from '@sentry/node';
 
     return;
 
-}
+};
 
 export const get = (req: Request, res: Response) => {
-    const { id } = req.params
-    const { query: queryParams = {} } = req
+    const { id } = req.params;
+    const { query: queryParams = {} } = req;
     const loggedInCompanyId = req.companyId;
-    let { customerId, homeOwnerId, companyId, isActive } = queryParams
-    let query = {}
+    let { customerId, homeOwnerId, companyId, isActive } = queryParams;
+    let query = {};
 
     if (!id && !customerId && !companyId && loggedInCompanyId) {
         companyId = loggedInCompanyId;
     }
     if (id) {
-        query = { _id: id }
+        query = { _id: id };
     } else if (customerId && companyId) {
-        query = { customerId, companyId }
+        query = { customerId, companyId };
     } else if (homeOwnerId && companyId) {
-        query = { homeOwner: homeOwnerId, companyId }
+        query = { homeOwner: homeOwnerId, companyId };
     } else if (customerId && !homeOwnerId) {
-        query = { customerId }
+        query = { customerId };
     } else if (homeOwnerId && !customerId) {
-        query = { homeOwner: homeOwnerId }
+        query = { homeOwner: homeOwnerId };
     } else if(homeOwnerId && customerId) {
-        query =  { $or: [{ homeOwner: homeOwnerId }, { customerId }] }
+        query =  { $or: [{ homeOwner: homeOwnerId }, { customerId }] };
     } else if (companyId) {
-        query = { companyId }
+        query = { companyId };
     }
 
     switch (isActive) {
-        case 'true':
-        case true:
-            query = { ...query, $or: [{ isActive: true }, { isActive: { $exists: false } }] };
-            break;
+    case 'true':
+    case true:
+        query = { ...query, $or: [{ isActive: true }, { isActive: { $exists: false } }] };
+        break;
 
-        case 'false':
-        case false:
-            query = { ...query, isActive: false };
-            break;
+    case 'false':
+    case false:
+        query = { ...query, isActive: false };
+        break;
 
-        default:
-            // Retrieve all job location, query is good at this point
-            break;
+    default:
+        // Retrieve all job location, query is good at this point
+        break;
     }
 
     JobLocation.find(query)
         .populate('jobSites', '-__v -locationId -customerId -homeOwner')
         .populate('contacts', '-__v')
         .exec().then((jobLocations: any) => {
-        return res.json(jobLocations);
-    }).catch((err) => {
-        Sentry.captureException(err);
-        return res.json({'status': Status.Error, 'message': err.message});
-    })
-}
+            return res.json(jobLocations);
+        }).catch((err) => {
+            Sentry.captureException(err);
+            return res.json({'status': Status.Error, 'message': err.message});
+        });
+};
 
 export const create = async (req: Request, res: Response) => {
-    const params = req.body
-    let companyId = req.companyId
-    const company = req.company
+    const params = req.body;
+    let companyId = req.companyId;
+    const company = req.company;
     if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId
+        companyId = req.otherCompanyId;
     }
     const name = params.name;
     const contact = params.contact ? JSON.parse(params.contact) : {};
@@ -97,9 +97,9 @@ export const create = async (req: Request, res: Response) => {
     const homeOwnerId = params.homeOwnerId;
 
     if (!(locationLat && locationLong) && !(street && city && state && zipcode)) {
-        return res.json({'status': Status.Error, 'message': "Either location or address is required."})
+        return res.json({'status': Status.Error, 'message': 'Either location or address is required.'});
     }
-    let jobLocationData: any = {
+    const jobLocationData: any = {
         name,
         address: {
             street: street,
@@ -109,10 +109,10 @@ export const create = async (req: Request, res: Response) => {
         },
         contacts: [],
         companyId
-    }
+    };
 
     if (!customerId && !homeOwnerId) {
-        return res.json({ status: Status.Error, message: 'Either one of customerId or homeOwnerId should be provided'})
+        return res.json({ status: Status.Error, message: 'Either one of customerId or homeOwnerId should be provided'});
     }
 
     if (homeOwnerId) {
@@ -172,8 +172,8 @@ export const create = async (req: Request, res: Response) => {
     }).catch((err) => {
         Sentry.captureException(err);
         return res.json({'status': Status.Error, 'message': err.message});
-    })
-}
+    });
+};
 
 export const update = async (req: Request, res: Response) => {
 
@@ -202,13 +202,13 @@ export const update = async (req: Request, res: Response) => {
         return res.json({ status: Status.NotFound, message: 'Home owner not found.' });
     }
 
-    let query
+    let query;
     if (customer) {
-        query = { customerId: customer?._id }
+        query = { customerId: customer?._id };
     }
 
     if (homeOwner) {
-        query = { homeOwner: homeOwner?._id }
+        query = { homeOwner: homeOwner?._id };
     }
 
     // Find and check if job locatino existed
@@ -274,11 +274,11 @@ export const update = async (req: Request, res: Response) => {
                 message: 'Subdivision updated successfully.',
                 jobLocation,
                 quickbookCustomerJob: qbCustomerJob
-            })
-        })
+            });
+        });
     } else {
         return res.json({ status: Status.Success, message: 'Subdivision updated successfully.', jobLocation });
     }
 
 
-}
+};

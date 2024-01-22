@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ICompanyCustomer extends Document {
 
@@ -32,7 +32,7 @@ const CompanyCustomerSchema = new Schema({
     },
     createdAt: Date
 
-})
+});
 
 //Indexes
 CompanyCustomerSchema.index({ company: 1 });
@@ -43,4 +43,4 @@ CompanyCustomerSchema.index({ equipments: 1 });
 CompanyCustomerSchema.index({ jobLocations: 1 });
 CompanyCustomerSchema.index({ paymentTerm: 1 });
 
-export const CompanyCustomer = mongoose.model<ICompanyCustomer>('CompanyCustomer', CompanyCustomerSchema)
+export const CompanyCustomer = mongoose.model<ICompanyCustomer>('CompanyCustomer', CompanyCustomerSchema);

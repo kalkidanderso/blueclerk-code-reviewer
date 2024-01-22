@@ -40,7 +40,7 @@ import { sendInvoiceEmailToCustomer, uploadFileInS3 } from '../services/aws';
 import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer';
 import { _createQBInvoice, _deleteQBInvoice, _updateQBInvoice, _voidQBInvoice } from '../controllers/quickbook.invoice';
 import { transformPlaceholders, getPlaceholderValues, _createCompanyDefaultEmail } from '../controllers/emailDefault';
-import * as InvoiceLogController from "../controllers/invoiceLogs";
+import * as InvoiceLogController from '../controllers/invoiceLogs';
 import { IJobSite, JobSite } from '../models/JobSite';
 import { IJobLocation, JobLocation } from '../models/JobLocation';
 import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission';
@@ -70,7 +70,7 @@ export const _resetInvoiceQB = (company: ICompany): void => {
 
     return;
 
-}
+};
 
 export const getInvoicesByCustomerId = (req: Request, res: Response) => {
 
@@ -112,69 +112,69 @@ export const getInvoicesByCustomerId = (req: Request, res: Response) => {
         .exec((err: any, invoices: IInvoice[]) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
 
-            return res.json({ 'status': Status.Success, 'invoices': invoices })
-        })
+            return res.json({ 'status': Status.Success, 'invoices': invoices });
+        });
 
-}
+};
 
 export const setCustomInvoiceNumber = (req: Request, res: Response) => {
 
-    const params = req.body
-    const admin = <ICompanyAdmin>req.user
-    var oldInvoicePrefix: string
-    var newInvoicePrefix: string
-    var oldInvoiceId: number
+    const params = req.body;
+    const admin = <ICompanyAdmin>req.user;
+    let oldInvoicePrefix: string;
+    let newInvoicePrefix: string;
+    let oldInvoiceId: number;
 
     if ((params.invoicePrefix == undefined || params.invoicePrefix === '""') && (params.invoiceNumber == undefined || params.invoiceNumber === '""')) {
-        return res.json({ 'status': Status.Error, 'message': "Either prefix or work order number is required." })
+        return res.json({ 'status': Status.Error, 'message': 'Either prefix or work order number is required.' });
     }
 
     Company.findById(admin.company,
         (err: any, company: ICompany) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
 
             if (company == undefined || company == null) {
-                return res.json({ 'status': Status.Error, 'message': 'No company found.' })
+                return res.json({ 'status': Status.Error, 'message': 'No company found.' });
             }
 
             if (typeof params.invoicePrefix !== 'undefined' && params.invoicePrefix && (typeof params.invoiceNumber === 'undefined' && !params.invoiceNumber)) {
 
                 if (params.invoicePrefix == company.invoicePrefix) {
 
-                    return res.json({ 'status': Status.Success, 'message': "Invoice Prefix already set there." });
+                    return res.json({ 'status': Status.Success, 'message': 'Invoice Prefix already set there.' });
                 }
 
                 checkInvoicePrefixExists(req, res, (req: Request, res: Response, previousPrefix: IInvoicePrefix) => {
 
-                    oldInvoicePrefix = company.invoicePrefix
+                    oldInvoicePrefix = company.invoicePrefix;
 
                     company.updateOne({ 'invoicePrefix': params.invoicePrefix }, (err: any) => {
                         if (err) {
-                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                         }
 
 
                         if (previousPrefix == null && oldInvoicePrefix != undefined) {
 
-                            var prefix = new InvoicePrefix({
+                            const prefix = new InvoicePrefix({
                                 company: req.companyId,
                                 prefix: oldInvoicePrefix,
                                 maxInvoiceId: company.currentInvoiceId
-                            })
+                            });
 
                             prefix.save((err: any) => {
                                 if (err) {
-                                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                                 }
 
-                                return res.json({ 'status': Status.Success, 'message': "Prefix updated successfully." });
-                            })
+                                return res.json({ 'status': Status.Success, 'message': 'Prefix updated successfully.' });
+                            });
 
                         } else if (previousPrefix != null) {
 
@@ -182,38 +182,38 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                                 { 'prefix': oldInvoicePrefix, 'maxInvoiceId': company.currentInvoiceId },
                                 (err: any) => {
                                     if (err) {
-                                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                                     }
 
                                     return res.json({
                                         'status': Status.Success,
-                                        'message': "Prefix updated successfully."
+                                        'message': 'Prefix updated successfully.'
                                     });
-                                })
+                                });
                         } else {
-                            return res.json({ 'status': Status.Success, 'message': "Prefix updated successfully." });
+                            return res.json({ 'status': Status.Success, 'message': 'Prefix updated successfully.' });
                         }
 
-                    })
+                    });
 
-                })
+                });
             } else if (typeof params.invoiceNumber !== 'undefined' && (typeof params.invoicePrefix === 'undefined' || !params.invoicePrefix)) {
 
                 // if (company.currentInvoiceId > params.invoiceNumber) {
                 //     return res.json({'status': Status.Success, 'message': "Invoice number can not be less then " + company.currentJobId});
                 //}
 
-                newInvoicePrefix = params.invoicePrefix == "" ? null : params?.invoicePrefix
+                newInvoicePrefix = params.invoicePrefix == '' ? null : params?.invoicePrefix;
 
                 company.updateOne({
                     'currentInvoiceId': params.invoiceNumber,
                     'invoicePrefix': newInvoicePrefix
                 }, (err: any) => {
                     if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                     }
-                    return res.json({ 'status': Status.Success, 'message': "Invoice number updated successfully." });
-                })
+                    return res.json({ 'status': Status.Success, 'message': 'Invoice number updated successfully.' });
+                });
 
             } else if ((typeof params.invoicePrefix !== 'undefined' && params.invoicePrefix) && (typeof params.invoiceNumber !== 'undefined')) {
 
@@ -225,24 +225,24 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
 
                     company.updateOne({ 'currentInvoiceId': params.invoiceNumber }, (err: any) => {
                         if (err) {
-                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                         }
 
-                        return res.json({ 'status': Status.Success, 'message': "Invoice number updated successfully." });
-                    })
+                        return res.json({ 'status': Status.Success, 'message': 'Invoice number updated successfully.' });
+                    });
 
                 } else if (company.prefix != params.invoicePrefix) {
                     checkInvoicePrefixExists(req, res, (req: Request, res: Response) => {
 
-                        oldInvoicePrefix = company.prefix
-                        oldInvoiceId = company.currentJobId
+                        oldInvoicePrefix = company.prefix;
+                        oldInvoiceId = company.currentJobId;
 
                         company.updateOne({
                             'invoicePrefix': params.invoicePrefix,
                             'currentInvoiceId': params.invoiceNumber
                         }, (err: any) => {
                             if (err) {
-                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                             }
 
                             if (prefix == null && oldInvoicePrefix != undefined) {
@@ -250,64 +250,64 @@ export const setCustomInvoiceNumber = (req: Request, res: Response) => {
                                     company: req.companyId,
                                     prefix: oldInvoicePrefix,
                                     maxInvoiceId: oldInvoiceId
-                                })
+                                });
                                 prefix.save((err: any) => {
                                     if (err) {
-                                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                                     }
 
                                     return res.json({
                                         'status': Status.Success,
-                                        'message': "Prefix updated successfully."
+                                        'message': 'Prefix updated successfully.'
                                     });
-                                })
+                                });
                             } else if (prefix != null) {
-                                const invoicePrefix = <IInvoicePrefix>prefix
+                                const invoicePrefix = <IInvoicePrefix>prefix;
 
                                 invoicePrefix.updateOne({ 'prefix': oldInvoicePrefix, 'maxInvoiceId': oldInvoiceId },
                                     (err: any) => {
                                         if (err) {
-                                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                                         }
 
                                         return res.json({
                                             'status': Status.Success,
-                                            'message': "Prefix updated successfully."
+                                            'message': 'Prefix updated successfully.'
                                         });
-                                    })
+                                    });
                             } else {
-                                return res.json({ 'status': Status.Success, 'message': "Prefix updated successfully." });
+                                return res.json({ 'status': Status.Success, 'message': 'Prefix updated successfully.' });
                             }
-                        })
-                    })
+                        });
+                    });
                 }
             }
         }
-    )
-}
+    );
+};
 
 const checkInvoicePrefixExists = (req: Request, res: Response, next: (req: Request, res: Response, prefix: IInvoicePrefix) => void) => {
 
-    const params = req.body
+    const params = req.body;
 
     InvoicePrefix.findOne(
         { 'prefix': req.company.prefix, 'company': req.companyId },
         (err: any, invoicePrefix: IInvoicePrefix) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
 
             if (invoicePrefix == undefined || invoicePrefix == null) {
-                next(req, res, null)
-                return
+                next(req, res, null);
+                return;
 
             } else {
                 if (params.invoiceNumber != undefined && params.invoiceNumber !== null && params.invoiceNumber != '""') {
                     // if (invoicePrefix.maxInvoiceId > params.invoiceNumber) {
                     //     return res.json({'status': Status.Error, 'message': 'Invoice number with prefix ' + params.invoicePrefix + ' is not allowed. Try no greater then ' + invoicePrefix.maxInvoiceId})
                     //} else {
-                    next(req, res, invoicePrefix)
+                    next(req, res, invoicePrefix);
                     //     return
                     //}
 
@@ -315,17 +315,17 @@ const checkInvoicePrefixExists = (req: Request, res: Response, next: (req: Reque
                     return res.json({
                         'status': Status.Error,
                         'message': 'Current invoice number with prefix ' + params.invoicePrefix + ' is not allowed. Try no greater then ' + invoicePrefix.maxInvoiceId
-                    })
+                    });
 
                 } else {
-                    next(req, res, invoicePrefix)
-                    return
+                    next(req, res, invoicePrefix);
+                    return;
                 }
             }
         }
-    )
+    );
 
-}
+};
 
 export const getInvoiceNumber = (req: Request, res: Response) => {
 
@@ -333,11 +333,11 @@ export const getInvoiceNumber = (req: Request, res: Response) => {
         (err: any, company: ICompany) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
 
             if (company == undefined || company == null) {
-                return res.json({ 'status': Status.Error, 'message': 'No company found.' })
+                return res.json({ 'status': Status.Error, 'message': 'No company found.' });
             }
 
             return res.json({
@@ -346,15 +346,15 @@ export const getInvoiceNumber = (req: Request, res: Response) => {
                 'currentInvoiceNumber': company.currentInvoiceId
             });
         }
-    )
-}
+    );
+};
 
 // Job Invoices
 export const createInvoice = (req: Request, res: Response) => {
 
-    const params = req.body
-    const user = <IUser>req.user
-    const company = <ICompany>req.company
+    const params = req.body;
+    const user = <IUser>req.user;
+    const company = <ICompany>req.company;
 
     if (params.jobId) {
 
@@ -362,18 +362,18 @@ export const createInvoice = (req: Request, res: Response) => {
             .then((previousInvoice: any) => {
 
                 if (previousInvoice) {
-                    throw new Error('Invoice already created for this job')
+                    throw new Error('Invoice already created for this job');
                 }
 
-                const jobPromise = Job.findById(params.jobId)
+                const jobPromise = Job.findById(params.jobId);
                 const POPromise = PurchaseOrder.find({
                     job: params.jobId
-                })
-                return Promise.all([jobPromise, POPromise])
+                });
+                return Promise.all([jobPromise, POPromise]);
 
             })
             .then((result: any) => {
-                const job = <IJob>result[0]
+                const job = <IJob>result[0];
 
                 // Convert jobTypes to ObjectId in array
                 const jobTypes: { id: any; quantity: number; price: number; }[] = [];
@@ -383,9 +383,9 @@ export const createInvoice = (req: Request, res: Response) => {
                             id: taskJobType.jobType,
                             quantity: taskJobType.completedCount || taskJobType.quantity,
                             price: taskJobType.price,
-                        })
-                    })
-                })
+                        });
+                    });
+                });
 
                 // To merge job types when they have the same item
                 const jobTypesFiltered = jobTypes.reduce((accumulator, currentObj) => {
@@ -403,25 +403,25 @@ export const createInvoice = (req: Request, res: Response) => {
                 if (!jobTypesFiltered.length) jobTypesFiltered.push({id: job.type, quantity: 1, price: 0});
                 // Search all jobTypes' items
                 // const items = Item.find({jobType: {$in: jobTypeIds}});
-                const items: any[] = []
+                const items: any[] = [];
                 jobTypesFiltered.forEach(async (jobType) => {
-                    const item: any = await Item.findOne({jobType: jobType.id})
-                    item["quantity"] = jobType.quantity;
-                    item["price"] = jobType.price;
+                    const item: any = await Item.findOne({jobType: jobType.id});
+                    item['quantity'] = jobType.quantity;
+                    item['price'] = jobType.price;
                     items.push(item);
                 });
 
                 // const items = jobTypeIds.map(jobTypeId => Item.findOne({jobType: jobTypeId}))
-                return Promise.all([result[0], result[1], items])
+                return Promise.all([result[0], result[1], items]);
             })
             .then((result: any) => {
 
-                const job = result[0]
-                const purchaseOrders = result[1]
+                const job = result[0];
+                const purchaseOrders = result[1];
                 const items = result[2];
 
                 if (!job) {
-                    throw new Error('Invalid job id')
+                    throw new Error('Invalid job id');
                     // return res.json({'status': Status.Error, 'message': 'Invalid job id'})
                 }
                 return new Promise((resolve, reject) => {
@@ -429,28 +429,28 @@ export const createInvoice = (req: Request, res: Response) => {
 
                         invoiceData.save()
                             .then((newInvoice: IInvoice) => {
-                                resolve({ latestInvoiceId: currentInvoiceId, invoice: newInvoice })
+                                resolve({ latestInvoiceId: currentInvoiceId, invoice: newInvoice });
                             })
                             .catch(() => {
-                                reject('Unable to create invoice, please try again')
-                            })
+                                reject('Unable to create invoice, please try again');
+                            });
 
-                    })
-                })
+                    });
+                });
 
             })
             .then((data: any) => {
 
                 return new Promise((resolve, reject) => {
-                    let invoiceId = data.latestInvoiceId + 1
+                    const invoiceId = data.latestInvoiceId + 1;
                     company.updateOne({ currentInvoiceId: invoiceId })
                         .then(() => {
-                            resolve(data.invoice)
+                            resolve(data.invoice);
                         })
                         .catch(() => {
-                            reject()
-                        })
-                })
+                            reject();
+                        });
+                });
             })
             .then((invoice: IInvoice) => {
 
@@ -469,14 +469,14 @@ export const createInvoice = (req: Request, res: Response) => {
                                 if (task.contractor) {
                                     const contractor = await Company.findOne({ _id: task.contractor });
 
-                                    if (contractor && contractor.commissionType != "fixed") {
-                                        let commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
+                                    if (contractor && contractor.commissionType != 'fixed') {
+                                        const commission = (invoice.total / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
                                         const contractorCommissionEntry = {
                                             contractor: contractor._id,
                                             technician: contractor.admin,
                                             commission: contractor.commission,
                                             commissionAmount: Number(commission.toFixed(2))
-                                        }
+                                        };
 
                                         contractor.balance += Number(commission.toFixed(2));
                                         contractor.save();
@@ -494,7 +494,7 @@ export const createInvoice = (req: Request, res: Response) => {
                                             technician: technician._id,
                                             commission: technician.commission,
                                             commissionAmount: Number(commission.toFixed(2))
-                                        }
+                                        };
 
                                         technician.balance += Number(commission.toFixed(2));
                                         technician.save();
@@ -521,7 +521,7 @@ export const createInvoice = (req: Request, res: Response) => {
                     }
 
                     resolve(invoice);
-                })
+                });
             })
             .then((invoice: any) => {
 
@@ -537,14 +537,14 @@ export const createInvoice = (req: Request, res: Response) => {
                     }
 
                     resolve(invoice);
-                })
+                });
 
             })
             .then((invoice: IInvoice) => {
                 const inoiceLogsObj:any={
-                    invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.CREATED,info:"Invoice created", customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
+                    invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.CREATED,info:'Invoice created', customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
                     , createdBy: user._id
-                }
+                };
                 InvoiceLogController.create(inoiceLogsObj);
                 if (company.qbAuthorized && !invoice.isDraft) {
                     /**
@@ -602,29 +602,29 @@ export const createInvoice = (req: Request, res: Response) => {
             .catch((error: any) => {
                 Sentry.captureException(error);
                 if (error.message != undefined) {
-                    return res.json({ 'status': Status.Error, 'message': error.message })
+                    return res.json({ 'status': Status.Error, 'message': error.message });
                 } else {
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                 }
-            })
+            });
     } else if (params.hasOwnProperty('purchaseOrderId') && params.purchaseOrderId != null && params.purchaseOrderId != '""') {
 
         Invoice.findOne({ 'purchaseOrder': params.purchaseOrderId, 'company': req.companyId })
             .then((invoice: IInvoice | null) => {
                 if (invoice != undefined && invoice != null) {
-                    throw new Error('Invoice already created for this purchase order')
+                    throw new Error('Invoice already created for this purchase order');
                 } else {
-                    return PurchaseOrder.findById(params.purchaseOrderId)
+                    return PurchaseOrder.findById(params.purchaseOrderId);
                 }
 
             })
             .then((purchaseOrder: IPurchaseOrder | null) => {
                 if (purchaseOrder == undefined || purchaseOrder == null) {
-                    throw new Error('Invalid purchase order id')
+                    throw new Error('Invalid purchase order id');
                 }
 
                 if (purchaseOrder.invoiceCreated) {
-                    throw new Error('Invoice already created for this purchase order')
+                    throw new Error('Invoice already created for this purchase order');
                 }
 
                 return new Promise((resolve, reject) => {
@@ -636,26 +636,26 @@ export const createInvoice = (req: Request, res: Response) => {
                                     latestInvoiceId: currentInvoiceId,
                                     invoice: newInvoice,
                                     purchaseOrderId: purchaseOrder._id
-                                })
+                                });
                             })
                             .catch(() => {
-                                reject('Unable to create invoice, please try again')
-                            })
+                                reject('Unable to create invoice, please try again');
+                            });
 
-                    })
-                })
+                    });
+                });
             })
             .then((data: any) => {
-                let invoiceId = data.latestInvoiceId + 1
+                const invoiceId = data.latestInvoiceId + 1;
 
-                const companyUpdate = company.updateOne({ currentInvoiceId: invoiceId })
-                const poUpdate = PurchaseOrder.updateOne({ _id: data.purchaseOrderId }, { invoiceCreated: true })
+                const companyUpdate = company.updateOne({ currentInvoiceId: invoiceId });
+                const poUpdate = PurchaseOrder.updateOne({ _id: data.purchaseOrderId }, { invoiceCreated: true });
 
-                return Promise.all([data.invoice, companyUpdate, poUpdate])
+                return Promise.all([data.invoice, companyUpdate, poUpdate]);
             })
             .then((response: any) => {
 
-                const invoice = response[0]
+                const invoice = response[0];
                 return new Promise(async (resolve, reject) => {
 
                     if (!invoice.isDraft) {
@@ -665,7 +665,7 @@ export const createInvoice = (req: Request, res: Response) => {
                     }
 
                     resolve(invoice);
-                })
+                });
             })
             .then((invoice: IInvoice) => {
                 if (company.qbAuthorized && !invoice.isDraft) {
@@ -713,7 +713,7 @@ export const createInvoice = (req: Request, res: Response) => {
                                     invoice,
                                     quickbookInvoice: qbInvoice
                                 });
-                            })
+                            });
                         }
                     });
 
@@ -728,11 +728,11 @@ export const createInvoice = (req: Request, res: Response) => {
             .catch((error: any) => {
                 Sentry.captureException(error);
                 if (error.message != undefined) {
-                    return res.json({ 'status': Status.Error, 'message': error.message })
+                    return res.json({ 'status': Status.Error, 'message': error.message });
                 } else {
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                 }
-            })
+            });
 
 
         // (err: any, previousInvoice: IInvoice) => {
@@ -798,19 +798,19 @@ export const createInvoice = (req: Request, res: Response) => {
         Invoice.findOne({ 'estimate': params.estimateId, 'company': req.companyId })
             .then((invoice: IInvoice | null) => {
                 if (invoice != undefined && invoice != null) {
-                    throw new Error('Invoice already created for this estimate')
+                    throw new Error('Invoice already created for this estimate');
                 } else {
-                    return Estimate.findById(params.estimateId)
+                    return Estimate.findById(params.estimateId);
                 }
 
             })
             .then((estimate: IEstimate | null) => {
                 if (estimate == undefined || estimate == null) {
-                    throw new Error('Invalid estimate id')
+                    throw new Error('Invalid estimate id');
                 }
 
                 if (estimate.invoiceCreated) {
-                    throw new Error('Invoice already created for this estimate')
+                    throw new Error('Invoice already created for this estimate');
                 }
 
                 return new Promise((resolve, reject) => {
@@ -822,26 +822,26 @@ export const createInvoice = (req: Request, res: Response) => {
                                     latestInvoiceId: currentInvoiceId,
                                     invoice: newInvoice,
                                     estimateId: estimate._id
-                                })
+                                });
                             })
                             .catch(() => {
-                                reject('Unable to create invoice, please try again')
-                            })
+                                reject('Unable to create invoice, please try again');
+                            });
 
-                    })
-                })
+                    });
+                });
             })
             .then((data: any) => {
-                let invoiceId = data.latestInvoiceId + 1
+                const invoiceId = data.latestInvoiceId + 1;
 
-                const companyUpdate = company.updateOne({ currentInvoiceId: invoiceId })
-                const estimateUpdate = Estimate.updateOne({ _id: data.estimateId }, { invoiceCreated: true })
+                const companyUpdate = company.updateOne({ currentInvoiceId: invoiceId });
+                const estimateUpdate = Estimate.updateOne({ _id: data.estimateId }, { invoiceCreated: true });
 
-                return Promise.all([data.invoice, companyUpdate, estimateUpdate])
+                return Promise.all([data.invoice, companyUpdate, estimateUpdate]);
             })
             .then((response: any) => {
 
-                const invoice = response[0]
+                const invoice = response[0];
                 return new Promise(async (resolve, reject) => {
 
                     if (!invoice.isDraft) {
@@ -851,7 +851,7 @@ export const createInvoice = (req: Request, res: Response) => {
                     }
 
                     resolve(invoice);
-                })
+                });
             })
             .then((invoice: IInvoice) => {
                 if (company.qbAuthorized && !invoice.isDraft) {
@@ -914,11 +914,11 @@ export const createInvoice = (req: Request, res: Response) => {
             .catch((error: any) => {
                 Sentry.captureException(error);
                 if (error.message != undefined) {
-                    return res.json({ 'status': Status.Error, 'message': error.message })
+                    return res.json({ 'status': Status.Error, 'message': error.message });
                 } else {
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                 }
-            })
+            });
 
         // Invoice.findOne({'estimate': params.estimateId, 'company': req.companyId},
         // (err: any, previousInvoice: IInvoice) => {
@@ -1054,21 +1054,21 @@ export const createInvoice = (req: Request, res: Response) => {
                                 invoice: newInvoice
                             });
                         }
-                    })
-            })
-        })
+                    });
+            });
+        });
     }
-}
+};
 
 const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobTypeitems: IItem[], purchaseOrders: any, purchaseOrder: any, estimate: any, next: (req: Request, res: Response, invoice: IInvoice, invoiceId: number) => void) => {
 
-    const params = req.body
-    const company = <ICompany>req.company
-    const user = <IUser>req.user
+    const params = req.body;
+    const company = <ICompany>req.company;
+    const user = <IUser>req.user;
 
     let currentInvoiceId = 0;
     if (company.currentInvoiceId) {
-        currentInvoiceId = company.currentInvoiceId
+        currentInvoiceId = company.currentInvoiceId;
     }
 
     /* remove checking invoiceId with estimateId
@@ -1079,31 +1079,31 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
    }
     */
 
-    const invNumber = parseInt(params.invoiceNumber) || company.currentInvoiceId + 1
+    const invNumber = parseInt(params.invoiceNumber) || company.currentInvoiceId + 1;
     let invoiceId = company.invoicePrefix
         ? `Invoice ${company.invoicePrefix}-${invNumber}`
         : `Invoice ${invNumber}`;
 
-    let taxAmount: number = 0;
-    let charges: number = 0;
-    let shippingCost: number = 0;
-    let subTotalBeforeTax: number = 0
-    let total: number = 0;
-    let invoiceType: number = 0;
+    let taxAmount = 0;
+    let charges = 0;
+    let shippingCost = 0;
+    let subTotalBeforeTax = 0;
+    let total = 0;
+    let invoiceType = 0;
     let ticket: IServiceTicket;
-    let customer: string
+    let customer: string;
     let jobLocation: string;
     let jobSite: string;
-    let jobId: string
-    let timeSpent: number = 0
-    let purchaseOrderId: string = null
-    let estimateId: string = null
+    let jobId: string;
+    let timeSpent = 0;
+    let purchaseOrderId: string = null;
+    let estimateId: string = null;
     let workType: string = params.workType;
     let companyLocation: string = params.companyLocation;
 
     if (job) {
         charges = job.charges;
-        invoiceType = 0
+        invoiceType = 0;
         customer = job.customer;
         jobLocation = job.jobLocation;
         jobSite = job.jobSite;
@@ -1117,37 +1117,37 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
 
     if (purchaseOrder != null) {
         if (purchaseOrder.total == undefined || purchaseOrder.total == null || purchaseOrder.total == '""') {
-            return res.json({ 'status': Status.Error, 'message': 'purchaseOrder total is missing' })
+            return res.json({ 'status': Status.Error, 'message': 'purchaseOrder total is missing' });
         }
         if (purchaseOrder.customer == undefined || purchaseOrder.customer == null || purchaseOrder.customer == '""') {
-            return res.json({ 'status': Status.Error, 'message': 'purchaseOrder customer is missing' })
+            return res.json({ 'status': Status.Error, 'message': 'purchaseOrder customer is missing' });
         }
 
-        purchaseOrderId = purchaseOrder._id
-        charges = purchaseOrder.total
-        customer = purchaseOrder.customer
-        invoiceType = 1
+        purchaseOrderId = purchaseOrder._id;
+        charges = purchaseOrder.total;
+        customer = purchaseOrder.customer;
+        invoiceType = 1;
     }
 
     if (estimate != null) {
 
         if (estimate.total == undefined || estimate.total == null || estimate.total == '""') {
-            return res.json({ 'status': Status.Error, 'message': 'Estimate total is missing' })
+            return res.json({ 'status': Status.Error, 'message': 'Estimate total is missing' });
         }
         if (estimate.customer == undefined || estimate.customer == null || estimate.customer == '""') {
-            return res.json({ 'status': Status.Error, 'message': 'Estimate customer is missing' })
+            return res.json({ 'status': Status.Error, 'message': 'Estimate customer is missing' });
         }
 
-        estimateId = estimate._id
-        charges = estimate.total
-        customer = estimate.customer
-        invoiceType = 2
+        estimateId = estimate._id;
+        charges = estimate.total;
+        customer = estimate.customer;
+        invoiceType = 2;
 
-        let idOfEstimate = estimate.estimateId.replace('Estimate ', '')
-        invoiceId = 'Invoice ' + idOfEstimate
+        const idOfEstimate = estimate.estimateId.replace('Estimate ', '');
+        invoiceId = 'Invoice ' + idOfEstimate;
 
         if (company.invoicePrefix != undefined && company.invoicePrefix != null && company.invoicePrefix == '""') {
-            invoiceId = 'Invoice ' + company.invoicePrefix + '-' + idOfEstimate
+            invoiceId = 'Invoice ' + company.invoicePrefix + '-' + idOfEstimate;
         }
     }
 
@@ -1161,8 +1161,8 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
             return res.json({ status: Status.Error, message: 'Charges are required' });
         }
 
-        invoiceType = 3
-        customer = params.customerId
+        invoiceType = 3;
+        customer = params.customerId;
     }
 
     // Handle and overwrite Job Location if provided
@@ -1189,18 +1189,18 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         jobSite = jobSiteObj._id;
     }
 
-    let purchaseOrderIds: any = []
+    const purchaseOrderIds: any = [];
     if (params.includePO) {
 
         if (purchaseOrders != null && purchaseOrders.length > 0) {
             purchaseOrders.map((PO: any) => {
-                purchaseOrderIds.push(PO._id)
-                total = total + PO.total
-            })
+                purchaseOrderIds.push(PO._id);
+                total = total + PO.total;
+            });
         }
     }
 
-    var items: any = []
+    let items: any = [];
     if (params.items != undefined) {
         try {
             items = JSON.parse(params.items);
@@ -1211,11 +1211,11 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
             }
         } catch (error) {
             Sentry.captureException(error);
-            return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
+            return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' });
         }
     }
 
-    let invoiceItems: any[] = []
+    const invoiceItems: any[] = [];
     // Find Customer object to see the itemTier, customPrice, & payment term info
     const customerObj = await Customer.findById(customer).populate({path: 'paymentTerm'}).populate({path: 'discountPrices.discountItem'});
     if (!customerObj) {
@@ -1240,37 +1240,37 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
             if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed'))) {
-                return res.json({ 'status': Status.Error, 'message': 'Items format is invalid' })
+                return res.json({ 'status': Status.Error, 'message': 'Items format is invalid' });
             }
-            let obj: any = {}
-            let price = parseFloat(item.price)
-            let quantity = parseFloat(item.quantity)
-            let itemTax = 0
-            let itemTaxAmount: number = 0
-            let subTotal = price * quantity
+            const obj: any = {};
+            const price = parseFloat(item.price);
+            const quantity = parseFloat(item.quantity);
+            let itemTax = 0;
+            let itemTaxAmount = 0;
+            const subTotal = price * quantity;
 
             if (item.tax > 0) {
-                itemTax = parseFloat(item.tax)
+                itemTax = parseFloat(item.tax);
                 itemTaxAmount = subTotal * itemTax / 100;
                 taxAmount += itemTaxAmount;
             }
 
-            obj.quantity = item.quantity
-            obj.price = Math.round(item.price * 100) / 100
-            obj.isFixed = item.isFixed
-            obj.tax = itemTax
-            obj.taxAmount = Math.round(itemTaxAmount * 100) / 100
-            obj.subTotal = Math.round(subTotal * 100) / 100
+            obj.quantity = item.quantity;
+            obj.price = Math.round(item.price * 100) / 100;
+            obj.isFixed = item.isFixed;
+            obj.tax = itemTax;
+            obj.taxAmount = Math.round(itemTaxAmount * 100) / 100;
+            obj.subTotal = Math.round(subTotal * 100) / 100;
 
             if (item.item == undefined || item.item == null) {
-                obj.name = item.name
-                obj.description = item.description
+                obj.name = item.name;
+                obj.description = item.description;
             } else {
-                obj.item = item.item
-                obj.name = item.name || item.item?.name
-                obj.description = item.description || item.item?.description
+                obj.item = item.item;
+                obj.name = item.name || item.item?.name;
+                obj.description = item.description || item.item?.description;
             }
-            invoiceItems.push(obj)
+            invoiceItems.push(obj);
 
             subTotalBeforeTax += subTotal;
             total += subTotal;
@@ -1282,9 +1282,9 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         for (const jobTypeitem of jobTypeitems) {
 
             // Find the job task related to find its timeSpent
-            let jobTypes: ITaskJobType
+            let jobTypes: ITaskJobType;
             const task = job.tasks.find(task => {
-                jobTypes = <ITaskJobType>task.jobTypes.find(jobType => jobType.jobType.toString() === jobTypeitem.jobType.toString())
+                jobTypes = <ITaskJobType>task.jobTypes.find(jobType => jobType.jobType.toString() === jobTypeitem.jobType.toString());
                 return jobTypes;
             });
             let itemTier;
@@ -1301,32 +1301,32 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
                 });
             }
 
-            let obj: any = {}
+            const obj: any = {};
             // Set price to 0 if customer uses customPrice
-            let price = (jobTypeitem as any).price ?? (customerObj.isCustomPrice ? 0 : itemTier?.charge || jobTypeitem.charges);
+            const price = (jobTypeitem as any).price ?? (customerObj.isCustomPrice ? 0 : itemTier?.charge || jobTypeitem.charges);
             // If item is hourly, take the task's timeSpent (minutes) for the quantity
-            let quantity = jobTypeitem.isFixed ? ((jobTypeitem as any).quantity || 1) : (jobTypes?.timeSpent / 60) || 1;
-            let itemTax = 0
-            let itemTaxAmount: number = 0
-            let subTotal = price * quantity
+            const quantity = jobTypeitem.isFixed ? ((jobTypeitem as any).quantity || 1) : (jobTypes?.timeSpent / 60) || 1;
+            let itemTax = 0;
+            let itemTaxAmount = 0;
+            const subTotal = price * quantity;
 
             if (jobTypeitem.tax > 0) {
-                itemTax = jobTypeitem.tax
+                itemTax = jobTypeitem.tax;
                 itemTaxAmount = subTotal * itemTax / 100;
                 taxAmount += itemTaxAmount;
             }
 
-            obj.quantity = Math.round(quantity * 100) / 100
-            obj.price = Math.round(price * 100) / 100
-            obj.isFixed = jobTypeitem.isFixed
-            obj.tax = itemTax
-            obj.taxAmount = Math.round(itemTaxAmount * 100) / 100
-            obj.subTotal = Math.round(subTotal * 100) / 100
-            obj.item = jobTypeitem._id
-            obj.name = jobTypeitem.name
-            obj.description = jobTypeitem.description
+            obj.quantity = Math.round(quantity * 100) / 100;
+            obj.price = Math.round(price * 100) / 100;
+            obj.isFixed = jobTypeitem.isFixed;
+            obj.tax = itemTax;
+            obj.taxAmount = Math.round(itemTaxAmount * 100) / 100;
+            obj.subTotal = Math.round(subTotal * 100) / 100;
+            obj.item = jobTypeitem._id;
+            obj.name = jobTypeitem.name;
+            obj.description = jobTypeitem.description;
 
-            invoiceItems.push(obj)
+            invoiceItems.push(obj);
 
             timeSpent += jobTypes?.timeSpent || 0;
             subTotalBeforeTax += subTotal;
@@ -1354,7 +1354,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
     if (jobTypeitems?.length > 0 && customerObj.discountPrices?.length > 0) {
         // Sort the customer discount prices and filter any null prices
         let discountPrices = customerObj.discountPrices?.sort((a, b) => {
-            return a.quantity - b.quantity
+            return a.quantity - b.quantity;
         });
         discountPrices = discountPrices.filter(disc => disc.discountItem && ((disc.discountItem as IItem)?.isActive ?? true));
 
@@ -1425,7 +1425,7 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         }
     }
 
-    var invoice = new Invoice({
+    const invoice = new Invoice({
         invoiceId: invoiceId,
         invoiceType: invoiceType,
         job: jobId,
@@ -1459,54 +1459,54 @@ const _populateInvoiceData = async (req: Request, res: Response, job: IJob, jobT
         lastEmailSent: null,
         workType: workType,
         companyLocation: companyLocation
-    })
+    });
 
     next(req, res, invoice, currentInvoiceId);
 
-}
+};
 
 // PO Invoices
 export const createPOInvoice = (req: Request, res: Response) => {
 
-    const params = req.body
-    const user = <IUser>req.user
-    const company = <ICompany>req.company
+    const params = req.body;
+    const user = <IUser>req.user;
+    const company = <ICompany>req.company;
 
     Invoice.findOne({ 'purchaseOrder': params.purchaseOrderId, 'company': req.companyId },
         (err: any, previousInvoice: IInvoice) => {
 
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
 
             if (previousInvoice != undefined || previousInvoice != null) {
                 return res.json({
                     'status': Status.Success,
-                    'message': "Invoice already created for this purchase order."
-                })
+                    'message': 'Invoice already created for this purchase order.'
+                });
             }
 
             PurchaseOrder.findById(params.purchaseOrderId, (POError: any, PO: IPurchaseOrder) => {
 
                 if (POError) {
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                 }
 
                 if (PO == undefined || PO == null) {
-                    return res.json({ 'status': Status.Error, 'message': 'Invalid purchase order id' })
+                    return res.json({ 'status': Status.Error, 'message': 'Invalid purchase order id' });
                 }
 
                 let currentInvoiceId = 0;
                 if (company.currentInvoiceId) {
-                    currentInvoiceId = company.currentInvoiceId
+                    currentInvoiceId = company.currentInvoiceId;
                 }
-                let invoiceId = 'Invoice ' + (currentInvoiceId + 1)
+                let invoiceId = 'Invoice ' + (currentInvoiceId + 1);
 
                 if (company.invoicePrefix != undefined && company.invoicePrefix != null && company.invoicePrefix == '""') {
-                    invoiceId = 'Invoice ' + company.invoicePrefix + '-' + (currentInvoiceId + 1)
+                    invoiceId = 'Invoice ' + company.invoicePrefix + '-' + (currentInvoiceId + 1);
                 }
 
-                var invoice = new Invoice({
+                const invoice = new Invoice({
                     invoiceId: invoiceId,
                     purchaseOrder: params.purchaseOrderId,
                     customer: PO.customer,
@@ -1516,35 +1516,35 @@ export const createPOInvoice = (req: Request, res: Response) => {
                     note: params.note,
                     createdAt: Date.now(),
                     invoiceType: 1
-                })
+                });
 
                 invoice.save((invoiceError: any) => {
 
                     if (invoiceError) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                     }
 
                     const invoiceLogsObj:any={
-                        invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.CREATED, info:"Invoice created",customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
+                        invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.CREATED, info:'Invoice created',customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
                         , createdBy: user._id
-                    }
+                    };
                     InvoiceLogController.create(invoiceLogsObj);
 
                     company.updateOne({ currentInvoiceId: currentInvoiceId + 1 })
                         .exec((companyError: any) => {
                             if (companyError) {
-                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                             }
 
                             return res.json({
                                 'status': Status.Success,
-                                'message': "Purchase order invoice created successfully."
-                            })
-                        })
-                })
-            })
+                                'message': 'Purchase order invoice created successfully.'
+                            });
+                        });
+                });
+            });
         });
-}
+};
 const findAddedAndRemovedItems = (original: any, updated: any) => {
     const added = [];
     const removed = [];
@@ -1556,8 +1556,8 @@ const findAddedAndRemovedItems = (original: any, updated: any) => {
     for (const [index, item] of original.entries()) {
         if (!updatedIds.includes(item.item.toString())) {
             removed.push({
-                "type":"removed",
-                "name": item?.name
+                'type':'removed',
+                'name': item?.name
             });
         }
         
@@ -1565,10 +1565,10 @@ const findAddedAndRemovedItems = (original: any, updated: any) => {
 
             if (original[index]?.quantity != updated[index]?.quantity ) {
                 updatedItems.push({
-                    "type":"updated",
-                    "name": item?.name,
-                    "new": updated[index]?.quantity,
-                    "old": original[index]?.quantity,
+                    'type':'updated',
+                    'name': item?.name,
+                    'new': updated[index]?.quantity,
+                    'old': original[index]?.quantity,
                 });
 
             }
@@ -1579,8 +1579,8 @@ const findAddedAndRemovedItems = (original: any, updated: any) => {
 
         if (!originalIds.includes(item.item.toString())) {
             added.push({
-                type:"added",
-                "name": item?.name
+                type:'added',
+                'name': item?.name
             });
         }
         // if (originalIds.includes(item.item.toString())) {
@@ -1598,54 +1598,54 @@ const findAddedAndRemovedItems = (original: any, updated: any) => {
     }
 
     return { added, removed, updatedItems };
-}
+};
 const getInvoiceLogsPefix = (key: string) => {
 
     switch (key) {
-        case "status":
-            // code block
-            return "Payment status changed";
-        case "ITEMS_ADDED":
-            // code block
-            return "Items added";
-        case "taxAmount":
-            // code block
-            return "Tax amount changed";
-        case "ITEMS_REMOVED":
-            // code block
-            return "Items removed";
-        case "dueDate":
-            // code block
-            return "Due date changed";
-        case "issuedDate":
-            // code block
-            return "Issued date changed";
-        case "subTotal":
-            // code block
-            return "Sub Total changed";
-        case "total":
-            // code block
-            return "Invoice Total changed";
-        case "note":
-            // code block
-            return "Customer notes changed";
-        case "balanceDue":
-            // code block
-            return "Balance due changed";
-        case "customerPO":
-            // code block
-            return "PO number changed";
-        case "paid":
-            // code block
-            return "Payment status changed";
+    case 'status':
+        // code block
+        return 'Payment status changed';
+    case 'ITEMS_ADDED':
+        // code block
+        return 'Items added';
+    case 'taxAmount':
+        // code block
+        return 'Tax amount changed';
+    case 'ITEMS_REMOVED':
+        // code block
+        return 'Items removed';
+    case 'dueDate':
+        // code block
+        return 'Due date changed';
+    case 'issuedDate':
+        // code block
+        return 'Issued date changed';
+    case 'subTotal':
+        // code block
+        return 'Sub Total changed';
+    case 'total':
+        // code block
+        return 'Invoice Total changed';
+    case 'note':
+        // code block
+        return 'Customer notes changed';
+    case 'balanceDue':
+        // code block
+        return 'Balance due changed';
+    case 'customerPO':
+        // code block
+        return 'PO number changed';
+    case 'paid':
+        // code block
+        return 'Payment status changed';
 
-        default:
-            // code block
-            return key
+    default:
+        // code block
+        return key;
     }
-}
+};
 const changesManage = (newObj: any, oldObj: any) => {
-    let logs: any[] = [];
+    const logs: any[] = [];
 
     Object.keys(newObj).map(key => {
 
@@ -1662,7 +1662,7 @@ const changesManage = (newObj: any, oldObj: any) => {
         // }
         // else 
         
-        if (key == "items") {
+        if (key == 'items') {
             // if(newObj[key].length==oldObj[key].length)
             {
 
@@ -1674,7 +1674,7 @@ const changesManage = (newObj: any, oldObj: any) => {
 
                     added.map((itemUpdates: any) => {
 
-                        logs.push("Item "+ itemUpdates.name +" added")
+                        logs.push('Item '+ itemUpdates.name +' added');
 
                     });
                 }
@@ -1683,7 +1683,7 @@ const changesManage = (newObj: any, oldObj: any) => {
 
                     removed.map((itemUpdates: any) => {
 
-                        logs.push("Item "+ itemUpdates.name +" removed")
+                        logs.push('Item '+ itemUpdates.name +' removed');
 
                     });
                 }
@@ -1692,7 +1692,7 @@ const changesManage = (newObj: any, oldObj: any) => {
 
                     updatedItems.map((itemUpdates: any) => {
 
-                        logs.push(itemUpdates.name + " quantity changed from "+itemUpdates.old +" to " + itemUpdates.new)
+                        logs.push(itemUpdates.name + ' quantity changed from '+itemUpdates.old +' to ' + itemUpdates.new);
 
                     });
 
@@ -1703,21 +1703,21 @@ const changesManage = (newObj: any, oldObj: any) => {
 
         }
 
-        else if (key == "customerPO" ) {
+        else if (key == 'customerPO' ) {
             if (newObj[key] != oldObj[key]) {
-                logs.push(`Edited PO number (old: ${oldObj[key]} new: ${newObj[key]})`)
+                logs.push(`Edited PO number (old: ${oldObj[key]} new: ${newObj[key]})`);
             }
         }
-    })
+    });
 
 
     return logs;
-}
+};
 export const updateInvoice = (req: Request, res: Response) => {
 
-    const params = req.body
+    const params = req.body;
     const company = <ICompany>req.company;
-    const user = <IUser>req.user
+    const user = <IUser>req.user;
 
     Invoice.findOne({ '_id': params.invoiceId, 'company': req.companyId },
         async (err: any, invoice: IInvoice) => {
@@ -1742,7 +1742,7 @@ export const updateInvoice = (req: Request, res: Response) => {
             await company.populate({ path: 'paymentTerm' }).execPopulate();
             // Save the invoice old isDraft before it is replaced
             const oldIsDraft = invoice.isDraft;
-            const oldTotalInvoice = invoice.total
+            const oldTotalInvoice = invoice.total;
 
             // Retrieve payment term for this invoice
             let paymentTerm: IPaymentTerm;
@@ -1808,39 +1808,39 @@ export const updateInvoice = (req: Request, res: Response) => {
                 Job.findById(invoice.job)
                     .then((job: any) => {
                         if (job == undefined || job == null) {
-                            throw new Error('job for this invoice is not found')
+                            throw new Error('job for this invoice is not found');
                         }
 
                         const POPromise = PurchaseOrder.find({
                             job: invoice.job
-                        })
-                        return Promise.all([job, POPromise])
+                        });
+                        return Promise.all([job, POPromise]);
                     })
                     .then(async (result: any) => {
-                        let job = result[0]
-                        let purchaseOrders = result[1]
+                        const job = result[0];
+                        const purchaseOrders = result[1];
 
                         if (err) {
-                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                         }
 
                         if ((params.charges == undefined || params.charges == null || params.charges == '""') && (params.tax == undefined || params.tax == null || params.tax == '""')) {
                             return res.json({
                                 'status': Status.Error,
                                 'message': 'Tax Percentage or charges are required'
-                            })
+                            });
                         }
                         const issuedDate = params.issuedDate ? new Date(params.issuedDate) : invoice.issuedDate;
                         const dueDate = params.paymentTermId && paymentTerm
                             ? moment(issuedDate).add(paymentTerm?.dueDays, 'd').valueOf()
                             : params.dueDate
                                 ? new Date(params.dueDate)
-                                : issuedDate
+                                : issuedDate;
                         let charges: number = invoice.charges;
                         let shippingCost: number = invoice.shippingCost;
-                        let taxAmount: number = 0;
-                        let subTotalBeforeTax: number = 0;
-                        let total: number = 0;
+                        let taxAmount = 0;
+                        let subTotalBeforeTax = 0;
+                        let total = 0;
                         let paymentApplied = invoice.paymentApplied ?? 0;
                         let balanceDue = invoice.balanceDue ?? (invoice.total - paymentApplied) ?? invoice.total;
                         let paid = invoice.paid;
@@ -1848,22 +1848,22 @@ export const updateInvoice = (req: Request, res: Response) => {
                         const oldTotal = invoice.total;
 
                         if (!job.isFixed && (params.timeSpent == undefined && params.timeSpent == null && params.timeSpent == '""')) {
-                            return res.json({ 'status': Status.Error, 'message': 'Time spent is required' })
+                            return res.json({ 'status': Status.Error, 'message': 'Time spent is required' });
                         } else if (!job.isFixed) {
-                            invoice.timeSpent = params.timeSpent
+                            invoice.timeSpent = params.timeSpent;
                         }
-                        let purchaseOrderIds: any = []
+                        const purchaseOrderIds: any = [];
                         if (params.includePO) {
                             if (purchaseOrders != null && purchaseOrders.length > 0) {
                                 purchaseOrders.map((PO: any) => {
-                                    purchaseOrderIds.push(PO._id)
-                                })
+                                    purchaseOrderIds.push(PO._id);
+                                });
                                 // invoice.jobPurchaseOrders = purchaseOrderIds
                             }
                         }
 
                         // total = invoice.total
-                        var items: any = []
+                        let items: any = [];
                         if (params.items != undefined) {
                             try {
                                 items = JSON.parse(params.items);
@@ -1874,48 +1874,48 @@ export const updateInvoice = (req: Request, res: Response) => {
                                 }
                             } catch (error) {
                                 Sentry.captureException(error);
-                                return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
+                                return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' });
                             }
                         }
 
-                        let invoiceItems: any[] = []
+                        const invoiceItems: any[] = [];
 
                         if (items.length > 0) {
 
                             for (let i = 0; i < items.length; i++) {
                                 const item = items[i];
                                 if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed'))) {
-                                    return res.json({ 'status': Status.Error, 'message': 'Items format is invalid' })
+                                    return res.json({ 'status': Status.Error, 'message': 'Items format is invalid' });
                                 }
-                                let obj: any = {}
-                                let price = parseFloat(item.price)
-                                let quantity = parseFloat(item.quantity)
-                                let itemTax = 0
-                                let itemTaxAmount: number = 0
-                                let subTotal = price * quantity
+                                const obj: any = {};
+                                const price = parseFloat(item.price);
+                                const quantity = parseFloat(item.quantity);
+                                let itemTax = 0;
+                                let itemTaxAmount = 0;
+                                const subTotal = price * quantity;
 
                                 if (item.tax > 0) {
-                                    itemTax = parseFloat(item.tax)
+                                    itemTax = parseFloat(item.tax);
                                     itemTaxAmount = subTotal * itemTax / 100;
                                     taxAmount += itemTaxAmount;
                                 }
 
-                                obj.quantity = item.quantity
-                                obj.price = Math.round(item.price * 100) / 100
-                                obj.isFixed = item.isFixed
-                                obj.tax = itemTax
-                                obj.taxAmount = Math.round(itemTaxAmount * 100) / 100
-                                obj.subTotal = Math.round(subTotal * 100) / 100
+                                obj.quantity = item.quantity;
+                                obj.price = Math.round(item.price * 100) / 100;
+                                obj.isFixed = item.isFixed;
+                                obj.tax = itemTax;
+                                obj.taxAmount = Math.round(itemTaxAmount * 100) / 100;
+                                obj.subTotal = Math.round(subTotal * 100) / 100;
 
                                 if (!item.item) {
-                                    obj.name = item.name
-                                    obj.description = item.description
+                                    obj.name = item.name;
+                                    obj.description = item.description;
                                 } else {
-                                    obj.item = item.item
-                                    obj.name = item.name || item.item?.name
-                                    obj.description = item.description || item.item?.description
+                                    obj.item = item.item;
+                                    obj.name = item.name || item.item?.name;
+                                    obj.description = item.description || item.item?.description;
                                 }
-                                invoiceItems.push(obj)
+                                invoiceItems.push(obj);
 
                                 subTotalBeforeTax += subTotal;
                                 total += subTotal;
@@ -1965,12 +1965,12 @@ export const updateInvoice = (req: Request, res: Response) => {
                                 for (const invoiceCommissionTechnician of invoiceCommission.technicians) {
                                     if (invoiceCommissionTechnician.contractor) {
                                         const contractor = await Company.findOne({_id: invoiceCommissionTechnician.contractor}).exec();
-                                        if (contractor && contractor.commissionType != "fixed") {
+                                        if (contractor && contractor.commissionType != 'fixed') {
                                             if (Number(total) !== Number(oldTotalInvoice)) {
                                                 const getCommission = (t: any) => (t / totalTechnician) * (contractor.commission ?? DefaultCommission.VENDOR_COMMISSION) / 100;
-                                                const oldCommission = getCommission(oldTotal)
-                                                let commission = getCommission(total)
-                                                commission = Number(commission.toFixed(2))
+                                                const oldCommission = getCommission(oldTotal);
+                                                let commission = getCommission(total);
+                                                commission = Number(commission.toFixed(2));
                                                 contractor.balance -= Number(oldCommission.toFixed(2));
                                                 contractor.balance += Number(commission.toFixed(2));
                                                 invoiceCommissionTechnician.commissionAmount = Number(commission.toFixed(2) || 0);
@@ -2049,77 +2049,77 @@ export const updateInvoice = (req: Request, res: Response) => {
                             invoiceId
                         }, { omitUndefined: true },
 
-                            async (err: any) => {
-                                if (err) {
-                                    return res.json({ status: Status.Error, message: Messages.GenericError });
-                                }
+                        async (err: any) => {
+                            if (err) {
+                                return res.json({ status: Status.Error, message: Messages.GenericError });
+                            }
 
-                                /**
+                            /**
                                  * Kris' remark (Sept 27th, 2022):
                                  * Add additional update for payment term,
                                  * to not update too many code for now,
                                  * because the one above have omitUndefined true.
                                  */
-                                invoice.paymentTerm = params.paymentTermId ? paymentTerm?._id : null;
-                                await invoice.save();
-                                if(!oldInovice.isDraft){
+                            invoice.paymentTerm = params.paymentTermId ? paymentTerm?._id : null;
+                            await invoice.save();
+                            if(!oldInovice.isDraft){
                                     
-                                const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.UPDATED, info: changes.join(","), customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
-                                , createdBy: user._id
-                            }
+                                const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.UPDATED, info: changes.join(','), customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
+                                    , createdBy: user._id
+                                };
                                 InvoiceLogController.create(invoiceLogsObj);
 
                             }
-                                // To handle the switch of Invoice isDraft
-                                _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
-                                    if (errMsg) {
-                                        return res.json({
-                                            status: Status.Success,
-                                            message: 'Invoice updated successfully',
-                                            invoice,
-                                            quickbookInvoice: null,
-                                            quickbookInvoiceError: errMsg
-                                        });
-                                    }
-
+                            // To handle the switch of Invoice isDraft
+                            _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
+                                if (errMsg) {
                                     return res.json({
                                         status: Status.Success,
                                         message: 'Invoice updated successfully',
                                         invoice,
-                                        quickbookInvoice: qbInvoice
+                                        quickbookInvoice: null,
+                                        quickbookInvoiceError: errMsg
                                     });
+                                }
+
+                                return res.json({
+                                    status: Status.Success,
+                                    message: 'Invoice updated successfully',
+                                    invoice,
+                                    quickbookInvoice: qbInvoice
                                 });
-                            })
+                            });
+                        });
                     })
                     .catch((error: any) => {
                         Sentry.captureException(error);
                         return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
-                    })
+                    });
             } else {
 
                 // MANUAL / CUSTOM INVOICE
 
                 if ((params.charges == undefined || params.charges == null || params.charges == '""') && (params.tax == undefined || params.tax == null || params.tax == '""')) {
-                    return res.json({ 'status': Status.Error, 'message': 'Tax Percentage or charges are required' })
+                    return res.json({ 'status': Status.Error, 'message': 'Tax Percentage or charges are required' });
                 }
                 const issuedDate = params.issuedDate ? new Date(params.issuedDate) : invoice.issuedDate;
                 const dueDate = params.paymentTermId && paymentTerm
                     ? moment(issuedDate).add(paymentTerm?.dueDays, 'd').valueOf()
                     : params.dueDate
                         ? new Date(params.dueDate)
-                        : issuedDate
+                        : issuedDate;
                 let charges: number = invoice.charges;
                 let shippingCost: number = invoice.shippingCost;
-                let taxAmount: number = 0;
-                let subTotalBeforeTax: number = 0;
-                let total: number = 0;
+                let taxAmount = 0;
+                let subTotalBeforeTax = 0;
+                let total = 0;
                 let paymentApplied = invoice.paymentApplied ?? 0;
                 let balanceDue = invoice.balanceDue ?? (invoice.total - paymentApplied) ?? invoice.total;
                 let paid = invoice.paid;
                 let status = invoice.status;
                 const oldTotal = invoice.total;
 
-                var items: any = []
+                let items: any = [];
                 if (params.items != undefined) {
                     try {
                         items = JSON.parse(params.items);
@@ -2130,48 +2130,48 @@ export const updateInvoice = (req: Request, res: Response) => {
                         }
                     } catch (error) {
                         Sentry.captureException(error);
-                        return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' })
+                        return res.json({ 'status': Status.Error, 'message': 'Items json is invalid' });
                     }
                 }
 
-                let invoiceItems: any[] = []
+                const invoiceItems: any[] = [];
 
                 if (items.length > 0) {
 
                     for (let i = 0; i < items.length; i++) {
                         const item = items[i];
                         if ((!item.hasOwnProperty('item') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed')) && (!item.hasOwnProperty('name') || !item.hasOwnProperty('description') || !item.hasOwnProperty('tax') || !item.hasOwnProperty('price') || !item.hasOwnProperty('quantity') || !item.hasOwnProperty('isFixed'))) {
-                            return res.json({ 'status': Status.Error, 'message': 'Items format is invalid' })
+                            return res.json({ 'status': Status.Error, 'message': 'Items format is invalid' });
                         }
-                        let obj: any = {}
-                        let price = parseFloat(item.price)
-                        let quantity = parseFloat(item.quantity)
-                        let itemTax = 0
-                        let itemTaxAmount: number = 0
-                        let subTotal = price * quantity
+                        const obj: any = {};
+                        const price = parseFloat(item.price);
+                        const quantity = parseFloat(item.quantity);
+                        let itemTax = 0;
+                        let itemTaxAmount = 0;
+                        const subTotal = price * quantity;
 
                         if (item.tax > 0) {
-                            itemTax = parseFloat(item.tax)
+                            itemTax = parseFloat(item.tax);
                             itemTaxAmount = subTotal * itemTax / 100;
                             taxAmount += itemTaxAmount;
                         }
 
-                        obj.quantity = item.quantity
-                        obj.price = Math.round(item.price * 100) / 100
-                        obj.isFixed = item.isFixed
-                        obj.tax = itemTax
-                        obj.taxAmount = Math.round(itemTaxAmount * 100) / 100
-                        obj.subTotal = Math.round(subTotal * 100) / 100
+                        obj.quantity = item.quantity;
+                        obj.price = Math.round(item.price * 100) / 100;
+                        obj.isFixed = item.isFixed;
+                        obj.tax = itemTax;
+                        obj.taxAmount = Math.round(itemTaxAmount * 100) / 100;
+                        obj.subTotal = Math.round(subTotal * 100) / 100;
 
                         if (!item.item) {
-                            obj.name = item.name
-                            obj.description = item.description
+                            obj.name = item.name;
+                            obj.description = item.description;
                         } else {
-                            obj.item = item.item
-                            obj.name = item.name || item.item?.name
-                            obj.description = item.description || item.item?.description
+                            obj.item = item.item;
+                            obj.name = item.name || item.item?.name;
+                            obj.description = item.description || item.item?.description;
                         }
-                        invoiceItems.push(obj)
+                        invoiceItems.push(obj);
 
                         subTotalBeforeTax += subTotal;
                         total += subTotal;
@@ -2259,48 +2259,48 @@ export const updateInvoice = (req: Request, res: Response) => {
                     vendorId: params.vendorId,
                     invoiceId
                 }, { omitUndefined: true },
-                    async (err: any) => {
-                        if (err) {
-                            return res.json({ status: Status.Error, message: Messages.GenericError });
-                        }
+                async (err: any) => {
+                    if (err) {
+                        return res.json({ status: Status.Error, message: Messages.GenericError });
+                    }
 
-                        /**
+                    /**
                          * Kris' remark (Sept 27th, 2022):
                          * Add additional update for payment term,
                          * to not update too many code for now,
                          * because the one above have omitUndefined true.
                          */
-                        invoice.paymentTerm = params.paymentTermId ? paymentTerm?._id : null;
-                        await invoice.save();
+                    invoice.paymentTerm = params.paymentTermId ? paymentTerm?._id : null;
+                    await invoice.save();
                       
-                        const invoiceLogsObj:any={
-                            invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.UPDATED, info: changes.join(","), customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
-                            , createdBy: user._id
-                        }
-                        InvoiceLogController.create(invoiceLogsObj);
-                        // To handle the switch of Invoice isDraft
-                        _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
-                            if (errMsg) {
-                                return res.json({
-                                    status: Status.Success,
-                                    message: 'Invoice updated successfully',
-                                    invoice,
-                                    quickbookInvoice: null,
-                                    quickbookInvoiceError: errMsg
-                                });
-                            }
-
+                    const invoiceLogsObj:any={
+                        invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.UPDATED, info: changes.join(','), customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company
+                        , createdBy: user._id
+                    };
+                    InvoiceLogController.create(invoiceLogsObj);
+                    // To handle the switch of Invoice isDraft
+                    _handleDraftInvoiceAndSyncQB(req, res, company, customerObj, invoice, oldIsDraft, (errMsg, invoice, qbInvoice) => {
+                        if (errMsg) {
                             return res.json({
                                 status: Status.Success,
                                 message: 'Invoice updated successfully',
                                 invoice,
-                                quickbookInvoice: qbInvoice
+                                quickbookInvoice: null,
+                                quickbookInvoiceError: errMsg
                             });
+                        }
+
+                        return res.json({
+                            status: Status.Success,
+                            message: 'Invoice updated successfully',
+                            invoice,
+                            quickbookInvoice: qbInvoice
                         });
-                    })
+                    });
+                });
             }
         });
-}
+};
 
 export const updateInvoiceMessages = async (req: Request, res: Response) => {
     const params = req.body;
@@ -2417,7 +2417,7 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
                 })
                 .exec(async (err: any, scans: IScan[]) => {
                     if (err) {
-                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                        return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                     }
 
                     const payments = await PaymentCustomer.find({
@@ -2430,9 +2430,9 @@ export const getInvoiceDetail = (req: Request, res: Response) => {
                     });
 
                     return res.json({ status: Status.Success, invoice, scans, payments });
-                })
-        })
-}
+                });
+        });
+};
 
 export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
 
@@ -2441,53 +2441,53 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
     let invoice, invoices, customer, job;
 
     switch (params.emailType) {
-        case EmailTypes.INVOICES:
-            if (!params.invoiceIds) {
-                return res.json({ status: Status.Error, message: 'Param invoiceIds is required for emailType INVOICES' });
-            }
+    case EmailTypes.INVOICES:
+        if (!params.invoiceIds) {
+            return res.json({ status: Status.Error, message: 'Param invoiceIds is required for emailType INVOICES' });
+        }
 
-            const invoiceIds = JSON.parse(params.invoiceIds)?.map((id: string) => new ObjectId(id));
-            invoices = await Invoice
-                .find({ company, _id: { $in: invoiceIds } })
-                .populate({
-                    path: 'customer',
-                    select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
-                })
+        const invoiceIds = JSON.parse(params.invoiceIds)?.map((id: string) => new ObjectId(id));
+        invoices = await Invoice
+            .find({ company, _id: { $in: invoiceIds } })
+            .populate({
+                path: 'customer',
+                select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+            });
 
-            if (!invoices?.length) {
-                return res.json({ status: Status.Error, message: 'Invoices not found.' });
-            }
+        if (!invoices?.length) {
+            return res.json({ status: Status.Error, message: 'Invoices not found.' });
+        }
 
-            customer = <ICustomer>invoices[0]?.customer;
-            break;
+        customer = <ICustomer>invoices[0]?.customer;
+        break;
 
-        case EmailTypes.INVOICE:
-            if (!params.invoiceId) {
-                return res.json({ status: Status.Error, message: 'Param invoiceId is required for emailType INVOICE' });
-            }
+    case EmailTypes.INVOICE:
+        if (!params.invoiceId) {
+            return res.json({ status: Status.Error, message: 'Param invoiceId is required for emailType INVOICE' });
+        }
 
-        default:
-            // Retrieve invoice and populate customer and paymentTerm info
-            invoice = await Invoice
-                .findOne({ company, _id: params.invoiceId })
-                .populate({
-                    path: 'customer',
-                    select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
-                })
-                .populate({ path: 'customerContactId', select: 'name email phone' })
-                .populate({
-                    path: 'job',
-                    select: 'customerContactId',
-                    populate: [{ path: 'customerContactId', select: 'name email phone' }]
-                });
+    default:
+        // Retrieve invoice and populate customer and paymentTerm info
+        invoice = await Invoice
+            .findOne({ company, _id: params.invoiceId })
+            .populate({
+                path: 'customer',
+                select: 'info.email auth.email profile.displayName address.street address.city address.state address.zipCode contact.phone contactName'
+            })
+            .populate({ path: 'customerContactId', select: 'name email phone' })
+            .populate({
+                path: 'job',
+                select: 'customerContactId',
+                populate: [{ path: 'customerContactId', select: 'name email phone' }]
+            });
 
-            if (!invoice) {
-                return res.json({ status: Status.Error, message: 'Invoice not found.' });
-            }
+        if (!invoice) {
+            return res.json({ status: Status.Error, message: 'Invoice not found.' });
+        }
 
-            customer = <ICustomer>invoice?.customer;
-            job = <IJob>invoice?.job;
-            break;
+        customer = <ICustomer>invoice?.customer;
+        job = <IJob>invoice?.job;
+        break;
     }
 
     // const customer = <ICustomer>invoice?.customer;
@@ -2532,7 +2532,7 @@ export const getInvoiceEmailTemplate = async (req: Request, res: Response) => {
         invoice, invoices
     });
 
-}
+};
 
 /**
  * To send email with one invoice as the attachment
@@ -2590,7 +2590,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
         .populate({
             path: 'companyLocation',
             select: 'isAddressAsBillingAddress address billingAddress'
-        })
+        });
 
     if (!invoice) {
         return res.json({ status: Status.Error, message: 'Invoice not found.' });
@@ -2605,7 +2605,7 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     const filepath = req.file?.path ?? `${INVOICE_PDF_PATH}/${invoice.invoiceId}.pdf`;
     const invoicePdfs = [{invoice, filepath}];
     const emailDefault = await EmailDefault.findOne({company, emailType: EmailTypes.INVOICE});
-    const sender_email = companyLocation?.billingAddress?.emailSender || user.auth?.email
+    const sender_email = companyLocation?.billingAddress?.emailSender || user.auth?.email;
     // Generate Invoice PDF
     await _generateInvoicePdf(company, invoice);
 
@@ -2682,13 +2682,13 @@ export const sendInvoiceEmail = async (req: Request, res: Response) => {
     invoice.lastEmailSent = sendingDate;
     await invoice.save();
 
-    const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.EMAIL_SENT, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id }
+    const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.EMAIL_SENT, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id };
     InvoiceLogController.create(invoiceLogsObj);
 
 
     return res.json({ status: Status.Success, message: 'Invoice has been sent successfully.' });
 
-}
+};
 
 /**
  * To send email with multiple invoices as the attachments
@@ -2724,7 +2724,7 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
         invoiceIds = invoiceIds.map((id: string) => new ObjectId(id));
     } catch (error) {
         Sentry.captureException(error);
-        return res.json({ 'status': Status.Error, 'message': 'Param Invoice IDs is invalid' })
+        return res.json({ 'status': Status.Error, 'message': 'Param Invoice IDs is invalid' });
     }
 
     // Retrieve invoices and populate customer and paymentTerm info
@@ -2773,9 +2773,9 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Invoices not found.' });
     }
 
-    let invoicePdfs = [];
+    const invoicePdfs = [];
     let totalInvoiceAmount = 0;
-    let invoiceSender = "";
+    let invoiceSender = '';
 
     try {
         // Iterate all invoices to generate their PDF and collect the filepath
@@ -2807,7 +2807,7 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
             invoiceSender = companyLocation?.billingAddress?.emailSender;
 
             await invoice.save();
-            const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.EMAIL_SENT, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id }
+            const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.EMAIL_SENT, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id };
             InvoiceLogController.create(invoiceLogsObj);
         
         }
@@ -2872,17 +2872,17 @@ export const sendInvoicesEmail = async (req: Request, res: Response) => {
   
     return res.json({ status: Status.Success, message: 'Invoice has been sent successfully.' });
 
-}
+};
 
 export const getInvoices = async (req: Request, res: Response) => {
 
     const params = req.body;
     const workType = req.query.workType;
     const companyLocation = req.query.companyLocation;
-    let companyId = req.otherCompanyId || req.companyId;
+    const companyId = req.otherCompanyId || req.companyId;
 
     // Check if any filter provided to decide whether return all records or not
-    let isAllRecords = await _getIsAllRecordsByParams(params);
+    const isAllRecords = await _getIsAllRecordsByParams(params);
     // Get the date of the last 90 days
     const last90days = moment().subtract(90, 'days').format();
 
@@ -2924,7 +2924,7 @@ export const getInvoices = async (req: Request, res: Response) => {
                 { 'technicianObj.profile.displayName': keywordRegex },
                 { 'contractorsObj.info.companyName': keywordRegex },
             ]
-        })
+        });
     }
     if (params.invoiceId) {
         const invoiceIdRegex = helper.getRegex(params.invoiceId, 'i');
@@ -2983,30 +2983,30 @@ export const getInvoices = async (req: Request, res: Response) => {
         filterQuery['$and'].push({ $or: [{ 'jobObj.tasks.technician': new ObjectId(params.technicianId) }, { 'jobObj.tasks.contractor': new ObjectId(params.technicianId) }] });
     }
     switch (params.isDraft) {
-        case true:
-            filterQuery['$and'].push({ isDraft: params.isDraft });
-            break;
+    case true:
+        filterQuery['$and'].push({ isDraft: params.isDraft });
+        break;
 
-        default:
-            /**
+    default:
+        /**
              * For isDraft false, use the $ne because we want to retrieve old invoices,
              * old invoices may don't have isDraft property at all
              */
-            filterQuery['$and'].push({ isDraft: { $ne: true } });
-            break;
+        filterQuery['$and'].push({ isDraft: { $ne: true } });
+        break;
     }
     switch (params.isVoid) {
-        case true:
-            filterQuery['$and'].push({ isVoid: params.isVoid });
-            break;
+    case true:
+        filterQuery['$and'].push({ isVoid: params.isVoid });
+        break;
 
-        default:
-            /**
+    default:
+        /**
              * For isVoid false, use the $ne because we want to retrieve old invoices,
              * old invoices may don't have isVoid property at all
              */
-            filterQuery['$and'].push({ isVoid: { $ne: true } });
-            break;
+        filterQuery['$and'].push({ isVoid: { $ne: true } });
+        break;
     }
     if (params.startDate && params.endDate) {
         const startDate = moment.utc(params.startDate).startOf('day').format();
@@ -3027,22 +3027,22 @@ export const getInvoices = async (req: Request, res: Response) => {
     if (workType) {
         let workTypeIds: any[] = [];
         try {
-            let workTypeArr = JSON.parse(workType);
+            const workTypeArr = JSON.parse(workType);
             workTypeIds = workTypeArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
         } catch (error) {
         }
-        ;
+        
         filterQuery['$and'].push({ workType: { $in: workTypeIds } });
     }
     if (companyLocation) {
         let companyLocationIds: any[] = [];
         try {
-            let companyLocationArr = JSON.parse(companyLocation);
+            const companyLocationArr = JSON.parse(companyLocation);
             companyLocationIds = companyLocationArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
         } catch (error) {
         }
         filterQuery['$and'].push({ companyLocation: { $in: companyLocationIds } });
@@ -3051,7 +3051,7 @@ export const getInvoices = async (req: Request, res: Response) => {
     // Deep clone filterQuery
     const query: any = { $and: [] };
     filterQuery['$and'].map((q: any) => {
-        query['$and'].push({ ...q })
+        query['$and'].push({ ...q });
     });
     // Pagination query that default to nothing
     let paginationQuery = {};
@@ -3110,7 +3110,7 @@ export const getInvoices = async (req: Request, res: Response) => {
                 }
             },
 
-        ]
+        ];
     }
 
     aggregateLookups.push({
@@ -3120,7 +3120,7 @@ export const getInvoices = async (req: Request, res: Response) => {
             foreignField: '_id',
             as: 'contactsObj'
         }
-    })
+    });
 
 
     // Filter jobs using aggregate to be search to another collection
@@ -3222,7 +3222,7 @@ export const getInvoices = async (req: Request, res: Response) => {
         { $match: { ...filterQuery } },
         { $count: 'count' }
         // {$sort: sortQuery}
-    ])
+    ]);
 
     /**
      * Get last page cursor
@@ -3244,11 +3244,11 @@ export const getInvoices = async (req: Request, res: Response) => {
     /**
      * Check if next page is available
      */
-    let nextCursor = { createdAt: invoices[invoices.length - 1]?.createdAt, _id: invoices[invoices.length - 1]?._id };
+    const nextCursor = { createdAt: invoices[invoices.length - 1]?.createdAt, _id: invoices[invoices.length - 1]?._id };
     // Deep clone filterQuery
     const nextPageQuery: any = { $and: [] };
     filterQuery['$and'].map((q: any) => {
-        nextPageQuery['$and'].push({ ...q })
+        nextPageQuery['$and'].push({ ...q });
     });
     // To be added with the pagination for the previous page
     nextPageQuery['$and'].push({
@@ -3267,11 +3267,11 @@ export const getInvoices = async (req: Request, res: Response) => {
     /**
      * Check if previous page is availabe
      */
-    let previousCursor = { createdAt: invoices[0]?.createdAt, _id: invoices[0]?._id };
+    const previousCursor = { createdAt: invoices[0]?.createdAt, _id: invoices[0]?._id };
     // Deep clone filterQuery
     const previousPageQuery: any = { $and: [] };
     filterQuery['$and'].map((q: any) => {
-        previousPageQuery['$and'].push({ ...q })
+        previousPageQuery['$and'].push({ ...q });
     });
     // To be added with the pagination for the previous page
     previousPageQuery['$and'].push({
@@ -3288,30 +3288,30 @@ export const getInvoices = async (req: Request, res: Response) => {
     ]).allowDiskUse(true);
 
     // Retrieve number of the unsynced invoices
-    let filterUnsynced: any = {};
+    const filterUnsynced: any = {};
 
     if (workType) {
         let workTypeIds: any[] = [];
         try {
-            let workTypeArr = JSON.parse(workType);
+            const workTypeArr = JSON.parse(workType);
             workTypeIds = workTypeArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
         } catch (error) {
         }
-        ;
-        filterUnsynced["workType"] = { $in: workTypeIds };
+        
+        filterUnsynced['workType'] = { $in: workTypeIds };
     }
     if (companyLocation) {
         let companyLocationIds: any[] = [];
         try {
-            let companyLocationArr = JSON.parse(companyLocation);
+            const companyLocationArr = JSON.parse(companyLocation);
             companyLocationIds = companyLocationArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
         } catch (error) {
         }
-        filterUnsynced["companyLocation"] = { $in: companyLocationIds };
+        filterUnsynced['companyLocation'] = { $in: companyLocationIds };
     }
 
     const unsyncedInvoices = await Invoice.find({
@@ -3340,7 +3340,7 @@ export const getInvoices = async (req: Request, res: Response) => {
         //}
     });
 
-}
+};
 
 /**
  * To retrieve unsynced invoices that not draft and active
@@ -3360,7 +3360,7 @@ export const getUnsyncedInvoices = async (req: Request, res: Response) => {
             { isVoid: { $ne: true } },
             { quickbookId: null }
         ]
-    }
+    };
 
     // Check and add if params filter provided
     if (params.keyword) {
@@ -3382,7 +3382,7 @@ export const getUnsyncedInvoices = async (req: Request, res: Response) => {
                 { 'technicianObj.profile.displayName': keywordRegex },
                 { 'contractorsObj.info.companyName': keywordRegex },
             ]
-        })
+        });
     }
     if (params.customerId) {
         filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
@@ -3398,22 +3398,22 @@ export const getUnsyncedInvoices = async (req: Request, res: Response) => {
     if (workType) {
         let workTypeIds: any[] = [];
         try {
-            let workTypeArr = JSON.parse(workType);
+            const workTypeArr = JSON.parse(workType);
             workTypeIds = workTypeArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
         } catch (error) {
         }
-        ;
+        
         filterQuery['$and'].push({ workType: { $in: workTypeIds } });
     }
     if (companyLocation) {
         let companyLocationIds: any[] = [];
         try {
-            let companyLocationArr = JSON.parse(companyLocation);
+            const companyLocationArr = JSON.parse(companyLocation);
             companyLocationIds = companyLocationArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
         } catch (error) {
         }
         filterQuery['$and'].push({ companyLocation: { $in: companyLocationIds } });
@@ -3472,7 +3472,7 @@ export const getUnsyncedInvoices = async (req: Request, res: Response) => {
         invoices
     });
 
-}
+};
 
 export const getCompanyInvoices = (req: Request, res: Response) => {
 
@@ -3480,22 +3480,22 @@ export const getCompanyInvoices = (req: Request, res: Response) => {
         .populate('company')
         .exec((err: any, invoices: IInvoice[]) => {
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': err.message })
+                return res.json({ 'status': Status.Error, 'message': err.message });
             }
-            return res.json({ 'status': Status.Success, 'companyInvoices': invoices })
+            return res.json({ 'status': Status.Success, 'companyInvoices': invoices });
         });
-}
+};
 export const getCompanyInvoiceDetails = (req: Request, res: Response) => {
     const companyInvoiceId = req.query.companyInvoiceId;
     CompanyInvoice.find({ 'company': req.companyId, _id: new ObjectId(companyInvoiceId) })
         .populate('company')
         .exec((err: any, invoices: IInvoice[]) => {
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': err.message })
+                return res.json({ 'status': Status.Error, 'message': err.message });
             }
-            return res.json({ 'status': Status.Success, 'companyInvoice': invoices })
+            return res.json({ 'status': Status.Success, 'companyInvoice': invoices });
         });
-}
+};
 
 
 /**
@@ -3524,9 +3524,9 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         Customer.findByIdAndUpdate(customer._id, { balance }).exec();
 
 
-        const techniciansEntry = []
+        const techniciansEntry = [];
         if (invoice.job) {
-            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id })
+            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
             if (invoiceCommission) {
                 if (invoiceCommission?.technicians) {
                     const totalTechnician = invoiceCommission.technicians.length;
@@ -3562,9 +3562,9 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
                                 technician: contractor.admin,
                                 commission: contractor.commission,
                                 commissionAmount: Number(commission.toFixed(2))
-                            }
+                            };
 
-                            if (contractor && contractor.commissionType != "fixed") {
+                            if (contractor && contractor.commissionType != 'fixed') {
 
                                 contractor.balance += Number(commission.toFixed(2));
                                 contractor.save();
@@ -3580,7 +3580,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
                                 technician: technician._id,
                                 commission: technician.commission,
                                 commissionAmount: Number(commission.toFixed(2))
-                            }
+                            };
 
                             if (technician) {
                                 technician.balance += Number(commission.toFixed(2));
@@ -3658,7 +3658,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         Customer.findByIdAndUpdate(customer._id, { balance }).exec();
 
         if (invoice.job && invoice.commission) {
-            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id })
+            const invoiceCommission = await InvoiceCommission.findOne({ invoice: invoice._id });
             if (invoiceCommission.technicians) {
                 const totalTechnician = invoiceCommission.technicians.length;
                 for (const invoiceCommissionTechnician of invoiceCommission?.technicians) {
@@ -3710,7 +3710,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
                 }
 
                 return next(null, invoice, null);
-            })
+            });
         } else {
             return next(null, invoice, null);
         }
@@ -3723,7 +3723,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
          */
 
         // Save customer credit
-        customer.save()
+        customer.save();
 
         if (company.qbAuthorized) {
 
@@ -3743,7 +3743,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
                     }
 
                     return next(null, invoice, qbInvoice);
-                })
+                });
             } else {
                 /**
                  * Check Customer & Job Locations data on QBooks,
@@ -3790,7 +3790,7 @@ const _handleDraftInvoiceAndSyncQB = async (req: Request, res: Response, company
         return next(null, invoice, null);
     }
 
-}
+};
 
 async function convertImageToBase64(imageUrl: string) {
     try {
@@ -3833,8 +3833,8 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
 
 
     const jobNote = {
-        id: (await ticket?._id)?.toString() ?? "",
-        comment: ticket?.note ?? ""
+        id: (await ticket?._id)?.toString() ?? '',
+        comment: ticket?.note ?? ''
     };
     const jobImgs = ticket?.images?.map(image => image?.imageUrl) ?? [];
     const technicianNote = invoice?.technicianMessages?.notes?.filter((note) => note?.id !== jobNote.id)[0]?.comment ?? '';
@@ -3846,11 +3846,11 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     const base64JobImages = await convertImagesToBase64(jobImages);
     const base64TechnicianImages = await convertImagesToBase64(technicianImages);
 
-    let numbOfColumns = 5;
+    const numbOfColumns = 5;
 
-    let jobImagesForPDF = []
+    const jobImagesForPDF = [];
     for (let j = 0; j < base64JobImages.length; j++) {
-        jobImagesForPDF.push({ image: base64JobImages[j], width: 150 })
+        jobImagesForPDF.push({ image: base64JobImages[j], width: 150 });
     }
     const jobNumRows = Math.ceil(jobImagesForPDF.length / numbOfColumns);
     const jobBase64ImagesRows = [];
@@ -3866,9 +3866,9 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
         });
     }
 
-    let technicianImagesForPDF = []
-    for (var j = 0; j < base64TechnicianImages.length; j++) {
-        technicianImagesForPDF.push({ image: base64TechnicianImages[j], width: 150 })
+    const technicianImagesForPDF = [];
+    for (let j = 0; j < base64TechnicianImages.length; j++) {
+        technicianImagesForPDF.push({ image: base64TechnicianImages[j], width: 150 });
     }
     const numRows = Math.ceil(technicianImagesForPDF.length / numbOfColumns);
     const techBase64ImagesRows = [];
@@ -3891,7 +3891,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
         city: invoice.companyLocation ? `${(companyLocation.isAddressAsBillingAddress ? companyLocation.address?.city : companyLocation.billingAddress?.city) ?? ''}` : `${company.address?.city ?? ''}`,
         state: invoice.companyLocation ? `${(companyLocation.isAddressAsBillingAddress ? companyLocation.address?.state : companyLocation.billingAddress?.state) ?? ''}` : `${company.address?.state ?? ''}`,
         zipCode: invoice.companyLocation ? `${(companyLocation.isAddressAsBillingAddress ? companyLocation.address?.zipCode : companyLocation.billingAddress?.zipCode) ?? ''}` : `${company.address?.zipCode ?? ''}`,
-    }
+    };
 
     // Construct Customer Address object
     const customerAddress = {
@@ -3899,7 +3899,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
         city: customer?.address?.city ? `, ${customer?.address?.city}` : '',
         state: customer?.address?.state ? `, ${customer?.address?.state}` : '',
         zipCode: customer?.address?.zipCode ? `, ${customer?.address?.zipCode}` : '',
-    }
+    };
 
     // Construct default Job Service Address and Job Site Address object
     const jobAddress: any = { ...customerAddress };
@@ -3938,7 +3938,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
     let companyImage: any = {
         text: '',
         fillColor: '#cccccc'
-    }
+    };
 
     let companyLogoFilePath = '';
 
@@ -3953,7 +3953,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             margin: [0, 20, 0, 10],
             border: [false, false, false, true],
             rowSpan: 2
-        }
+        };
     }
 
     // Construct the header for the Invoice Items
@@ -3964,33 +3964,33 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             [
                 { text: '', style: 'itemTitle' },
                 {
-                    text: "Service / Product",
-                    style: "itemTitle",
+                    text: 'Service / Product',
+                    style: 'itemTitle',
                 },
                 {
                     text: 'Quantity',
                     style: 'itemTitle',
-                    alignment: "center"
+                    alignment: 'center'
                 },
                 {
                     text: 'Price',
-                    style: "itemTitle",
-                    alignment: "center"
+                    style: 'itemTitle',
+                    alignment: 'center'
                 },
                 {
-                    text: "Taxable",
-                    style: "itemTitle",
-                    alignment: "center",
+                    text: 'Taxable',
+                    style: 'itemTitle',
+                    alignment: 'center',
                 },
                 {
-                    text: "Amount",
-                    style: "itemTitle",
-                    alignment: "right",
+                    text: 'Amount',
+                    style: 'itemTitle',
+                    alignment: 'right',
                 },
                 { text: '', style: 'itemTitle' },
             ],
         ],
-    }
+    };
 
     // Add Invoice's Items to table template
     const bodyTable: any = [];
@@ -4020,7 +4020,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
 
     // INITIALIZE INVOICE PDF TEMPLATE
     const docDefinition: any = {
-        pageSize: "A4",
+        pageSize: 'A4',
         pageMargins: [0, 0, 50, 30],
         content: [
             {
@@ -4107,7 +4107,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                                 margin: [0, 10, 0, 10],
                             },
                             {},
-                            { text: `Job PO/Sales Order:`, style: 'invoiceMetadataTitle', margin: [0, 10, 0, 0] },
+                            { text: 'Job PO/Sales Order:', style: 'invoiceMetadataTitle', margin: [0, 10, 0, 0] },
                             { text: invoice.customerPO ?? ' ', style: 'invoiceMetadata', margin: [0, 10, 0, 0] },
                             {}
                         ],
@@ -4386,7 +4386,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                 },
                 fillColor: '#F9FDFF',
                 layout: { ...Layouts.noBorders },
-            }]
+            }];
         },
         styles: Styles.invoice,
         defaultStyle: {
@@ -4418,7 +4418,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
             if (company.info?.logoUrl) {
                 fs.unlink(companyLogoFilePath, (err) => {
                     if (err) console.log(`Error in deleting temporary company logo image file "${companyLogoFilePath}" : ${err}`);
-                })
+                });
             }
             resolve('');
         })
@@ -4426,7 +4426,7 @@ export const _generateInvoicePdf = async (company: ICompany, invoice: IInvoice) 
                 reject('Error in _generateInvoicePdf: ' + error);
             });
     });
-}
+};
 
 // Check and download Company Logo to /tmp file and return the image fullpath
 export const downloadFileToPath = async (
@@ -4443,7 +4443,7 @@ export const downloadFileToPath = async (
             fs.mkdirSync(absoluteTargetPath);
         }
         if (fs.existsSync(fullPath)) {
-            fs.unlinkSync(fullPath)
+            fs.unlinkSync(fullPath);
         }
 
         const protocol = sourceUrl.startsWith('https') ? https : http;
@@ -4456,25 +4456,25 @@ export const downloadFileToPath = async (
                     file.on('finish', () => {
                         file.close();
                         resolve2();
-                    })
+                    });
                 });
 
                 resolve(fullPath);
-            })
+            });
         });
     } catch (error) {
         Sentry.captureException(error);
         console.log('Error in downloadFileToPath: ', error);
         throw error;
     }
-}
+};
 
 /**
  * @description Checks if a file exists on specified path
  */
 export const fileExists = async (absolutePath: string): Promise<boolean> => {
     return fs.existsSync(absolutePath);
-}
+};
 
 export const updateCommission = async (req: Request, res: Response) => {
 
@@ -4495,218 +4495,218 @@ export const updateCommission = async (req: Request, res: Response) => {
         },
     });
 
-    const isFixed = params.commissionType === 'fixed'
+    const isFixed = params.commissionType === 'fixed';
 
     await commissionHistory.save();
 
     switch (params.type) {
-        case 'vendor':
-            const contractor = await Company.findById(params.id).exec();
-            if (!contractor) {
-                return res.json({ status: Status.Error, message: 'Vendor not found' });
-            }
+    case 'vendor':
+        const contractor = await Company.findById(params.id).exec();
+        if (!contractor) {
+            return res.json({ status: Status.Error, message: 'Vendor not found' });
+        }
 
+        // Update vendor's commission rate
+        contractor.commissionType = params.commissionType ?? '%';
+        if (isFixed) {
+            contractor.commission = 0;
+            contractor.commissionTier = params.commissionTier;
+        } else {
+            contractor.commission = params.commission ?? null;
+            contractor.commissionTier = null;
+        }
+
+        // Check if the date is greater than today, if so, do nothing... else, do as you used to..
+        if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day') && !isFixed) {
             // Update vendor's commission rate
-            contractor.commissionType = params.commissionType ?? '%';
-            if (isFixed) {
-                contractor.commission = 0;
-                contractor.commissionTier = params.commissionTier;
-            } else {
-                contractor.commission = params.commission ?? null;
-                contractor.commissionTier = null;
-            }
+            contractor.commission = params.commission ?? null;
 
-            // Check if the date is greater than today, if so, do nothing... else, do as you used to..
-            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day') && !isFixed) {
-                // Update vendor's commission rate
-                contractor.commission = params.commission ?? null;
+            // Find if vendor already have invoice commission
+            // --should only happen if the invoice issued date is greater than the effective date
+            const contractorInvoiceCommissions = await InvoiceCommission.find({ 'technicians.contractor': contractor._id })
+                .populate('invoice')
+                .exec();
 
-                // Find if vendor already have invoice commission
-                // --should only happen if the invoice issued date is greater than the effective date
-                const contractorInvoiceCommissions = await InvoiceCommission.find({ 'technicians.contractor': contractor._id })
-                    .populate('invoice')
-                    .exec();
+            if (contractorInvoiceCommissions?.length) {
+                // Iterate all invoice commissions
+                for (const invoiceCommission of contractorInvoiceCommissions) {
+                    const invoice = <IInvoice>invoiceCommission.invoice;
+                    const totalTechnician = invoiceCommission?.technicians?.length ?? 0;
+                    const contractorCommission = invoiceCommission?.technicians?.find((technician) => technician?.contractor?.toString() === contractor._id?.toString());
 
-                if (contractorInvoiceCommissions?.length) {
-                    // Iterate all invoice commissions
-                    for (const invoiceCommission of contractorInvoiceCommissions) {
-                        const invoice = <IInvoice>invoiceCommission.invoice;
-                        const totalTechnician = invoiceCommission?.technicians?.length ?? 0;
-                        const contractorCommission = invoiceCommission?.technicians?.find((technician) => technician?.contractor?.toString() === contractor._id?.toString());
+                    if (!contractorCommission) {
+                        continue;
+                    }
 
-                        if (!contractorCommission) {
-                            continue;
-                        }
-
-                        if (!contractorCommission.paid) {
-                            /**
+                    if (!contractorCommission.paid) {
+                        /**
                              * If invoice commission is not been paid,
                              * update the amount with the new rate
                              * now for this invoice- let's get the issuedDate and compare it to params effective date
                              * if the issued date is less than effective date-- don't update, else update
                              **/
-                            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment.utc(invoice?.issuedDate ?? invoice?.createdAt), 'day')) {
-                                contractorCommission.commission = params.commission ?? null;
-                                const commissionAmount = (((invoice?.total ?? 0) / totalTechnician) * Number(params.commission ?? 0)) / 100;
-                                contractorCommission.commissionAmount = Number(commissionAmount?.toFixed(2));
-                            }
+                        if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment.utc(invoice?.issuedDate ?? invoice?.createdAt), 'day')) {
+                            contractorCommission.commission = params.commission ?? null;
+                            const commissionAmount = (((invoice?.total ?? 0) / totalTechnician) * Number(params.commission ?? 0)) / 100;
+                            contractorCommission.commissionAmount = Number(commissionAmount?.toFixed(2));
                         }
-
-                        // Recalculate vendor open balance
-                        commissionBalance += contractorCommission.commissionAmount ?? 0;
-                        await invoiceCommission.save();
                     }
 
-                    // Update vendor balance and save vendor object
-                    contractor.balance = commissionBalance;
+                    // Recalculate vendor open balance
+                    commissionBalance += contractorCommission.commissionAmount ?? 0;
+                    await invoiceCommission.save();
                 }
+
+                // Update vendor balance and save vendor object
+                contractor.balance = commissionBalance;
             }
+        }
 
-            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day') && isFixed) {
-                const jobCommissions = await JobCommission.find({ 'technicians.contractor': contractor._id })
-                    .populate('job')
-                    .exec();
+        if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day') && isFixed) {
+            const jobCommissions = await JobCommission.find({ 'technicians.contractor': contractor._id })
+                .populate('job')
+                .exec();
 
-                if (jobCommissions?.length) {
-                    // Iterate all job commissions
-                    for (const jobCommission of jobCommissions) {
-                        const job = <IJob>jobCommission.job;
-                        const contractorCommission = jobCommission?.technicians?.find((technician) => technician?.contractor?.toString() === contractor._id?.toString());
+            if (jobCommissions?.length) {
+                // Iterate all job commissions
+                for (const jobCommission of jobCommissions) {
+                    const job = <IJob>jobCommission.job;
+                    const contractorCommission = jobCommission?.technicians?.find((technician) => technician?.contractor?.toString() === contractor._id?.toString());
 
-                        if (!contractorCommission) {
-                            continue;
-                        }
+                    if (!contractorCommission) {
+                        continue;
+                    }
 
-                        if (!contractorCommission.paid && (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment.utc(jobCommission?.createdAt), 'day'))) {
-                            /**
+                    if (!contractorCommission.paid && (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment.utc(jobCommission?.createdAt), 'day'))) {
+                        /**
                              * If job commission is not been paid,
                              * update the amount with the new rate, else update
                              **/
-                            contractorCommission.commission = params.commission ?? 0;
-                            contractorCommission.commissionAmount = 0;
-                            for (const task of job.tasks) {
-                                if (String(task.contractor) == String(contractor._id)) {
-                                    for (const j of task.jobTypes) {
-                                        const jobType = await Item.findOne({ jobType: j.jobType })
+                        contractorCommission.commission = params.commission ?? 0;
+                        contractorCommission.commissionAmount = 0;
+                        for (const task of job.tasks) {
+                            if (String(task.contractor) == String(contractor._id)) {
+                                for (const j of task.jobTypes) {
+                                    const jobType = await Item.findOne({ jobType: j.jobType });
 
-                                        const commissionTier = contractor.commissionTier as IJobCosting;
-                                        const commissionTierId = commissionTier._id || contractor.commissionTier
-                                        if (commissionTierId) {
-                                            const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId))
-                                            if (commissionTier?.charge) {
-                                                contractorCommission.commissionAmount += commissionTier.charge
-                                            }
+                                    const commissionTier = contractor.commissionTier as IJobCosting;
+                                    const commissionTierId = commissionTier._id || contractor.commissionTier;
+                                    if (commissionTierId) {
+                                        const commissionTier = jobType.costing.find(({ tier }) => String(tier) == String(commissionTierId));
+                                        if (commissionTier?.charge) {
+                                            contractorCommission.commissionAmount += commissionTier.charge;
                                         }
                                     }
                                 }
                             }
-                            const commisionHistory = await CommissionHistory.find({ job: job._id, technicianOrContractor: contractor._id }).sort({ createdAt: -1 })
-                            if (commisionHistory.length) {
-                                contractorCommission.commissionAmount += commisionHistory[0].addition?.amount || 0;
-                                contractorCommission.commissionAmount -= commisionHistory[0].deduction?.amount || 0;
-                            }
                         }
-
-                        // Recalculate vendor open balance
-                        commissionBalance += contractorCommission.commissionAmount ?? 0;
-                        await jobCommission.save();
+                        const commisionHistory = await CommissionHistory.find({ job: job._id, technicianOrContractor: contractor._id }).sort({ createdAt: -1 });
+                        if (commisionHistory.length) {
+                            contractorCommission.commissionAmount += commisionHistory[0].addition?.amount || 0;
+                            contractorCommission.commissionAmount -= commisionHistory[0].deduction?.amount || 0;
+                        }
                     }
 
-                    // Update vendor balance and save vendor object
-                    contractor.balance = commissionBalance;
+                    // Recalculate vendor open balance
+                    commissionBalance += contractorCommission.commissionAmount ?? 0;
+                    await jobCommission.save();
                 }
+
+                // Update vendor balance and save vendor object
+                contractor.balance = commissionBalance;
             }
+        }
 
-            await contractor.save();
-            return res.json({ status: Status.Success, message: 'Commission updated successfully', contractor });
+        await contractor.save();
+        return res.json({ status: Status.Success, message: 'Commission updated successfully', contractor });
 
-        case 'employee':
-            const employee = await User.findById(params.id).exec();
-            if (!employee) {
-                return res.json({ status: Status.Error, message: 'Employee not found' });
-            }
+    case 'employee':
+        const employee = await User.findById(params.id).exec();
+        if (!employee) {
+            return res.json({ status: Status.Error, message: 'Employee not found' });
+        }
 
-            // Check if the date is greater than today, if so, do not update commision... else, do as you used to..
-            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day')) {
-                // Update employee's commission rate
-                employee.commission = params.commission ?? null;
+        // Check if the date is greater than today, if so, do not update commision... else, do as you used to..
+        if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment(), 'day')) {
+            // Update employee's commission rate
+            employee.commission = params.commission ?? null;
 
-                // Find if employee already have invoice commission
-                // --should only happen if the invoice issued date is greater than the effective date
-                const employeeInvoiceCommissions = await InvoiceCommission.find({ 'technicians.technician': employee._id })
-                    .populate('invoice')
-                    .exec();
+            // Find if employee already have invoice commission
+            // --should only happen if the invoice issued date is greater than the effective date
+            const employeeInvoiceCommissions = await InvoiceCommission.find({ 'technicians.technician': employee._id })
+                .populate('invoice')
+                .exec();
 
-                if (employeeInvoiceCommissions?.length) {
-                    // Iterate all invoice commissions
-                    for (const invoiceCommission of employeeInvoiceCommissions) {
-                        const invoice = <IInvoice>invoiceCommission.invoice;
-                        const totalTechnician = invoiceCommission?.technicians?.length ?? 0;
-                        const employeeCommission = invoiceCommission.technicians?.find((technician) => technician?.technician?.toString() === employee._id?.toString());
+            if (employeeInvoiceCommissions?.length) {
+                // Iterate all invoice commissions
+                for (const invoiceCommission of employeeInvoiceCommissions) {
+                    const invoice = <IInvoice>invoiceCommission.invoice;
+                    const totalTechnician = invoiceCommission?.technicians?.length ?? 0;
+                    const employeeCommission = invoiceCommission.technicians?.find((technician) => technician?.technician?.toString() === employee._id?.toString());
 
-                        if (!employeeCommission) {
-                            continue;
-                        }
+                    if (!employeeCommission) {
+                        continue;
+                    }
 
-                        if (!employeeCommission.paid) {
-                            /**
+                    if (!employeeCommission.paid) {
+                        /**
                              * If invoice commission is not been paid,
                              * update the amount with the new rate
                              * now for this invoice- let's get the issuedDate and compare it to params effective date
                              * if the issued date is less than effective date-- don't update, else update
                              **/
-                            if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment.utc(invoice?.issuedDate ?? invoice?.createdAt), 'day')) {
-                                employeeCommission.commission = params.commission ?? null;
-                                const commissionAmount = (((invoice?.total ?? 0) / totalTechnician) * Number(params.commission ?? 0)) / 100;
-                                employeeCommission.commissionAmount = Number(commissionAmount?.toFixed(2));
-                            }
+                        if (moment.utc(params.commissionEffectiveDate).isSameOrBefore(moment.utc(invoice?.issuedDate ?? invoice?.createdAt), 'day')) {
+                            employeeCommission.commission = params.commission ?? null;
+                            const commissionAmount = (((invoice?.total ?? 0) / totalTechnician) * Number(params.commission ?? 0)) / 100;
+                            employeeCommission.commissionAmount = Number(commissionAmount?.toFixed(2));
                         }
-
-                        // Recalculate employee open balance
-                        commissionBalance += employeeCommission.commissionAmount ?? 0;
-                        await invoiceCommission.save();
                     }
+
+                    // Recalculate employee open balance
+                    commissionBalance += employeeCommission.commissionAmount ?? 0;
+                    await invoiceCommission.save();
                 }
+            }
 
-                // Update employee balance and save employee object
-                employee.balance = commissionBalance;
-            } //else part here for commission processing if date is in future
+            // Update employee balance and save employee object
+            employee.balance = commissionBalance;
+        } //else part here for commission processing if date is in future
 
-            await employee.save();
-            return res.json({ status: Status.Success, message: 'Commission updated successfully', employee });
+        await employee.save();
+        return res.json({ status: Status.Success, message: 'Commission updated successfully', employee });
 
-        default:
-            return res.json({
-                status: Status.Success,
-                message: 'Type not supported. Available Type to be used: vendor or employee.'
-            });
+    default:
+        return res.json({
+            status: Status.Success,
+            message: 'Type not supported. Available Type to be used: vendor or employee.'
+        });
     }
 
-}
+};
 
 export const getCommissionHistory = async (req: Request, res: Response) => {
     const { beneficiaryId } = req.params;
-    const commissionHistories = await CommissionHistory.find({ technicianOrContractor: beneficiaryId })
-    return res.json({ 'status': Status.OK, 'history': commissionHistories })
-}
+    const commissionHistories = await CommissionHistory.find({ technicianOrContractor: beneficiaryId });
+    return res.json({ 'status': Status.OK, 'history': commissionHistories });
+};
 
 
 export const getCommissionHistoryByJob = async (req: Request, res: Response) => {
     const { jobId } = req.params;
-    const commissionHistories = await CommissionHistory.find({ job: jobId })
-    return res.json({ 'status': Status.OK, 'history': commissionHistories })
-}
+    const commissionHistories = await CommissionHistory.find({ job: jobId });
+    return res.json({ 'status': Status.OK, 'history': commissionHistories });
+};
 
 
 export const updateCommissionCron = async (req: Request, res: Response) => {
 
-    let start = new Date();
+    const start = new Date();
     start.setHours(0, 0, 0, 0);
 
-    let end = new Date();
+    const end = new Date();
     end.setHours(23, 59, 59, 999);
     // get commission_ histories whole effective date is today
-    const commissionHistories = await CommissionHistory.find({ effectiveDate: { $gte: start, $lt: end } })
+    const commissionHistories = await CommissionHistory.find({ effectiveDate: { $gte: start, $lt: end } });
     if (commissionHistories?.length > 0) {
         for (const history of commissionHistories) {
             //    if type is contractor
@@ -4715,15 +4715,15 @@ export const updateCommissionCron = async (req: Request, res: Response) => {
                 const contractor = await Company.findById(history.technicianOrContractor).exec();
                 if (contractor) {
                     //update that commision
-                    contractor.commission = history.commission
-                    await contractor.save()
+                    contractor.commission = history.commission;
+                    await contractor.save();
                 }
             } else if (history?.type === 'employee') {
                 const employee = await User.findById(history.technicianOrContractor).exec();
                 if (employee) {
                     // update employee
-                    employee.commission = history.commission
-                    await employee.save()
+                    employee.commission = history.commission;
+                    await employee.save();
 
                 }
 
@@ -4732,7 +4732,7 @@ export const updateCommissionCron = async (req: Request, res: Response) => {
         }
     }
     return res.json({ status: Status.OK });
-}
+};
 
 export const getInvoicesByContractor = async (req: Request, res: Response) => {
 
@@ -4743,7 +4743,7 @@ export const getInvoicesByContractor = async (req: Request, res: Response) => {
     const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
 
     if (params.startDate && params.endDate) {
-        query = { issuedDate: { $gte: startDate, $lte: endDate } }
+        query = { issuedDate: { $gte: startDate, $lte: endDate } };
     }
 
     if (params.name) {
@@ -4752,7 +4752,7 @@ export const getInvoicesByContractor = async (req: Request, res: Response) => {
             { note: { $regex: params.name, $options: 'i' } },
             { vendorId: { $regex: params.name, $options: 'i' } },
             { invoiceId: { $regex: params.name, $options: 'i' } },
-        ]
+        ];
     }
 
     if (!params.id) {
@@ -4760,16 +4760,16 @@ export const getInvoicesByContractor = async (req: Request, res: Response) => {
     }
 
     switch (params.type) {
-        case 'vendor':
-            jobQuery = { company, 'tasks.contractor': params.id }
-            break;
+    case 'vendor':
+        jobQuery = { company, 'tasks.contractor': params.id };
+        break;
 
-        case 'employee':
-            jobQuery = { company, 'tasks.technician': params.id };
-            break;
+    case 'employee':
+        jobQuery = { company, 'tasks.technician': params.id };
+        break;
 
-        default:
-            return res.json({ status: Status.Error, message: 'Type is required' });
+    default:
+        return res.json({ status: Status.Error, message: 'Type is required' });
     }
 
     const jobs = await Job.find(jobQuery).exec();
@@ -4814,14 +4814,14 @@ export const getInvoicesByContractor = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, invoices });
 
-}
+};
 
 export const unVoidInvoice = async (req: Request, res: Response) => {
 
     const params = req.body;
     let invoice = await Invoice.findById(params.invoiceId);
     const company = <ICompany>req.company;
-    const user = <IUser>req.user
+    const user = <IUser>req.user;
 
     if (!invoice) {
 
@@ -4854,7 +4854,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
     invoice = await new Invoice(invoice).save();
     if (invoice) {
 
-        const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.DUPLICATE, oldInvoiceId: params.invoiceId, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id }
+        const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.DUPLICATE, oldInvoiceId: params.invoiceId, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id };
         InvoiceLogController.create(invoiceLogsObj);
 
     }
@@ -4882,9 +4882,9 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
                             technician: contractor.admin,
                             commission: contractor.commission,
                             commissionAmount: Number(commission.toFixed(2))
-                        }
+                        };
 
-                        if (contractor && contractor.commissionType != "fixed") {
+                        if (contractor && contractor.commissionType != 'fixed') {
 
                             contractor.balance += Number(commission.toFixed(2));
                             contractor.save();
@@ -4899,7 +4899,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
                             technician: technician._id,
                             commission: technician.commission,
                             commissionAmount: Number(commission.toFixed(2))
-                        }
+                        };
 
                         if (technician) {
                             technician.balance += Number(commission.toFixed(2));
@@ -4911,7 +4911,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
                 }
             }
 
-            let invoiceCommission = await new InvoiceCommission({
+            const invoiceCommission = await new InvoiceCommission({
                 invoice: invoice._id,
                 technicians: invoiceCommissionEntry
             }).save();
@@ -4973,10 +4973,10 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
         // @ts-ignore
         else if (invoice.hasOwnProperty('purchaseOrder') && invoice.purchaseOrder != null && invoice.purchaseOrder != '""') {
 
-            console.log("is a PO");
+            console.log('is a PO');
 
-            const companyUpdate = await company.updateOne({ currentInvoiceId: invoiceNumber })
-            const poUpdate = PurchaseOrder.updateOne({ _id: invoice.purchaseOrder }, { invoiceCreated: true })
+            const companyUpdate = await company.updateOne({ currentInvoiceId: invoiceNumber });
+            const poUpdate = PurchaseOrder.updateOne({ _id: invoice.purchaseOrder }, { invoiceCreated: true });
 
             const customer = await Customer.findById(invoice.customer);
             customer.balance += invoice.total;
@@ -5018,7 +5018,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
                             invoice,
                             quickbookInvoice: qbInvoice
                         });
-                    })
+                    });
                 }
 
             } else {
@@ -5032,10 +5032,10 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
         // @ts-ignore
         else if (invoice.hasOwnProperty('estimate') && invoice.estimate != null && invoice.estimate != '""') {
 
-            console.log("is a estimate");
+            console.log('is a estimate');
 
-            const companyUpdate = await company.updateOne({ currentInvoiceId: invoiceNumber })
-            const estimateUpdate = Estimate.updateOne({ _id: invoice.estimate }, { invoiceCreated: true })
+            const companyUpdate = await company.updateOne({ currentInvoiceId: invoiceNumber });
+            const estimateUpdate = Estimate.updateOne({ _id: invoice.estimate }, { invoiceCreated: true });
 
             if (!invoice.isDraft) {
                 const customer = await Customer.findById(invoice.customer);
@@ -5091,7 +5091,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
             }
         }
         else {
-            console.log("is a something else");
+            console.log('is a something else');
 
             company.updateOne({ currentInvoiceId: invoiceNumber })
                 .exec(async (companyError: any) => {
@@ -5151,7 +5151,7 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
                             invoice: invoice
                         });
                     }
-                })
+                });
         }
 
 
@@ -5159,14 +5159,14 @@ export const unVoidInvoice = async (req: Request, res: Response) => {
 
 
 
-}
+};
 
 export const voidInvoice = async (req: Request, res: Response) => {
 
     const params = req.body;
     const invoice = await Invoice.findById(params.invoiceId);
     const company = <ICompany>req.company;
-    const user = <IUser>req.user
+    const user = <IUser>req.user;
 
     if (!invoice) {
         return res.json({ status: Status.Error, message: 'Invoice not found.' });
@@ -5213,11 +5213,11 @@ export const voidInvoice = async (req: Request, res: Response) => {
         await _voidQBInvoice(req, res, company, invoice);
     }
     
-    const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.VOID, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id }
+    const invoiceLogsObj:any={ invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.VOID, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id };
     InvoiceLogController.create(invoiceLogsObj);
     return res.json({ status: Status.Success, message: 'Invoice voided successfully', invoice });
 
-}
+};
 
 export const generateInvoicePdf = async (req: Request, res: Response) => {
     const params = req.query;
@@ -5267,7 +5267,7 @@ export const generateInvoicePdf = async (req: Request, res: Response) => {
         .populate({
             path: 'companyLocation',
             select: 'isAddressAsBillingAddress address billingAddress'
-        })
+        });
 
     if (!invoice) {
         return res.json({ status: Status.NotFound, message: 'Invoice not found' });
@@ -5279,7 +5279,7 @@ export const generateInvoicePdf = async (req: Request, res: Response) => {
     await _generateInvoicePdf(company, invoice);
     const invoiceUrl = await uploadFileInS3(filepath, 'pdf');
     return res.json({ status: Status.Success, message: 'Invoice Successfully Generated', invoiceUrl: invoiceUrl });
-}
+};
 
 // PARTIAL METHODS
 
@@ -5321,7 +5321,7 @@ const _getIsAllRecordsByParams = async (params: any): Promise<boolean> => {
     }
 
     return isAllRecords;
-}
+};
 
 export const updateJobCommission = async (req: Request, res: Response) => {
     const body = req.body;
@@ -5339,7 +5339,7 @@ export const updateJobCommission = async (req: Request, res: Response) => {
             commission: balance,
             addition: body.addition,
             deduction: body.deduction,
-            type: "additions & deductions",
+            type: 'additions & deductions',
             editedBy: {
                 id: user._id,
                 displayName: user.profile.displayName,
@@ -5363,11 +5363,11 @@ export const updateJobCommission = async (req: Request, res: Response) => {
                 await commission.save();
             }
         } else {
-            let contractorCommissionEntry = {
+            const contractorCommissionEntry = {
                 contractor: req.params.id,
                 commission: body.balance,
                 commissionAmount: body.balance
-            }
+            };
 
             const jobCommisssion = await new JobCommission({
                 job: body.job,
@@ -5378,5 +5378,5 @@ export const updateJobCommission = async (req: Request, res: Response) => {
         }
 
     }).then(() => res.json({ status: Status.Success, message: 'Update successful' }))
-        .catch(err => res.json({ status: Status.Error, message: err.message }))
-}
+        .catch(err => res.json({ status: Status.Error, message: err.message }));
+};

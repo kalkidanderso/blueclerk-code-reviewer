@@ -1,5 +1,5 @@
-import { Schema } from 'mongoose'
-import { User, IUser } from './User'
+import { Schema } from 'mongoose';
+import { User, IUser } from './User';
 
 export interface ISubscriber extends IUser {
 
@@ -31,6 +31,6 @@ const SubscriberSchema = new Schema({
     users: [{ type: Schema.Types.ObjectId, ref: 'NonSubscriber' }],
     customers: [{ type: Schema.Types.ObjectId, ref: 'Customer' }],
 
-})
+});
 
-export const Subscriber = User.discriminator<ISubscriber>('Subscriber', SubscriberSchema)
+export const Subscriber = User.discriminator<ISubscriber>('Subscriber', SubscriberSchema);

@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 import { PaymentTypes } from '../common/constants';
 
 import { ICompany } from '../models/Company';
@@ -197,7 +197,7 @@ const PaymentSchema = new Schema({
         ref: 'CompanyLocation',
     }],
     updatedAt: Date,
-})
+});
 
 const PaymentCustomerSchema = new Schema({
 
@@ -219,7 +219,7 @@ const PaymentCustomerSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'CompanyLocation',
     }],
-})
+});
 
 const PaymentVendorSchema = new Schema({
 
@@ -261,18 +261,18 @@ const PaymentEmployeeSchema = new Schema({
         type: Number,
         default: 0
     }
-})
+});
 
 //Indexes
 PaymentSchema.index({ company: 1 });
 PaymentSchema.index({ createdBy: 1 });
 PaymentSchema.index({ updatedBy: 1 });
-PaymentCustomerSchema.index({ customer: 1 })
-PaymentCustomerSchema.index({ invoice: 1 })
-PaymentVendorSchema.index({ contractor: 1 })
-PaymentVendorSchema.index({ invoices: 1 })
-PaymentEmployeeSchema.index({ employee: 1 })
-PaymentEmployeeSchema.index({ invoices: 1 })
+PaymentCustomerSchema.index({ customer: 1 });
+PaymentCustomerSchema.index({ invoice: 1 });
+PaymentVendorSchema.index({ contractor: 1 });
+PaymentVendorSchema.index({ invoices: 1 });
+PaymentEmployeeSchema.index({ employee: 1 });
+PaymentEmployeeSchema.index({ invoices: 1 });
 PaymentSchema.index({ company: 1, quickbookId: 1 });
 PaymentSchema.index({ company: 1, quickbookId: 1, isVoid: 1 });
 PaymentSchema.index({ company: 1, contractor: 1,  paidAt: 1, isVoid: 1});
@@ -280,7 +280,7 @@ PaymentSchema.index({ company: 1, employee: 1,  paidAt: 1, isVoid: 1});
 PaymentSchema.index({ company: 1, quickbookId: 1, referenceNumber: 1, paymentType: 1, isVoid: 1});
 PaymentSchema.index({ company: 1, quickbookId: 1, referenceNumber: 1, paymentType: 1, line: 1, isVoid: 1});
 
-export const Payment = mongoose.model<IPayment>('Payment', PaymentSchema)
-export const PaymentCustomer = Payment.discriminator<IPaymentCustomer>('PaymentCustomer', PaymentCustomerSchema)
-export const PaymentVendor = Payment.discriminator<IPaymentVendor>('PaymentVendor', PaymentVendorSchema)
-export const PaymentEmployee = Payment.discriminator<IPaymentEmployee>('PaymentEmployee', PaymentEmployeeSchema)
+export const Payment = mongoose.model<IPayment>('Payment', PaymentSchema);
+export const PaymentCustomer = Payment.discriminator<IPaymentCustomer>('PaymentCustomer', PaymentCustomerSchema);
+export const PaymentVendor = Payment.discriminator<IPaymentVendor>('PaymentVendor', PaymentVendorSchema);
+export const PaymentEmployee = Payment.discriminator<IPaymentEmployee>('PaymentEmployee', PaymentEmployeeSchema);

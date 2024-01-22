@@ -42,9 +42,9 @@ export const _standardAccountReceivableReport = async (companyId: string, params
             aging6190,
             aging91over,
         }
-    }
+    };
 
-}
+};
 
 /**
  * Generate custom account receivable report,
@@ -188,7 +188,7 @@ export const _customAccountReceivableReport = async (companyId: string, params: 
         customerAgingBuckets
     };
 
-}
+};
 
 /**
  * Generate basic account receivable report,
@@ -209,22 +209,22 @@ const _generateAccountReceivableReport = async (companyId: string, params: any) 
     if (workType) {
         let workTypeIds: any[] = [];
         try {
-            let workTypeArr = JSON.parse(workType);
+            const workTypeArr = JSON.parse(workType);
             workTypeIds = workTypeArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
-        } catch (error) {};
-        query["workType"] = { $in : workTypeIds };
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
+        } catch (error) {}
+        query['workType'] = { $in : workTypeIds };
     }
     if (companyLocation) {
         let companyLocationIds: any[] = [];
         try {
-            let companyLocationArr = JSON.parse(companyLocation);
+            const companyLocationArr = JSON.parse(companyLocation);
             companyLocationIds = companyLocationArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
         } catch (error) {}
-        query["companyLocation"] = { $in : companyLocationIds };
+        query['companyLocation'] = { $in : companyLocationIds };
     }
 
     // Handle if there asOf params provided, otherwise using today as default
@@ -271,7 +271,7 @@ const _generateAccountReceivableReport = async (companyId: string, params: any) 
         aging91over
     };
 
-}
+};
 
 /**
  * To get the aging bucket by the given params
@@ -317,7 +317,7 @@ const _getAgingBucket = async (
         totalUnpaid: roundTwoDecimal(agingBucketAggregate[0]?.totalUnpaid),
     };
 
-}
+};
 
 /**
  * Generate account receivable detail report,
@@ -369,7 +369,7 @@ export const _generateAccountReceivableDetail = async (companyId: string, params
             jobLocationAgingBuckets.push({
                 jobLocation,
                 agingBuckets: []
-            })
+            });
         }
     }
 
@@ -483,7 +483,7 @@ export const _generateAccountReceivableDetail = async (companyId: string, params
         jobLocationAgingBuckets
     };
 
-}
+};
 
 /**
  * Generate account receivable invoices report,
@@ -497,7 +497,7 @@ export const _generateAccountReceivableInvoices = async (companyId: string, para
         throw new Error('Customer not found');
     }
 
-    let invoiceAgingBuckets: any[] = [];
+    const invoiceAgingBuckets: any[] = [];
     let invoiceCount = 0;
 
     /**
@@ -512,7 +512,7 @@ export const _generateAccountReceivableInvoices = async (companyId: string, para
                 { 'jobObj.jobLocation': <any>null },
                 { invoiceType: 3 }
             ]
-        }
+        };
 
     // Construct the basic filter query
     const query: any = {
@@ -630,7 +630,7 @@ export const _generateAccountReceivableInvoices = async (companyId: string, para
             invoiceAgingBuckets.push({
                 name: invoiceAggregate?._id?.dueDate,
                 invoices: [...invoices]
-            })
+            });
         } else {
             existingInvoice.invoices?.push(...invoices);
         }
@@ -645,7 +645,7 @@ export const _generateAccountReceivableInvoices = async (companyId: string, para
         invoiceAgingBuckets
     };
 
-}
+};
 
 // ==============================
 // ==========[ PDF ]=============
@@ -667,14 +667,14 @@ export const _generateAccountReceivableReportPdf = async({
 
     // Retrieve the report data based, either standard or custom
     switch (params.reportData) {
-        case ReportData.CUSTOM:
-            accountReceivableReport = await _customAccountReceivableReport(company._id, params);
-            break;
+    case ReportData.CUSTOM:
+        accountReceivableReport = await _customAccountReceivableReport(company._id, params);
+        break;
 
-        case ReportData.STANDARD:
-        default:
-            accountReceivableReport = await _standardAccountReceivableReport(company._id, params);
-            break;
+    case ReportData.STANDARD:
+    default:
+        accountReceivableReport = await _standardAccountReceivableReport(company._id, params);
+        break;
     }
 
     // Initialize PDF Make
@@ -700,10 +700,10 @@ export const _generateAccountReceivableReportPdf = async({
         pdfDoc.end();
         writeStream.on('finish', resolve);
     }).then(() => {
-        return { fullPath, accountReceivableReport }
-    })
+        return { fullPath, accountReceivableReport };
+    });
 
-}
+};
 
 // Partial method to generate the PDF content of A/R Report
 const _handleReportPdf = async({
@@ -719,7 +719,7 @@ const _handleReportPdf = async({
 }): Promise<any> => {
 
     // Handle As Of information if there asOf params provided, otherwise using today as default
-    let asOf = params.asOf ? params.asOf : moment().format("YYYY-MM-DD");
+    let asOf = params.asOf ? params.asOf : moment().format('YYYY-MM-DD');
     asOf = moment.utc(asOf).format('MMM. DD, YYYY');
 
     // Handle Customer filter information if there customers param provided
@@ -743,7 +743,7 @@ const _handleReportPdf = async({
         widths: [35, 127, 63, 63, 63, 63, 63, 63, 35],
         height: 10,
         body: [],
-    }
+    };
 
     // Add AR Report's customer aging buckets to table object
     const bodyTable: any = [];
@@ -924,7 +924,7 @@ const _handleReportPdf = async({
                 },
                 fillColor: '#EAECF3',
                 layout: { ...Layouts.noBorders },
-            }]
+            }];
         },
         styles: Styles.arReport,
         defaultStyle: {
@@ -935,7 +935,7 @@ const _handleReportPdf = async({
 
     return docDefinition;
 
-}
+};
 
 /**
  * Generic partial method to get grand total unpaid
@@ -957,7 +957,7 @@ const _getTotalUnpaid = async (query: any): Promise<number> => {
     ]);
 
     return roundTwoDecimal(totalUnpaidAggregate[0]?.totalUnpaid);
-}
+};
 
 /**
  * Generic partial method to get aging bucket dates
@@ -970,7 +970,7 @@ const _getAgingBucketDates = async (date: string): Promise<{ agingCurrentDate: s
     const aging91overDate = moment.utc(date).subtract(91, 'days').endOf('day').format();
 
     return { agingCurrentDate, aging130Date, aging3160Date, aging6190Date, aging91overDate };
-}
+};
 
 /**
  * Partial method to get selected customer aging bucket
@@ -1019,4 +1019,4 @@ const _getCustomerAgingBucket = async (query: any, agingCurrentDate: string, agi
     }
 
     return customerAgingBucket;
-}
+};

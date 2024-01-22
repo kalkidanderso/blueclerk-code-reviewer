@@ -49,7 +49,7 @@ export const getAllJobRoutes = async (req: Request, res: Response) => {
             }
         },
         { $project: { jobs: 0 } }
-    ])
+    ]);
 
     await JobRoute.populate(jobRoutes, [
         {
@@ -78,7 +78,7 @@ export const getAllJobRoutes = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, jobRoutes: jobRoutes });
 
-}
+};
 
 /**
  * To retrieve job route by schedule date and technician/contractor
@@ -130,7 +130,7 @@ export const getJobRoute = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, jobRoute });
 
-}
+};
 
 export const getAllJobRoutesByTechnician = async (req: Request, res: Response) => {
 
@@ -139,7 +139,7 @@ export const getAllJobRoutesByTechnician = async (req: Request, res: Response) =
     const technician = <IUser>req.technician;
     const contractor = <ICompany>req.contractor;
 
-    let query:any = {
+    const query:any = {
         company: company._id,
         employeeType: params.employeeType,
         technician: technician?._id,
@@ -149,7 +149,7 @@ export const getAllJobRoutesByTechnician = async (req: Request, res: Response) =
     if (params.startDate && params.endDate) {
         const startDate = moment(params.startDate).format('YYYY-MM-DD');
         const endDate = moment(params.endDate).format('YYYY-MM-DD');
-        query["scheduleDate"] = { $gte: new Date(startDate), $lte: new Date(endDate) };
+        query['scheduleDate'] = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }
 
     const jobRoute = await JobRoute.find(query).sort({ _id: -1 })
@@ -172,7 +172,7 @@ export const getAllJobRoutesByTechnician = async (req: Request, res: Response) =
 
     return res.json({ status: Status.Success, jobRoute });
 
-}
+};
 
 /**
  * To create a new job route for technician/contractor
@@ -241,7 +241,7 @@ export const createJobRoute = async (req: Request, res: Response) => {
     // Save the new routes for the technician/contractor
     const jobRoute = new JobRoute({
         company: company._id,
-        scheduleDate: moment(params.scheduleDate).format("YYYY-MM-DD"),
+        scheduleDate: moment(params.scheduleDate).format('YYYY-MM-DD'),
         employeeType: params.employeeType ?? 0,
         technician: technician?._id,
         contractor: contractor?._id,
@@ -271,7 +271,7 @@ export const createJobRoute = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, message: 'Job route created successfully', jobRoute, invalidJobIds });
 
-}
+};
 
 /**
  * To update one job route
@@ -342,7 +342,7 @@ export const updateJobRoute = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, message: 'Job route updated successfully.', jobRoute, invalidJobIds });
 
-}
+};
 
 /**
  *
@@ -365,7 +365,7 @@ export const _addOrRemoveJobRoutes = async (technicianId: string, scheduleDate: 
     const query = {
         technician: technicianId,
         ...scheduleDateQuery
-    }
+    };
 
     // Retrieve the job route for the technician if exist
     const jobRoute = await JobRoute.findOne(query).sort({ _id: -1 });
@@ -375,32 +375,32 @@ export const _addOrRemoveJobRoutes = async (technicianId: string, scheduleDate: 
     }
 
     switch (action) {
-        case 'ADD':
-            // Add the job to the job routes
-            jobRoute.routes.push({
-                order: jobRoute.routes.length + 1,
-                job: jobId
-            });
-            break;
+    case 'ADD':
+        // Add the job to the job routes
+        jobRoute.routes.push({
+            order: jobRoute.routes.length + 1,
+            job: jobId
+        });
+        break;
 
-        case 'REMOVE':
-            // Remove the job from job routes
-            const routes = jobRoute.routes.filter(route => route.job.toString() !== jobId.toString());
+    case 'REMOVE':
+        // Remove the job from job routes
+        const routes = jobRoute.routes.filter(route => route.job.toString() !== jobId.toString());
 
-            // Reorder the order of the route
-            let i = 0;
-            for (const route of routes) {
-                route.order = (i += 1);
-            }
+        // Reorder the order of the route
+        let i = 0;
+        for (const route of routes) {
+            route.order = (i += 1);
+        }
 
-            jobRoute.routes = routes;
-            break;
+        jobRoute.routes = routes;
+        break;
 
-        default:
-            break;
+    default:
+        break;
     }
 
     await jobRoute.save();
     return;
 
-}
+};

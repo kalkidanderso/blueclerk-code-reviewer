@@ -12,6 +12,6 @@ const WorkTypeSchema = new Schema({
         trim: true,
     },
     createdAt: Date
-})
+});
 
 export const WorkType = mongoose.model<IWorkType>('WorkType', WorkTypeSchema);

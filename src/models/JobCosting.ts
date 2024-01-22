@@ -31,5 +31,5 @@ const JobCostingSchema = new Schema(
         inactiveAt: Date
     },
     { timestamps: { createdAt: true, updatedAt: true } }
-)
+);
 export const JobCosting = mongoose.model<IJobCosting>('JobCosting', JobCostingSchema);

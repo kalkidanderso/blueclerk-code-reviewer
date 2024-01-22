@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ITag extends Document {
 
@@ -8,7 +8,7 @@ export interface ITag extends Document {
     address: string
     customer: Schema.Types.ObjectId
     info: {
-        nfcTag: String
+        nfcTag: string
         imageUrl: string
     },
     images:[string?],
@@ -74,7 +74,7 @@ const TagSchema = new Schema({
         default: Date.now()
     }
 
-})
+});
 
 //Indexes
 TagSchema.index({ jobLocation: 1 });
@@ -85,4 +85,4 @@ TagSchema.index({ createdBy: 1 });
 TagSchema.index({ 'info.nfcTag': 1 });
 TagSchema.index({ 'info.nfcTag': 1, company: 1 });
 
-export const Tag = mongoose.model<ITag>('Tag', TagSchema)
+export const Tag = mongoose.model<ITag>('Tag', TagSchema);
