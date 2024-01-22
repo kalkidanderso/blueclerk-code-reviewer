@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IGroup extends Document {
 
@@ -23,11 +23,11 @@ const GroupSchema = new Schema({
     },
     members: [{ type: Schema.Types.ObjectId, ref: 'Employee' }],
 
-})
+});
 
 //Indexes
 GroupSchema.index({ company: 1 });
 GroupSchema.index({ manager: 1 });
 GroupSchema.index({ members: 1 });
 
-export const Group = mongoose.model<IGroup>('Group', GroupSchema)
+export const Group = mongoose.model<IGroup>('Group', GroupSchema);

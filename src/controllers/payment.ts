@@ -1,24 +1,24 @@
-import { Request, Response } from 'express'
-import { ObjectId } from 'mongodb'
-import moment from 'moment'
+import { Request, Response } from 'express';
+import { ObjectId } from 'mongodb';
+import moment from 'moment';
 import * as _ from 'lodash';
 import { roundTwoDecimal } from '../services/helper';
 
-import { Status, Messages, InvoiceStatus, payrollPaymentTypes } from '../common/constants'
-import { Company, ICompany } from '../models/Company'
-import { IUser, User } from '../models/User'
-import { Invoice, IInvoice } from '../models/Invoice'
-import { Payment, IPayment, PaymentVendor, PaymentEmployee, PaymentCustomer, IPaymentVendor, IPaymentEmployee, IJobExportQuery } from '../models/Payment'
-import { Customer, ICustomer } from '../models/Customer'
-import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer'
-import { _createQBPayment, _deleteQBPayment, _updateQBPayment, _voidPayment } from './quickbook.payment'
-import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission'
+import { Status, Messages, InvoiceStatus, payrollPaymentTypes } from '../common/constants';
+import { Company, ICompany } from '../models/Company';
+import { IUser, User } from '../models/User';
+import { Invoice, IInvoice } from '../models/Invoice';
+import { Payment, IPayment, PaymentVendor, PaymentEmployee, PaymentCustomer, IPaymentVendor, IPaymentEmployee, IJobExportQuery } from '../models/Payment';
+import { Customer, ICustomer } from '../models/Customer';
+import { _checkQBCustomerJobLocation } from '../controllers/quickbook.customer';
+import { _createQBPayment, _deleteQBPayment, _updateQBPayment, _voidPayment } from './quickbook.payment';
+import { IInvoiceCommission, InvoiceCommission } from '../models/InvoiceCommission';
 import { AdvancePayment, AdvancePaymentEmployee, AdvancePaymentVendor } from '../models/AdvancePayment';
 import * as Sentry from '@sentry/node';
 import { IJob, Job } from '../models/Job';
 import { IJobCommission, JobCommission } from '../models/JobCommission';
 import { logType } from 'src/models/invoiceLogs';
-import * as InvoiceLogController from "../controllers/invoiceLogs";
+import * as InvoiceLogController from '../controllers/invoiceLogs';
 
 
 /**
@@ -125,7 +125,7 @@ export const _calculateInvoiceBalance = async (invoice: IInvoice, customer: ICus
 
     return;
 
-}
+};
 
 /**
  * To reset Payment quickbookId,
@@ -146,26 +146,26 @@ export const getPayments = (req: Request, res: Response) => {
     const workType = req.query.workType;
     const companyLocation = req.query.companyLocation;
 
-    let filterQuery: { [key: string]: any } = { company: req.companyId, __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] } };
+    const filterQuery: { [key: string]: any } = { company: req.companyId, __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] } };
     if (workType) {
         let workTypeIds: any[] = [];
         try {
-            let workTypeArr = JSON.parse(workType);
+            const workTypeArr = JSON.parse(workType);
             workTypeIds = workTypeArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
-        } catch (error) { };
-        filterQuery["workType"] = { $in: workTypeIds };
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
+        } catch (error) { }
+        filterQuery['workType'] = { $in: workTypeIds };
     }
     if (companyLocation) {
         let companyLocationIds: any[] = [];
         try {
-            let companyLocationArr = JSON.parse(companyLocation);
+            const companyLocationArr = JSON.parse(companyLocation);
             companyLocationIds = companyLocationArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
         } catch (error) { }
-        filterQuery["companyLocation"] = { $in: companyLocationIds };
+        filterQuery['companyLocation'] = { $in: companyLocationIds };
     }
     Payment.find(filterQuery)
         .populate({
@@ -199,26 +199,26 @@ export const getPayments = (req: Request, res: Response) => {
         .then(async (payments: IPayment[] | null) => {
 
             // Retrieve number of the unsynced invoices
-            let filterUnsynced: any = {};
+            const filterUnsynced: any = {};
             if (workType) {
                 let workTypeIds: any[] = [];
                 try {
-                    let workTypeArr = JSON.parse(workType);
+                    const workTypeArr = JSON.parse(workType);
                     workTypeIds = workTypeArr.map((id: string) => {
-                        if (ObjectId.isValid(id)) return new ObjectId(id)
-                    })
-                } catch (error) { };
-                filterUnsynced["workType"] = { $in: workTypeIds };
+                        if (ObjectId.isValid(id)) return new ObjectId(id);
+                    });
+                } catch (error) { }
+                filterUnsynced['workType'] = { $in: workTypeIds };
             }
             if (companyLocation) {
                 let companyLocationIds: any[] = [];
                 try {
-                    let companyLocationArr = JSON.parse(companyLocation);
+                    const companyLocationArr = JSON.parse(companyLocation);
                     companyLocationIds = companyLocationArr.map((id: string) => {
-                        if (ObjectId.isValid(id)) return new ObjectId(id)
-                    })
+                        if (ObjectId.isValid(id)) return new ObjectId(id);
+                    });
                 } catch (error) { }
-                filterUnsynced["companyLocation"] = { $in: companyLocationIds };
+                filterUnsynced['companyLocation'] = { $in: companyLocationIds };
             }
 
             const unsyncedPayments = await Payment.find({
@@ -234,13 +234,13 @@ export const getPayments = (req: Request, res: Response) => {
         .catch((error: any) => {
             Sentry.captureException(error);
             if (error.message != undefined) {
-                return res.json({ 'status': Status.Error, 'message': error.message })
+                return res.json({ 'status': Status.Error, 'message': error.message });
             } else {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
-        })
+        });
 
-}
+};
 
 /**
  * To retrieve unsynced payments that active
@@ -260,7 +260,7 @@ export const getUnsyncedPayments = async (req: Request, res: Response) => {
             { isVoid: { $ne: true } },
             { quickbookId: null }
         ]
-    }
+    };
 
     // Check and add if params filter provided
     if (params.keyword) {
@@ -274,7 +274,7 @@ export const getUnsyncedPayments = async (req: Request, res: Response) => {
                 { 'line.invoice.invoiceId': keywordRegex },
                 { 'line.invoice.customerPO': keywordRegex },
             ]
-        })
+        });
     }
     if (params.customerId) {
         filterQuery['$and'].push({ customer: new ObjectId(params.customerId) });
@@ -283,20 +283,20 @@ export const getUnsyncedPayments = async (req: Request, res: Response) => {
     if (workType) {
         let workTypeIds: any[] = [];
         try {
-            let workTypeArr = JSON.parse(workType);
+            const workTypeArr = JSON.parse(workType);
             workTypeIds = workTypeArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
-        } catch (error) { };
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
+        } catch (error) { }
         filterQuery['$and'].push({ workType: { $in: workTypeIds } });
     }
     if (companyLocation) {
         let companyLocationIds: any[] = [];
         try {
-            let companyLocationArr = JSON.parse(companyLocation);
+            const companyLocationArr = JSON.parse(companyLocation);
             companyLocationIds = companyLocationArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
         } catch (error) { }
         filterQuery['$and'].push({ companyLocation: { $in: companyLocationIds } });
     }
@@ -329,7 +329,7 @@ export const getUnsyncedPayments = async (req: Request, res: Response) => {
         payments
     });
 
-}
+};
 
 export const getPaymentsByCustomerId = (req: Request, res: Response) => {
 
@@ -362,18 +362,18 @@ export const getPaymentsByCustomerId = (req: Request, res: Response) => {
         })
         .then((payments: IPayment[] | null) => {
 
-            return res.json({ 'status': Status.Success, 'payment': payments })
+            return res.json({ 'status': Status.Success, 'payment': payments });
         })
         .catch((error: any) => {
             Sentry.captureException(error);
             if (error.message != undefined) {
-                return res.json({ 'status': Status.Error, 'message': error.message })
+                return res.json({ 'status': Status.Error, 'message': error.message });
             } else {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
-        })
+        });
 
-}
+};
 
 export const getPaymentsByContractor = async (req: Request, res: Response) => {
 
@@ -388,223 +388,223 @@ export const getPaymentsByContractor = async (req: Request, res: Response) => {
     const workType = req.query.workType;
     const companyLocation = req.query.companyLocation;
 
-    let filterByDivision: any = {};
+    const filterByDivision: any = {};
 
     if (workType) {
         let workTypeIds: any[] = [];
         try {
-            let workTypeArr = JSON.parse(workType);
+            const workTypeArr = JSON.parse(workType);
             workTypeIds = workTypeArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
-        } catch (error) { };
-        filterByDivision["workType"] = { $in: workTypeIds };
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
+        } catch (error) { }
+        filterByDivision['workType'] = { $in: workTypeIds };
     }
     if (companyLocation) {
         let companyLocationIds: any[] = [];
         try {
-            let companyLocationArr = JSON.parse(companyLocation);
+            const companyLocationArr = JSON.parse(companyLocation);
             companyLocationIds = companyLocationArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
         } catch (error) { }
-        filterByDivision["companyLocation"] = { $in: companyLocationIds };
+        filterByDivision['companyLocation'] = { $in: companyLocationIds };
     }
 
     if (params.startDate && params.endDate) {
-        query = { paidAt: { $gte: startDate, $lte: endDate } }
+        query = { paidAt: { $gte: startDate, $lte: endDate } };
     }
 
     switch (params.isActive) {
-        case 'active':
-            voidQuery = { isVoid: { $ne: true } };
-            break;
+    case 'active':
+        voidQuery = { isVoid: { $ne: true } };
+        break;
 
-        case 'void':
-            voidQuery = { isVoid: true };
-            break;
+    case 'void':
+        voidQuery = { isVoid: true };
+        break;
 
-        default:
-            voidQuery = {}
-            break;
+    default:
+        voidQuery = {};
+        break;
     }
 
     switch (params.type) {
-        case 'vendor':
-            result = _.extend({ status: Status.Success });
-            const vendorQuery = { company: company._id, contractor: params.id, ...query, ...voidQuery, ...filterByDivision }
-            if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
-                const payments = await PaymentVendor.find(vendorQuery)
-                    .populate({
-                        path: 'company',
-                        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
-                    })
-                    .populate({
-                        path: 'contractor',
-                        select: 'info address contact',
-                        populate: [{ path: 'admin', select: 'profile auth.email contact' }]
-                    })
-                    .populate({
-                        path: 'invoices',
-                        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
-                    })
-                    .populate({
-                        path: 'createdBy',
-                        select: 'profile.displayName auth.email'
-                    })
-                    .catch((error: any) => {
-                        Sentry.captureException(error);
-                        return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
-                    });
-                result = _.extend(result, { payments });
-            }
+    case 'vendor':
+        result = _.extend({ status: Status.Success });
+        const vendorQuery = { company: company._id, contractor: params.id, ...query, ...voidQuery, ...filterByDivision };
+        if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
+            const payments = await PaymentVendor.find(vendorQuery)
+                .populate({
+                    path: 'company',
+                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                })
+                .populate({
+                    path: 'contractor',
+                    select: 'info address contact',
+                    populate: [{ path: 'admin', select: 'profile auth.email contact' }]
+                })
+                .populate({
+                    path: 'invoices',
+                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
+                })
+                .populate({
+                    path: 'createdBy',
+                    select: 'profile.displayName auth.email'
+                })
+                .catch((error: any) => {
+                    Sentry.captureException(error);
+                    return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
+                });
+            result = _.extend(result, { payments });
+        }
 
-            if (payrollPaymentType == payrollPaymentTypes.AdvancePayments || payrollPaymentType !== payrollPaymentTypes.PayrollPayments) {
-                const advancePayments = await AdvancePaymentVendor.find(vendorQuery)
-                    .populate({
-                        path: 'company',
-                        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
-                    })
-                    .populate({
-                        path: 'contractor',
-                        select: 'info address contact',
-                        populate: [{ path: 'admin', select: 'profile auth.email contact' }]
-                    })
-                    .populate({
-                        path: 'invoices',
-                        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
-                    })
-                    .populate({
-                        path: 'createdBy',
-                        select: 'profile.displayName auth.email'
-                    })
-                    .catch((error: any) => {
-                        Sentry.captureException(error);
-                        return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
-                    });
-                result = _.extend(result, { advancePayments });
-            }
-            return res.json(result);
+        if (payrollPaymentType == payrollPaymentTypes.AdvancePayments || payrollPaymentType !== payrollPaymentTypes.PayrollPayments) {
+            const advancePayments = await AdvancePaymentVendor.find(vendorQuery)
+                .populate({
+                    path: 'company',
+                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                })
+                .populate({
+                    path: 'contractor',
+                    select: 'info address contact',
+                    populate: [{ path: 'admin', select: 'profile auth.email contact' }]
+                })
+                .populate({
+                    path: 'invoices',
+                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
+                })
+                .populate({
+                    path: 'createdBy',
+                    select: 'profile.displayName auth.email'
+                })
+                .catch((error: any) => {
+                    Sentry.captureException(error);
+                    return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
+                });
+            result = _.extend(result, { advancePayments });
+        }
+        return res.json(result);
 
-        case 'employee':
-            result = _.extend({ status: Status.Success });
-            const employeeQuery = { company, employee: params.id, ...query, ...voidQuery, ...filterByDivision }
-            if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
-                const payments = await PaymentEmployee.find(employeeQuery)
-                    .populate({
-                        path: 'company',
-                        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
-                    })
-                    .populate({
-                        path: 'employee',
-                        select: 'profile auth.email address contact'
-                    })
-                    .populate({
-                        path: 'invoices',
-                        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
-                    })
-                    .populate({
-                        path: 'createdBy',
-                        select: 'profile.displayName auth.email'
-                    })
-                    .catch((error: any) => {
-                        Sentry.captureException(error);
-                        return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
-                    });
-                result = _.extend(result, { payments });
-            }
+    case 'employee':
+        result = _.extend({ status: Status.Success });
+        const employeeQuery = { company, employee: params.id, ...query, ...voidQuery, ...filterByDivision };
+        if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
+            const payments = await PaymentEmployee.find(employeeQuery)
+                .populate({
+                    path: 'company',
+                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                })
+                .populate({
+                    path: 'employee',
+                    select: 'profile auth.email address contact'
+                })
+                .populate({
+                    path: 'invoices',
+                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
+                })
+                .populate({
+                    path: 'createdBy',
+                    select: 'profile.displayName auth.email'
+                })
+                .catch((error: any) => {
+                    Sentry.captureException(error);
+                    return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
+                });
+            result = _.extend(result, { payments });
+        }
 
-            if (payrollPaymentType == payrollPaymentTypes.AdvancePayments || payrollPaymentType !== payrollPaymentTypes.PayrollPayments) {
-                const advancePayments = await AdvancePaymentEmployee.find(employeeQuery)
-                    .populate({
-                        path: 'company',
-                        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
-                    })
-                    .populate({
-                        path: 'employee',
-                        select: 'profile auth.email address contact'
-                    })
-                    .populate({
-                        path: 'invoices',
-                        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
-                    })
-                    .populate({
-                        path: 'createdBy',
-                        select: 'profile.displayName auth.email'
-                    })
-                    .catch((error: any) => {
-                        Sentry.captureException(error);
-                        return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
-                    });
-                result = _.extend(result, { advancePayments });
-            }
-            return res.json(result);
+        if (payrollPaymentType == payrollPaymentTypes.AdvancePayments || payrollPaymentType !== payrollPaymentTypes.PayrollPayments) {
+            const advancePayments = await AdvancePaymentEmployee.find(employeeQuery)
+                .populate({
+                    path: 'company',
+                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                })
+                .populate({
+                    path: 'employee',
+                    select: 'profile auth.email address contact'
+                })
+                .populate({
+                    path: 'invoices',
+                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
+                })
+                .populate({
+                    path: 'createdBy',
+                    select: 'profile.displayName auth.email'
+                })
+                .catch((error: any) => {
+                    Sentry.captureException(error);
+                    return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
+                });
+            result = _.extend(result, { advancePayments });
+        }
+        return res.json(result);
 
-        default:
-            result = _.extend({ status: Status.Success });
-            if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
-                const payments = await Payment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query, ...voidQuery, ...filterByDivision })
-                    .populate({
-                        path: 'company',
-                        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
-                    })
-                    .populate({
-                        path: 'contractor',
-                        select: 'info address contact',
-                        populate: [{ path: 'admin', select: 'profile auth.email contact' }]
-                    })
-                    .populate({
-                        path: 'employee',
-                        select: 'profile auth.email address contact'
-                    })
-                    .populate({
-                        path: 'invoices',
-                        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
-                    })
-                    .populate({
-                        path: 'createdBy',
-                        select: 'profile.displayName auth.email'
-                    })
-                    .catch((error: any) => {
-                        Sentry.captureException(error);
-                        return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
-                    });
-                result = _.extend(result, { payments });
-            }
+    default:
+        result = _.extend({ status: Status.Success });
+        if (payrollPaymentType === payrollPaymentTypes.PayrollPayments || payrollPaymentType !== payrollPaymentTypes.AdvancePayments) {
+            const payments = await Payment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query, ...voidQuery, ...filterByDivision })
+                .populate({
+                    path: 'company',
+                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                })
+                .populate({
+                    path: 'contractor',
+                    select: 'info address contact',
+                    populate: [{ path: 'admin', select: 'profile auth.email contact' }]
+                })
+                .populate({
+                    path: 'employee',
+                    select: 'profile auth.email address contact'
+                })
+                .populate({
+                    path: 'invoices',
+                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
+                })
+                .populate({
+                    path: 'createdBy',
+                    select: 'profile.displayName auth.email'
+                })
+                .catch((error: any) => {
+                    Sentry.captureException(error);
+                    return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
+                });
+            result = _.extend(result, { payments });
+        }
 
-            if (payrollPaymentType == payrollPaymentTypes.AdvancePayments || payrollPaymentType !== payrollPaymentTypes.PayrollPayments) {
-                const advancePayments = await AdvancePayment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query, ...voidQuery, ...filterByDivision })
-                    .populate({
-                        path: 'company',
-                        select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
-                    })
-                    .populate({
-                        path: 'contractor',
-                        select: 'info address contact',
-                        populate: [{ path: 'admin', select: 'profile auth.email contact' }]
-                    })
-                    .populate({
-                        path: 'employee',
-                        select: 'profile auth.email address contact'
-                    })
-                    .populate({
-                        path: 'invoices',
-                        select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
-                    })
-                    .populate({
-                        path: 'createdBy',
-                        select: 'profile.displayName auth.email'
-                    })
-                    .catch((error: any) => {
-                        Sentry.captureException(error);
-                        return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
-                    });
-                result = _.extend(result, { advancePayments });
-            }
-            return res.json(result);
+        if (payrollPaymentType == payrollPaymentTypes.AdvancePayments || payrollPaymentType !== payrollPaymentTypes.PayrollPayments) {
+            const advancePayments = await AdvancePayment.find({ company: company._id, __t: { $in: ['PaymentVendor', 'PaymentEmployee'] }, ...query, ...voidQuery, ...filterByDivision })
+                .populate({
+                    path: 'company',
+                    select: 'info.companyName info.logoUrl auth.email permissions.role address contact'
+                })
+                .populate({
+                    path: 'contractor',
+                    select: 'info address contact',
+                    populate: [{ path: 'admin', select: 'profile auth.email contact' }]
+                })
+                .populate({
+                    path: 'employee',
+                    select: 'profile auth.email address contact'
+                })
+                .populate({
+                    path: 'invoices',
+                    select: 'invoiceId invoiceType purchaseOrder job issuedDate dueDate charges shippingCost customerPO vendorId note status paid balanceDue paymentApplied tax taxAmount subTotal total'
+                })
+                .populate({
+                    path: 'createdBy',
+                    select: 'profile.displayName auth.email'
+                })
+                .catch((error: any) => {
+                    Sentry.captureException(error);
+                    return res.json({ status: Status.Error, message: error.message ?? Messages.GenericError });
+                });
+            result = _.extend(result, { advancePayments });
+        }
+        return res.json(result);
     }
 
-}
+};
 
 /**
  * Create payment for single invoice
@@ -634,7 +634,7 @@ export const createPayment = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: 'Customer not found.' });
     }
 
-    let divisionData: any = {};
+    const divisionData: any = {};
     if (params.invoiceId) {
         // Find and check if invoice existed and belongs to the customer
         invoice = await Invoice.findOne({
@@ -652,11 +652,11 @@ export const createPayment = async (req: Request, res: Response) => {
         }
 
         if (invoice.companyLocation) {
-            divisionData["companyLocation"] = invoice.companyLocation;
+            divisionData['companyLocation'] = invoice.companyLocation;
         }
 
         if (invoice.workType) {
-            divisionData["workType"] = invoice.workType;
+            divisionData['workType'] = invoice.workType;
         }
     }
 
@@ -671,11 +671,11 @@ export const createPayment = async (req: Request, res: Response) => {
         });
 
         if (firstInvoice.companyLocation) {
-            divisionData["companyLocation"] = firstInvoice.companyLocation;
+            divisionData['companyLocation'] = firstInvoice.companyLocation;
         }
 
         if (firstInvoice.workType) {
-            divisionData["workType"] = firstInvoice.workType;
+            divisionData['workType'] = firstInvoice.workType;
         }
     }
 
@@ -695,7 +695,7 @@ export const createPayment = async (req: Request, res: Response) => {
     });
 
     try {
-        let errorMessages = "";
+        let errorMessages = '';
         if (paramInvoices.length) {
             const errPayments: {[p: string]: string[]} = {};
             // Handle multiple invoices
@@ -704,26 +704,26 @@ export const createPayment = async (req: Request, res: Response) => {
                 
                 if (resInvoices.error) {
                     if (errPayments[resInvoices.error]) {
-                        errPayments[resInvoices.error].push(resInvoices.invoiceId?.replace("Invoice",""));
+                        errPayments[resInvoices.error].push(resInvoices.invoiceId?.replace('Invoice',''));
                     } else {
-                        errPayments[resInvoices.error] = [resInvoices.invoiceId?.replace("Invoice","")];
+                        errPayments[resInvoices.error] = [resInvoices.invoiceId?.replace('Invoice','')];
                     }
                 }
             }
 
             Object.keys(errPayments).forEach(err => {
-                if (err == "invoice_not_found") {
-                    errorMessages += `The payment was recorded & Invoice with id ${errPayments[err].toString()} either not found, already voided, or does not belong to the customer.`
+                if (err == 'invoice_not_found') {
+                    errorMessages += `The payment was recorded & Invoice with id ${errPayments[err].toString()} either not found, already voided, or does not belong to the customer.`;
                 } else {
-                    errorMessages += `The payment was recorded & Invoice with id ${errPayments[err].toString()} already paid off.`
+                    errorMessages += `The payment was recorded & Invoice with id ${errPayments[err].toString()} already paid off.`;
                 }
-            })
+            });
         } else {
             payment.amountPaid = params.amount;
             // Handle invoice balance due, underpayment, and overpayment
             await _calculateInvoiceBalance(invoice, customer, parseFloat(params.amount));
 
-            const invoiceLogsObj:any={invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_RECORDED, info:"Payment of $"+payment.amountPaid +" recorded", amountPaid:payment.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id};
+            const invoiceLogsObj:any={invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_RECORDED, info:'Payment of $'+payment.amountPaid +' recorded', amountPaid:payment.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id};
             InvoiceLogController.create(invoiceLogsObj);
 
         }
@@ -782,7 +782,7 @@ export const createPayment = async (req: Request, res: Response) => {
         Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
     }
-}
+};
 
 export const createPaymentContractor = async (req: Request, res: Response) => {
 
@@ -806,16 +806,16 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
     let creditUsed = params.creditUsed ?? 0;
 
     if (paramsInvoiceIds.length || paramsJobIds.length) {
-        if(paramsJobIds.length) jobQuery = { _id: { $in: paramsJobIds } }
-        if(paramsInvoiceIds.length) invoiceQuery = { _id: { $in: paramsInvoiceIds } }
+        if(paramsJobIds.length) jobQuery = { _id: { $in: paramsJobIds } };
+        if(paramsInvoiceIds.length) invoiceQuery = { _id: { $in: paramsInvoiceIds } };
     } else if (params.startDate && params.endDate) {
         jobQuery = { $or: [{ endTime: { $gte: startDate, $lte: endDate } }]};
-        invoiceQuery = { $or: [{ issuedDate: { $gte: startDate, $lte: endDate } }] }
+        invoiceQuery = { $or: [{ issuedDate: { $gte: startDate, $lte: endDate } }] };
     } else {
         return res.json({ statstus: Status.Error, message: 'Either invoiceIds, JobIds or startDate endDate is required' });
     }
 
-    let invoices: IInvoice[] = []
+    let invoices: IInvoice[] = [];
     let jobs: IJob[] = [];
 
     if (Object.keys(invoiceQuery).length) {
@@ -849,177 +849,177 @@ export const createPaymentContractor = async (req: Request, res: Response) => {
     };
 
     if (params.companyLocation) {
-        paymentEntry["companyLocation"] = params.companyLocation;
+        paymentEntry['companyLocation'] = params.companyLocation;
     }
 
     if (params.workType) {
-        paymentEntry["workType"] = params.workType;
+        paymentEntry['workType'] = params.workType;
     }
 
     switch (params.type) {
-        case 'vendor':
-            // Check if vendor exist
-            const contractor = await Company.findById(params.id).exec();
-            if (!contractor) {
-                return res.json({ status: Status.Error, message: 'Vendor not found' });
-            }
+    case 'vendor':
+        // Check if vendor exist
+        const contractor = await Company.findById(params.id).exec();
+        if (!contractor) {
+            return res.json({ status: Status.Error, message: 'Vendor not found' });
+        }
 
-            // Save the Payment Vendor entry
-            const paymentVendor = await new PaymentVendor({
-                contractor,
-                ...paymentEntry
-            }).save();
+        // Save the Payment Vendor entry
+        const paymentVendor = await new PaymentVendor({
+            contractor,
+            ...paymentEntry
+        }).save();
 
-            if (creditUsed > 0) {
-                // Deduct vendor credit
-                const contractorCredit = (contractor.credit ?? 0) - creditUsed;
-                contractor.credit = contractorCredit < 0 ? 0 : contractorCredit;
+        if (creditUsed > 0) {
+            // Deduct vendor credit
+            const contractorCredit = (contractor.credit ?? 0) - creditUsed;
+            contractor.credit = contractorCredit < 0 ? 0 : contractorCredit;
 
-                // Deduct advance payment's balance
-                // let creditUsed = params.creditUsed;
-                const vendorAdvancePayments = await AdvancePayment.find({
-                    company: company._id,
-                    isVoid: { $ne: true },
-                    contractor: contractor._id,
-                    appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) }
-                });
+            // Deduct advance payment's balance
+            // let creditUsed = params.creditUsed;
+            const vendorAdvancePayments = await AdvancePayment.find({
+                company: company._id,
+                isVoid: { $ne: true },
+                contractor: contractor._id,
+                appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) }
+            });
                 // Iterate advance payments and deduct their balance
-                for (const advancePayment of vendorAdvancePayments) {
-                    if (creditUsed > advancePayment.balance) {
-                        creditUsed -= advancePayment.balance;
-                        advancePayment.balance = 0;
-                    } else {
-                        advancePayment.balance -= creditUsed;
-                        creditUsed = 0;
-                    }
+            for (const advancePayment of vendorAdvancePayments) {
+                if (creditUsed > advancePayment.balance) {
+                    creditUsed -= advancePayment.balance;
+                    advancePayment.balance = 0;
+                } else {
+                    advancePayment.balance -= creditUsed;
+                    creditUsed = 0;
+                }
 
-                    await advancePayment.save();
+                await advancePayment.save();
 
-                    if (creditUsed <= 0) {
-                        break;
-                    }
-                };
-            }
-
-
-            // Iterate all invoices to mark the commission as paid and deduct vendor balance
-            for (const invoice of invoices) {
-                const invoiceCommission = <IInvoiceCommission>invoice.commission;
-
-                if (invoiceCommission.technicians) {
-                    // Find the vendor on the invoice commisison object
-                    const contractorInvoiceCommission = invoiceCommission.technicians.find(commission => commission?.contractor?.toString() === contractor?._id?.toString());
-
-                    // Mark vendor commission as paid
-                    contractorInvoiceCommission.paid = true;
-                    contractorInvoiceCommission.paidAt = paymentVendor.paidAt;
-
-                    // Deduct vendor balance
-                    const contractorBalance = contractor.balance - Number(contractorInvoiceCommission.commissionAmount.toFixed(2));
-                    contractor.balance = contractorBalance < 0 ? 0 : contractorBalance;
-
-                    await invoiceCommission.save();
+                if (creditUsed <= 0) {
+                    break;
                 }
             }
+        }
 
-            // Iterate all jobs to mark the commission as paid and deduct vendor balance
-            for (const job of jobs) {
-                const jobCommission = <IJobCommission>job.commission;
 
-                if (jobCommission.technicians) {
-                    // Find the vendor on the invoice commisison object
-                    const contractorJobCommission = jobCommission.technicians.find(commission => commission?.contractor?.toString() === contractor?._id?.toString());
+        // Iterate all invoices to mark the commission as paid and deduct vendor balance
+        for (const invoice of invoices) {
+            const invoiceCommission = <IInvoiceCommission>invoice.commission;
 
-                    // Mark vendor commission as paid
-                    contractorJobCommission.paid = true;
-                    contractorJobCommission.paidAt = paymentVendor.paidAt;
+            if (invoiceCommission.technicians) {
+                // Find the vendor on the invoice commisison object
+                const contractorInvoiceCommission = invoiceCommission.technicians.find(commission => commission?.contractor?.toString() === contractor?._id?.toString());
 
-                    // Deduct vendor balance
-                    const contractorBalance = contractor.balance - Number(contractorJobCommission.commissionAmount.toFixed(2));
-                    contractor.balance = contractorBalance < 0 ? 0 : contractorBalance;
+                // Mark vendor commission as paid
+                contractorInvoiceCommission.paid = true;
+                contractorInvoiceCommission.paidAt = paymentVendor.paidAt;
 
-                    await jobCommission.save();
-                }
+                // Deduct vendor balance
+                const contractorBalance = contractor.balance - Number(contractorInvoiceCommission.commissionAmount.toFixed(2));
+                contractor.balance = contractorBalance < 0 ? 0 : contractorBalance;
+
+                await invoiceCommission.save();
             }
-            await contractor.save();
+        }
 
-            // Record payment for vendor is done, finish the request
-            return res.json({ status: Status.Success, message: 'Payment successfully created.', payment: paymentVendor });
+        // Iterate all jobs to mark the commission as paid and deduct vendor balance
+        for (const job of jobs) {
+            const jobCommission = <IJobCommission>job.commission;
 
-        case 'employee':
-            // CHeck if employee exist
-            const employee = await User.findById(params.id).exec();
-            if (!employee) {
-                return res.json({ status: Status.Error, message: 'Employee not found' });
+            if (jobCommission.technicians) {
+                // Find the vendor on the invoice commisison object
+                const contractorJobCommission = jobCommission.technicians.find(commission => commission?.contractor?.toString() === contractor?._id?.toString());
+
+                // Mark vendor commission as paid
+                contractorJobCommission.paid = true;
+                contractorJobCommission.paidAt = paymentVendor.paidAt;
+
+                // Deduct vendor balance
+                const contractorBalance = contractor.balance - Number(contractorJobCommission.commissionAmount.toFixed(2));
+                contractor.balance = contractorBalance < 0 ? 0 : contractorBalance;
+
+                await jobCommission.save();
             }
+        }
+        await contractor.save();
 
-            // Save the Payment Employee entry
-            const paymentEmployee = await new PaymentEmployee({
-                employee,
-                ...paymentEntry
-            }).save();
+        // Record payment for vendor is done, finish the request
+        return res.json({ status: Status.Success, message: 'Payment successfully created.', payment: paymentVendor });
 
-            if (creditUsed > 0) {
-                // Deduct employee credit
-                const employeeCredit = (employee.credit ?? 0) - creditUsed;
-                employee.credit = employeeCredit < 0 ? 0 : employeeCredit;
+    case 'employee':
+        // CHeck if employee exist
+        const employee = await User.findById(params.id).exec();
+        if (!employee) {
+            return res.json({ status: Status.Error, message: 'Employee not found' });
+        }
 
-                // Deduct advance payment's balance
-                // let creditUsed = params.creditUsed;
-                const employeeAdvancePayments = await AdvancePayment.find({
-                    company: company._id,
-                    isVoid: { $ne: true },
-                    employee: employee._id,
-                    appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) }
-                });
+        // Save the Payment Employee entry
+        const paymentEmployee = await new PaymentEmployee({
+            employee,
+            ...paymentEntry
+        }).save();
+
+        if (creditUsed > 0) {
+            // Deduct employee credit
+            const employeeCredit = (employee.credit ?? 0) - creditUsed;
+            employee.credit = employeeCredit < 0 ? 0 : employeeCredit;
+
+            // Deduct advance payment's balance
+            // let creditUsed = params.creditUsed;
+            const employeeAdvancePayments = await AdvancePayment.find({
+                company: company._id,
+                isVoid: { $ne: true },
+                employee: employee._id,
+                appliedAt: { $gte: new Date(startDate), $lte: new Date(endDate) }
+            });
                 // Iterate advance payments and deduct their balance
-                for (const advancePayment of employeeAdvancePayments) {
-                    if (creditUsed > advancePayment.balance) {
-                        creditUsed -= advancePayment.balance;
-                        advancePayment.balance = 0;
-                    } else {
-                        advancePayment.balance -= creditUsed;
-                        creditUsed = 0;
-                    }
+            for (const advancePayment of employeeAdvancePayments) {
+                if (creditUsed > advancePayment.balance) {
+                    creditUsed -= advancePayment.balance;
+                    advancePayment.balance = 0;
+                } else {
+                    advancePayment.balance -= creditUsed;
+                    creditUsed = 0;
+                }
 
-                    await advancePayment.save();
+                await advancePayment.save();
 
-                    if (creditUsed <= 0) {
-                        break;
-                    }
-                };
-            }
-
-
-            // Iterate all invoices to mark the commission as paid and deduct employee balance
-            for (const invoice of invoices) {
-                const invoiceCommission = <IInvoiceCommission>invoice.commission;
-
-                if (invoiceCommission.technicians) {
-                    // Find the employee on the invoice commisison object
-                    const employeeInvoiceCommission = invoiceCommission.technicians.find(commission => commission?.technician?.toString() === employee?._id?.toString());
-
-                    // Mark employee commission as paid
-                    employeeInvoiceCommission.paid = true;
-                    employeeInvoiceCommission.paidAt = paymentEmployee.paidAt;
-
-                    // Deduct employee balance
-                    const employeeBalance = employee.balance - Number(employeeInvoiceCommission.commissionAmount.toFixed(2));
-                    employee.balance = employeeBalance < 0 ? 0 : employeeBalance;
-
-                    await invoiceCommission.save();
+                if (creditUsed <= 0) {
+                    break;
                 }
             }
-            await employee.save();
+        }
 
-            // Record payment for employee is done, finish the request
-            return res.json({ status: Status.Success, message: 'Payment successfully created.', payment: paymentEmployee });
 
-        default:
-            return res.json({ status: Status.Error, message: 'Type not supported. Available Type to be used: vendor or employee.' });
+        // Iterate all invoices to mark the commission as paid and deduct employee balance
+        for (const invoice of invoices) {
+            const invoiceCommission = <IInvoiceCommission>invoice.commission;
+
+            if (invoiceCommission.technicians) {
+                // Find the employee on the invoice commisison object
+                const employeeInvoiceCommission = invoiceCommission.technicians.find(commission => commission?.technician?.toString() === employee?._id?.toString());
+
+                // Mark employee commission as paid
+                employeeInvoiceCommission.paid = true;
+                employeeInvoiceCommission.paidAt = paymentEmployee.paidAt;
+
+                // Deduct employee balance
+                const employeeBalance = employee.balance - Number(employeeInvoiceCommission.commissionAmount.toFixed(2));
+                employee.balance = employeeBalance < 0 ? 0 : employeeBalance;
+
+                await invoiceCommission.save();
+            }
+        }
+        await employee.save();
+
+        // Record payment for employee is done, finish the request
+        return res.json({ status: Status.Success, message: 'Payment successfully created.', payment: paymentEmployee });
+
+    default:
+        return res.json({ status: Status.Error, message: 'Type not supported. Available Type to be used: vendor or employee.' });
     }
 
-}
+};
 
 export const createPaymentMultipleInvoices = async (req: Request, res: Response) => {
 
@@ -1043,7 +1043,7 @@ export const createPaymentMultipleInvoices = async (req: Request, res: Response)
             } else {
                 invoiceWrongIds.push(invoiceID);
             }
-        })
+        });
 
         // Check if there any not valid invoiceIds
         if (invoiceWrongIds.length > 0) {
@@ -1086,9 +1086,9 @@ export const createPaymentMultipleInvoices = async (req: Request, res: Response)
     } catch (error) {
         Sentry.captureException(error);
         return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
-    };
+    }
 
-}
+};
 
 const updateInvoice = (invoice: IInvoice) => {
     return new Promise<void>((resolve, reject) => {
@@ -1099,7 +1099,7 @@ const updateInvoice = (invoice: IInvoice) => {
             resolve();
         });
     });
-}
+};
 
 /**
  * Update payment for single invoice
@@ -1140,22 +1140,22 @@ export const updatePayment = async (req: Request, res: Response) => {
     }
 
     if (payment?.line.length && !paramsInvoices.length) {
-        return res.json({ status: Status.Error, message: 'Line is required on this payment' })
+        return res.json({ status: Status.Error, message: 'Line is required on this payment' });
     }
 
     const invoice = <IInvoice>payment.invoice;
 
     const updatedInvoices = paramsInvoices.map((elem:any) => elem.invoiceId);
 
-    for (let line of payment.line) {
+    for (const line of payment.line) {
         if (!updatedInvoices.includes(line.invoice._id.toString())) {
-           await _unpaidInvoice(line.invoice, payment.customer);
+            await _unpaidInvoice(line.invoice, payment.customer);
         }
     }
 
     payment.line = payment.line.filter((line :any) => {
         if (updatedInvoices.includes(line.invoice._id.toString())) {
-            return line
+            return line;
         } 
     });
 
@@ -1193,11 +1193,11 @@ export const updatePayment = async (req: Request, res: Response) => {
                 customer.save();
             } else {
                 // Otherwise, recalculate invoice & customer balance
-                await _calculateInvoiceBalance(invoice, customer, diffAmountPaid)
+                await _calculateInvoiceBalance(invoice, customer, diffAmountPaid);
             }
 
-               const invoiceLogsObj:any={invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_UPDATED, info:"Payment of $"+oldAmountPaid +" updated to $"+payment.amountPaid, amountPaid:payment.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: payment.updatedBy};
-             InvoiceLogController.create(invoiceLogsObj);
+            const invoiceLogsObj:any={invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_UPDATED, info:'Payment of $'+oldAmountPaid +' updated to $'+payment.amountPaid, amountPaid:payment.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: payment.updatedBy};
+            InvoiceLogController.create(invoiceLogsObj);
 
             invoices.push(invoice);
         }
@@ -1230,9 +1230,9 @@ export const updatePayment = async (req: Request, res: Response) => {
                     payment, quickbookPayment: qbPayment,
                     customer, invoices
                 });
-            })
+            });
         } else {
-            return res.json({ status: Status.Success, message: 'Payment successfully updated.', payment, quickbookPayment: null, quickbookPaymentError: "Error in Company's QB authorization or Payment QB id", customer, invoice });
+            return res.json({ status: Status.Success, message: 'Payment successfully updated.', payment, quickbookPayment: null, quickbookPaymentError: 'Error in Company\'s QB authorization or Payment QB id', customer, invoice });
         }
 
     } catch (error) {
@@ -1240,7 +1240,7 @@ export const updatePayment = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: error.message || Messages.GenericError });
     }
 
-}
+};
 
 export const updatePaymentContractor = async (req: Request, res: Response) => {
 
@@ -1250,42 +1250,42 @@ export const updatePaymentContractor = async (req: Request, res: Response) => {
     let payment: IPayment;
 
     switch (params.type) {
-        case 'vendor':
-            const contractor = await Company.findById(params.id);
-            if (!contractor) {
-                return res.json({ status: Status.Error, message: 'Vendor not found.' });
-            }
+    case 'vendor':
+        const contractor = await Company.findById(params.id);
+        if (!contractor) {
+            return res.json({ status: Status.Error, message: 'Vendor not found.' });
+        }
 
-            payment = await PaymentVendor.findOne({
-                _id: params.paymentId,
-                contractor: contractor._id,
-                company: company._id
-            }).populate({ path: 'invoices' });
+        payment = await PaymentVendor.findOne({
+            _id: params.paymentId,
+            contractor: contractor._id,
+            company: company._id
+        }).populate({ path: 'invoices' });
 
-            if (!payment) {
-                return res.json({ status: Status.Error, message: 'Payment not found or does not belong to the contractor.' });
-            }
-            break;
+        if (!payment) {
+            return res.json({ status: Status.Error, message: 'Payment not found or does not belong to the contractor.' });
+        }
+        break;
 
-        case 'employee':
-            const employee = await User.findById(params.id);
-            if (!employee) {
-                return res.json({ status: Status.Error, message: 'Employee not found.' });
-            }
+    case 'employee':
+        const employee = await User.findById(params.id);
+        if (!employee) {
+            return res.json({ status: Status.Error, message: 'Employee not found.' });
+        }
 
-            payment = await PaymentEmployee.findOne({
-                _id: params.paymentId,
-                employee: employee._id,
-                company: company._id
-            }).populate({ path: 'invoices' });
+        payment = await PaymentEmployee.findOne({
+            _id: params.paymentId,
+            employee: employee._id,
+            company: company._id
+        }).populate({ path: 'invoices' });
 
-            if (!payment) {
-                return res.json({ status: Status.Error, message: 'Payment not found or does not belong to the employee.' });
-            }
-            break;
+        if (!payment) {
+            return res.json({ status: Status.Error, message: 'Payment not found or does not belong to the employee.' });
+        }
+        break;
 
-        default:
-            return res.json({ status: Status.Error, message: 'Type not supported. Available Type to be used: vendor or employee.' });
+    default:
+        return res.json({ status: Status.Error, message: 'Type not supported. Available Type to be used: vendor or employee.' });
     }
 
     payment.amountPaid = params.amount ? Number(params.amount) : payment.amountPaid;
@@ -1300,33 +1300,33 @@ export const updatePaymentContractor = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, payment });
 
-}
+};
 
 export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
 
-    const params = req.body
-    const user = <IUser>req.user
-    let previousDedeuctedBalance: number = 0
-    let invoicesPaid: any = []
-    let invoiceIds: any = []
+    const params = req.body;
+    const user = <IUser>req.user;
+    let previousDedeuctedBalance = 0;
+    let invoicesPaid: any = [];
+    let invoiceIds: any = [];
     if (params.invoices != undefined) {
-        invoicesPaid = params.invoices.split(',')
+        invoicesPaid = params.invoices.split(',');
     }
 
     if (invoicesPaid.length > 0) {
         invoiceIds = invoicesPaid.map((invoiceID: string) => (
             new ObjectId(invoiceID.trim())
-        ))
+        ));
     }
 
     Payment.findById(params.paymentId)
         .then((payment: IPayment | null) => {
 
             if (payment == undefined || payment == null) {
-                throw new Error('Invalid payment Id.')
+                throw new Error('Invalid payment Id.');
             } else {
-                previousDedeuctedBalance = payment.amountPaid
-                return payment.updateOne({ amountPaid: roundTwoDecimal(params.amount), referenceNumber: params.referenceNumber, paymentType: params.paymentType, paidAt: params.paidAt, invoices: invoiceIds, udpatedBy: user._id, udpatedAt: Date.now() })
+                previousDedeuctedBalance = payment.amountPaid;
+                return payment.updateOne({ amountPaid: roundTwoDecimal(params.amount), referenceNumber: params.referenceNumber, paymentType: params.paymentType, paidAt: params.paidAt, invoices: invoiceIds, udpatedBy: user._id, udpatedAt: Date.now() });
             }
         })
         .then((response: any) => {
@@ -1336,46 +1336,46 @@ export const updatePaymentMultipleInvoices = (req: Request, res: Response) => {
                 Customer.findById(params.customerId)
                     .then((customer: ICustomer) => {
 
-                        let newBalance = customer.balance + previousDedeuctedBalance
-                        newBalance = newBalance - params.amount
+                        let newBalance = customer.balance + previousDedeuctedBalance;
+                        newBalance = newBalance - params.amount;
 
                         customer.updateOne({ balance: roundTwoDecimal(newBalance) })
                             .then((res: any) => {
-                                resolve()
+                                resolve();
                             })
                             .catch((err: any) => {
                                 Sentry.captureException(err);
-                                reject(err)
-                            })
+                                reject(err);
+                            });
                     })
                     .catch((err: any) => {
                         Sentry.captureException(err);
-                        reject(err)
-                    })
-            })
+                        reject(err);
+                    });
+            });
         })
         .then((result: any) => {
-            return Invoice.updateMany({ _id: { $in: invoiceIds } }, { paid: true })
+            return Invoice.updateMany({ _id: { $in: invoiceIds } }, { paid: true });
         })
         .then((response: any) => {
-            return res.json({ 'status': Status.Success, 'message': "Payment update successfully." })
+            return res.json({ 'status': Status.Success, 'message': 'Payment update successfully.' });
         })
         .catch((error: any) => {
             Sentry.captureException(error);
             if (error != undefined && error.message != undefined) {
-                return res.json({ 'status': Status.Error, 'message': error.message })
+                return res.json({ 'status': Status.Error, 'message': error.message });
             } else {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
-        })
-}
+        });
+};
 
 export const getPayrollBalance = async (req: Request, res: Response) => {
     const params = req.query;
     const company = <ICompany>req.company;
     const vendors: any = [];
     const employees: any = [];
-    let query: any = {}, queryPaymentVendor: any = {}, queryPaymentEmployee: any = {}, queryAdvancePaymentVendor: any = {}, queryAdvancePaymentEmployee: any = {};
+    const query: any = {}, queryPaymentVendor: any = {}, queryPaymentEmployee: any = {}, queryAdvancePaymentVendor: any = {}, queryAdvancePaymentEmployee: any = {};
 
     // Check when startDate and endDate is provided, offset must be required
     if (params.startDate && params.endDate && !params.offset) {
@@ -1387,15 +1387,15 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
     // get job with unpaid technician or contractor
     //Get Jobs Commission
     const [techniciansCommissionsInvoices, techniciansCommissionsJobs] = await Promise.all([_getTechnicianCommisionsInvoices(query, company),
-    _getTechnicianCommisionsJobs(query, company)])
+        _getTechnicianCommisionsJobs(query, company)]);
 
     const { contractors, technicians } = await _getTechniciansContrators(techniciansCommissionsInvoices, techniciansCommissionsJobs);
 
     await Promise.all([_fillEmployeesAndVendorFromInvoices(techniciansCommissionsInvoices, technicians, contractors, employees, vendors),
-    _fillEmployeesAndVendorFromJobs(techniciansCommissionsJobs, technicians, contractors, employees, vendors)]);
+        _fillEmployeesAndVendorFromJobs(techniciansCommissionsJobs, technicians, contractors, employees, vendors)]);
 
     await Promise.all([_getVendorPayments(vendors, company, queryPaymentVendor, queryAdvancePaymentVendor),
-    _getEmployeePayments(employees, company, queryPaymentEmployee, queryAdvancePaymentEmployee)]);
+        _getEmployeePayments(employees, company, queryPaymentEmployee, queryAdvancePaymentEmployee)]);
 
     return res.json({
         status: Status.Success,
@@ -1406,7 +1406,7 @@ export const getPayrollBalance = async (req: Request, res: Response) => {
         employees
     });
 
-}
+};
 
 export const getPayrollReport = async (req: Request, res: Response) => {
 
@@ -1428,42 +1428,42 @@ export const getPayrollReport = async (req: Request, res: Response) => {
 
         const startDate = moment(params.startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
         const endDate = moment(params.endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
-        query = { issuedDate: { $gte: startDate, $lte: endDate } }
+        query = { issuedDate: { $gte: startDate, $lte: endDate } };
     }
 
     switch (params.type) {
-        case 'vendor':
-            techQuery = { 'technicians.contractor': params.id };
-            break;
+    case 'vendor':
+        techQuery = { 'technicians.contractor': params.id };
+        break;
 
-        case 'employee':
-            techQuery = { 'technicians.technician': params.id };
-            break;
+    case 'employee':
+        techQuery = { 'technicians.technician': params.id };
+        break;
 
-        default:
-            techQuery = {};
-            break;
+    default:
+        techQuery = {};
+        break;
     }
 
     if (workType) {
         let workTypeIds: any[] = [];
         try {
-            let workTypeArr = JSON.parse(workType);
+            const workTypeArr = JSON.parse(workType);
             workTypeIds = workTypeArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
-        } catch (error) { };
-        query["workType"] = { $in: workTypeIds };
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
+        } catch (error) { }
+        query['workType'] = { $in: workTypeIds };
     }
     if (companyLocation) {
         let companyLocationIds: any[] = [];
         try {
-            let companyLocationArr = JSON.parse(companyLocation);
+            const companyLocationArr = JSON.parse(companyLocation);
             companyLocationIds = companyLocationArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
         } catch (error) { }
-        query["companyLocation"] = { $in: companyLocationIds };
+        query['companyLocation'] = { $in: companyLocationIds };
     }
 
     const invoices = await Invoice.find({
@@ -1608,7 +1608,7 @@ export const getPayrollReport = async (req: Request, res: Response) => {
 
 
     return res.json({ status: Status.Success, vendors, employees });
-}
+};
 
 export const exportVendorJobs =  async (req: Request, res: Response) => {
     const params = req.query;
@@ -1626,26 +1626,26 @@ export const exportVendorJobs =  async (req: Request, res: Response) => {
         status: 2,
         endTime: { $gte: startDateFormatted, $lte: endDateFormatted },
         commission: { $ne: null }
-    }
+    };
 
     if (workType) {
         let workTypeIds: any[] = [];
         try {
-            let workTypeArr = JSON.parse(workType);
+            const workTypeArr = JSON.parse(workType);
             workTypeIds = workTypeArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
-        } catch (error) { };
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
+        } catch (error) { }
 
         query['workType'] = { $in: workTypeIds };
     }
     if (companyLocation) {
         let companyLocationIds: any[] = [];
         try {
-            let companyLocationArr = JSON.parse(companyLocation);
+            const companyLocationArr = JSON.parse(companyLocation);
             companyLocationIds = companyLocationArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
         } catch (error) { }
         query['companyLocation'] = { $in: companyLocationIds };
     }
@@ -1670,7 +1670,7 @@ export const exportVendorJobs =  async (req: Request, res: Response) => {
                 pipeline: [
                     {$match: {'technicians.paid': false, 'technicians.contractor': new ObjectId(params.id)}},
                     {
-                        $unwind: "$technicians"
+                        $unwind: '$technicians'
                     },
                     {$lookup: {
                         from: 'users',
@@ -1678,28 +1678,28 @@ export const exportVendorJobs =  async (req: Request, res: Response) => {
                         // foreignField : '_id',
                         let: {
                             technician: {
-                                $toObjectId: "$technicians.technician"
+                                $toObjectId: '$technicians.technician'
                             },
-                            technicians: "$technicians"
+                            technicians: '$technicians'
                         },
                         pipeline: [
                             {
                                 $match: {
                                     $expr: {
-                                    $eq: [
-                                        "$_id",
-                                        "$$technician"
-                                    ]
+                                        $eq: [
+                                            '$_id',
+                                            '$$technician'
+                                        ]
                                     }
                                 }
                             },
                             {
                                 $replaceRoot: {
                                     newRoot: {
-                                    $mergeObjects: [
-                                        "$$technicians",
-                                        "$$ROOT.profile"
-                                    ]
+                                        $mergeObjects: [
+                                            '$$technicians',
+                                            '$$ROOT.profile'
+                                        ]
                                     }
                                 }
                             }
@@ -1709,11 +1709,11 @@ export const exportVendorJobs =  async (req: Request, res: Response) => {
                     }},
                     {
                         $group: {
-                            _id: "$_id",
+                            _id: '$_id',
                             
                             technicians: {
                                 $push: {
-                                $first: "$technicians"
+                                    $first: '$technicians'
                                 }
                             }
                         }
@@ -1728,20 +1728,20 @@ export const exportVendorJobs =  async (req: Request, res: Response) => {
             from : 'joblocations',
             localField : 'jobLocation',
             foreignField : '_id',
-            pipeline: [{ "$project": { name: 1 }}],
+            pipeline: [{ '$project': { name: 1 }}],
             as : 'jobLocation',
         }},
         { $lookup : {
             from : 'jobsites',
             localField : 'jobSite',
             foreignField : '_id',
-            pipeline: [{ "$project": { name: 1 }}],
+            pipeline: [{ '$project': { name: 1 }}],
             as : 'jobSite',
         }},
         {$unwind: '$commission'},
         {
             $project: {
-                _id: 1, jobId: 1, endTime: 1, jobLocation: {$first: '$jobLocation'}, jobSite: {$first: '$jobSite'}, commission: "$commission"
+                _id: 1, jobId: 1, endTime: 1, jobLocation: {$first: '$jobLocation'}, jobSite: {$first: '$jobSite'}, commission: '$commission'
             }
         },
         {
@@ -1757,19 +1757,19 @@ export const exportVendorJobs =  async (req: Request, res: Response) => {
         excelRows = [...excelRows, ...rows];
     });
 
-    const XLSX = require("xlsx");
+    const XLSX = require('xlsx');
     const worksheet = XLSX.utils.json_to_sheet(excelRows);
-    const headers = ["Job Number", "Date", "Subdivision", "Job Address", "Amount", "Technician Name"]
-    XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: "A1" });
+    const headers = ['Job Number', 'Date', 'Subdivision', 'Job Address', 'Amount', 'Technician Name'];
+    XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: 'A1' });
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Dates");
-    const buf = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Dates');
+    const buf = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
     const contractorName = contractor.info.displayName || contractor.info.companyName;
     const filename = `${contractorName} ${params.startDate}-${params.endDate}.xlsx`;
     res.attachment(filename);
     res.header('Access-Control-Expose-Headers', 'Content-Type, Location, Content-Disposition');
     res.status(200).end(buf);
-}
+};
 
 export const voidPaymentContractor = async (req: Request, res: Response) => {
 
@@ -1783,34 +1783,34 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
     let customer: ICustomer;
 
     switch (params.type) {
-        case 'vendor':
-            payment = await Payment.findOne({ _id: params.paymentId, company, __t: 'PaymentVendor' }).exec();
-            paymentVendor = <IPaymentVendor>payment;
+    case 'vendor':
+        payment = await Payment.findOne({ _id: params.paymentId, company, __t: 'PaymentVendor' }).exec();
+        paymentVendor = <IPaymentVendor>payment;
 
-            if (!payment) {
-                return res.json({ status: Status.Error, message: `Payment with type ${params.type} is Not Found` });
-            }
-            break;
+        if (!payment) {
+            return res.json({ status: Status.Error, message: `Payment with type ${params.type} is Not Found` });
+        }
+        break;
 
-        case 'employee':
-            payment = await Payment.findOne({ _id: params.paymentId, company, __t: 'PaymentEmployee' }).exec();
+    case 'employee':
+        payment = await Payment.findOne({ _id: params.paymentId, company, __t: 'PaymentEmployee' }).exec();
 
-            if (!payment) {
-                return res.json({ status: Status.Error, message: `Payment with type ${params.type} is Not Found` });
-            }
-            break;
+        if (!payment) {
+            return res.json({ status: Status.Error, message: `Payment with type ${params.type} is Not Found` });
+        }
+        break;
 
-        case 'customer':
-            payment = await Payment.findOne({ _id: params.paymentId, company, __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] } }).exec();
+    case 'customer':
+        payment = await Payment.findOne({ _id: params.paymentId, company, __t: { $nin: ['PaymentEmployee', 'PaymentVendor'] } }).exec();
 
-            if (!payment) {
-                return res.json({ status: Status.Error, message: `Payment with type ${params.type} is Not Found` });
-            }
-            customer = await Customer.findById(payment.customer);
-            break;
+        if (!payment) {
+            return res.json({ status: Status.Error, message: `Payment with type ${params.type} is Not Found` });
+        }
+        customer = await Customer.findById(payment.customer);
+        break;
 
-        default:
-            return res.json({ status: Status.Error, message: 'Type is required' });
+    default:
+        return res.json({ status: Status.Error, message: 'Type is required' });
     }
 
     const invoiceIds: string[] = [];
@@ -1860,7 +1860,7 @@ export const voidPaymentContractor = async (req: Request, res: Response) => {
   
     return res.json({ status: Status.Success, message: 'Payment void successfully', payment });
 
-}
+};
 
 // To handle create payment for multiple invoices
 export const _handleMultipleInvoices = async (
@@ -1877,11 +1877,11 @@ export const _handleMultipleInvoices = async (
     });
 
     if (!invoice || invoice.isDraft) {
-        return { error : `invoice_not_found`, invoiceId: invoice.invoiceId};
+        return { error : 'invoice_not_found', invoiceId: invoice.invoiceId};
     }
 
     if (invoice.status === InvoiceStatus.PAID) {
-        return { error : `already_paid_off`, invoiceId: invoice.invoiceId};
+        return { error : 'already_paid_off', invoiceId: invoice.invoiceId};
     }
 
     payment.line.push({
@@ -1892,13 +1892,13 @@ export const _handleMultipleInvoices = async (
     payment.amountPaid = payment.amountPaid ?? 0;
     payment.amountPaid += paramInvoice.amountPaid;
 
-    const invoiceLogsObj:any={invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_RECORDED, info:"Payment of $"+paramInvoice.amountPaid+" recorded", amountPaid:paramInvoice.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy:payment.createdBy}
+    const invoiceLogsObj:any={invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_RECORDED, info:'Payment of $'+paramInvoice.amountPaid+' recorded', amountPaid:paramInvoice.amountPaid, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy:payment.createdBy};
     InvoiceLogController.create(invoiceLogsObj);
 
     await _calculateInvoiceBalance(invoice, customer, parseFloat(paramInvoice.amountPaid));
 
     return { invoice, amountPaid: paramInvoice.amountPaid };
-}
+};
 
 // To handle update payment with multiple invoices
 export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payment: IPayment, customer: ICustomer, company: ICompany,oldAmountPaid:any): Promise<IInvoice[]> => {
@@ -1940,7 +1940,7 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
 
         invoices.push(invoiceLine);
 
-        const invoiceLogsObj:any={invoiceId: invoiceLine.invoiceId, invoice: invoiceLine._id, type: logType.PAYMENT_UPDATED, info:"Payment of $"+oldAmountPaid+" updated to $"+payment.amountPaid, amountPaid:payment.amountPaid, customer: invoiceLine.customer, companyLocation: invoiceLine.companyLocation, workType: invoiceLine.workType, company: invoiceLine.company, createdBy: payment.updatedBy}
+        const invoiceLogsObj:any={invoiceId: invoiceLine.invoiceId, invoice: invoiceLine._id, type: logType.PAYMENT_UPDATED, info:'Payment of $'+oldAmountPaid+' updated to $'+payment.amountPaid, amountPaid:payment.amountPaid, customer: invoiceLine.customer, companyLocation: invoiceLine.companyLocation, workType: invoiceLine.workType, company: invoiceLine.company, createdBy: payment.updatedBy};
         InvoiceLogController.create(invoiceLogsObj);
 
     }
@@ -1951,11 +1951,11 @@ export const _handleUpdateMultipleInvoices = async (paramsInvoices: any[], payme
 
     payment.amountPaid = roundTwoDecimal(paymentAmountPaid);
     return invoices;
-}
+};
 
 export const _handleVoidPayment = async (paymentType: string, invoiceIds: string[], payment: IPayment, customer: ICustomer,user:IUser) => {
 
-    const invoices = await Invoice.find({ _id: { $in: [...new Set(invoiceIds)] } })
+    const invoices = await Invoice.find({ _id: { $in: [...new Set(invoiceIds)] } });
 
     if (customer) {
         customer.balance += payment.amountPaid;
@@ -2024,7 +2024,7 @@ export const _handleVoidPayment = async (paymentType: string, invoiceIds: string
                 await invoice.save();
             }
 
-            const invoiceLogsObj:any={invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_VOID, info:"Payment of $"+payment.amountPaid+" voided", amountPaid:payment.amountPaid*-1, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id}
+            const invoiceLogsObj:any={invoiceId: invoice.invoiceId, invoice: invoice._id, type: logType.PAYMENT_VOID, info:'Payment of $'+payment.amountPaid+' voided', amountPaid:payment.amountPaid*-1, customer: invoice.customer, companyLocation: invoice.companyLocation, workType: invoice.workType, company: invoice.company, createdBy: user._id};
             InvoiceLogController.create(invoiceLogsObj);
 
         }
@@ -2033,10 +2033,10 @@ export const _handleVoidPayment = async (paymentType: string, invoiceIds: string
     }
 
     return;
-}
+};
 
 export const _handleVoidJobPayment = async (paymentType: string, jobIds: string[]) => {
-    const jobs = await Job.find({ _id: { $in: [...new Set(jobIds)] } })
+    const jobs = await Job.find({ _id: { $in: [...new Set(jobIds)] } });
     
     if (jobs?.length) {
         for (const job of jobs) {
@@ -2071,7 +2071,7 @@ export const _handleVoidJobPayment = async (paymentType: string, jobIds: string[
     }
 
     return;
-}
+};
 
 const _convertJobToRowExcel = (job: any, contractor: string): IJobExcelRow[] => {
     const rows: IJobExcelRow[] = [];
@@ -2089,12 +2089,12 @@ const _convertJobToRowExcel = (job: any, contractor: string): IJobExcelRow[] => 
             jobAdress: job.jobSite?.name,
             amount: tech?.commissionAmount,
             techName: tech?.displayName,
-        })
-    })
+        });
+    });
 
            
     return rows;
-}
+};
 
 /**
  * Partial method called by voidPaymentContractor,
@@ -2162,14 +2162,14 @@ const _handleVoidPaymentContractor = async (paymentType: string, paymentVendor: 
 
     return;
 
-}
+};
 
 const _getVendorPayments = async (vendors: any[], company: ICompany, queryPayment: any, queryAdvancePayment: any) => {
     queryPayment.company = company._id;
     queryPayment.isVoid = { $ne: true };
     queryAdvancePayment.company = company._id;
     queryAdvancePayment.isVoid = { $ne: true };
-    const contractorsIds = vendors.map((value) => value?.contractor?._id).filter((value) => value !== undefined)
+    const contractorsIds = vendors.map((value) => value?.contractor?._id).filter((value) => value !== undefined);
     queryPayment.contractor = { $in: contractorsIds };
     queryAdvancePayment.contractor = { $in: contractorsIds };
     // Retrieve advance payments history and the total of it
@@ -2177,8 +2177,8 @@ const _getVendorPayments = async (vendors: any[], company: ICompany, queryPaymen
         { $match: { ...queryAdvancePayment } },
         {
             $group: {
-                _id: { contractor: "$contractor", company: "$company" },
-                totalAdvancePayment: { $sum: "$amount" },
+                _id: { contractor: '$contractor', company: '$company' },
+                totalAdvancePayment: { $sum: '$amount' },
                 creditAvailable: { $sum: '$balance' }
             }
         }
@@ -2191,8 +2191,8 @@ const _getVendorPayments = async (vendors: any[], company: ICompany, queryPaymen
         { $match: { ...queryPayment } },
         {
             $group: {
-                _id: { contractor: "$contractor", company: "$company" },
-                creditUsed: { $sum: "$creditUsed" }
+                _id: { contractor: '$contractor', company: '$company' },
+                creditUsed: { $sum: '$creditUsed' }
             }
         }
     ])).reduce((accumulator, currentValue) => {
@@ -2209,14 +2209,14 @@ const _getVendorPayments = async (vendors: any[], company: ICompany, queryPaymen
         vendor.creditUsedTotal = payment?.creditUsed ?? 0;
 
     }
-}
+};
 
 const _getEmployeePayments = async (employees: any[], company: ICompany, queryPayment: any, queryAdvancePayment: any) => {
     queryPayment.company = company._id;
     queryPayment.isVoid = { $ne: true };
     queryAdvancePayment.company = company._id;
     queryAdvancePayment.isVoid = { $ne: true };
-    const employeesIds = employees.map((value) => value.employee?._id).filter((value) => value !== undefined)
+    const employeesIds = employees.map((value) => value.employee?._id).filter((value) => value !== undefined);
     queryPayment.employee = { $in: employeesIds };
     queryAdvancePayment.employee = { $in: employeesIds };
     // Retrieve advance payments history and the total of it
@@ -2224,8 +2224,8 @@ const _getEmployeePayments = async (employees: any[], company: ICompany, queryPa
         { $match: { ...queryAdvancePayment } },
         {
             $group: {
-                _id: { employee: "$employee", company: "$company" },
-                totalAdvancePayment: { $sum: "$amount" },
+                _id: { employee: '$employee', company: '$company' },
+                totalAdvancePayment: { $sum: '$amount' },
                 creditAvailable: { $sum: '$balance' }
             }
         }
@@ -2238,9 +2238,9 @@ const _getEmployeePayments = async (employees: any[], company: ICompany, queryPa
         { $match: { ...queryPayment } },
         {
             $group: {
-                _id: { employee: "$employee", company: "$company" },
-                totalPayment: { $sum: "$amountPaid" },
-                creditUsed: { $sum: "$creditUsed" }
+                _id: { employee: '$employee', company: '$company' },
+                totalPayment: { $sum: '$amountPaid' },
+                creditUsed: { $sum: '$creditUsed' }
             }
         }
     ])).reduce((accumulator, currentValue) => {
@@ -2255,7 +2255,7 @@ const _getEmployeePayments = async (employees: any[], company: ICompany, queryPa
         employee.creditAvailable = advancePayment?.creditAvailable ?? 0;
         employee.creditUsedTotal = payment?.creditUsed ?? 0;
     }
-}
+};
 
 /**
  * Fill the queries requeried to get the payroll balance
@@ -2267,46 +2267,46 @@ const _getEmployeePayments = async (employees: any[], company: ICompany, queryPa
  * @param {any} queryAdvancePaymentEmployee query applied in employee advance payments
  */
 const _fillQueriesPayrollBalance = (params: any, query: any, queryPaymentVendor: any, queryPaymentEmployee: any, queryAdvancePaymentVendor: any, queryAdvancePaymentEmployee: any) => {
-    const { startDate, endDate, workType, companyLocation, offset } = params
+    const { startDate, endDate, workType, companyLocation, offset } = params;
     if (startDate && endDate) {
         const startDateFormatted = moment(startDate).startOf('day').utcOffset(params.offset ?? '', true).utc().format();
         const endDateFormatted = moment(endDate).endOf('day').utcOffset(params.offset ?? '', true).utc().format();
-        query["date"] = { $gte: startDateFormatted, $lte: endDateFormatted };
-        queryPaymentVendor["paidAt"] = { $gte: new Date(startDate), $lte: new Date(endDate) };
-        queryAdvancePaymentVendor["appliedAt"] = { $gte: new Date(startDate), $lte: new Date(endDate) };
-        queryPaymentEmployee["paidAt"] = { $gte: new Date(startDate), $lte: new Date(endDate) };
-        queryAdvancePaymentEmployee["appliedAt"] = { $gte: new Date(startDate), $lte: new Date(endDate) };
+        query['date'] = { $gte: startDateFormatted, $lte: endDateFormatted };
+        queryPaymentVendor['paidAt'] = { $gte: new Date(startDate), $lte: new Date(endDate) };
+        queryAdvancePaymentVendor['appliedAt'] = { $gte: new Date(startDate), $lte: new Date(endDate) };
+        queryPaymentEmployee['paidAt'] = { $gte: new Date(startDate), $lte: new Date(endDate) };
+        queryAdvancePaymentEmployee['appliedAt'] = { $gte: new Date(startDate), $lte: new Date(endDate) };
     }
 
     if (workType) {
         let workTypeIds: any[] = [];
         try {
-            let workTypeArr = JSON.parse(workType);
+            const workTypeArr = JSON.parse(workType);
             workTypeIds = workTypeArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
-        } catch (error) { };
-        query["workType"] = { $in: workTypeIds };
-        queryPaymentVendor["workType"] = { $in: workTypeIds };
-        queryAdvancePaymentVendor["workType"] = { $in: workTypeIds };
-        queryPaymentEmployee["workType"] = { $in: workTypeIds };
-        queryAdvancePaymentEmployee["workType"] = { $in: workTypeIds };
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
+        } catch (error) { }
+        query['workType'] = { $in: workTypeIds };
+        queryPaymentVendor['workType'] = { $in: workTypeIds };
+        queryAdvancePaymentVendor['workType'] = { $in: workTypeIds };
+        queryPaymentEmployee['workType'] = { $in: workTypeIds };
+        queryAdvancePaymentEmployee['workType'] = { $in: workTypeIds };
     }
     if (companyLocation) {
         let companyLocationIds: any[] = [];
         try {
-            let companyLocationArr = JSON.parse(companyLocation);
+            const companyLocationArr = JSON.parse(companyLocation);
             companyLocationIds = companyLocationArr.map((id: string) => {
-                if (ObjectId.isValid(id)) return new ObjectId(id)
-            })
+                if (ObjectId.isValid(id)) return new ObjectId(id);
+            });
         } catch (error) { }
-        query["companyLocation"] = { $in: companyLocationIds };
-        queryPaymentVendor["companyLocation"] = { $in: companyLocationIds };
-        queryAdvancePaymentVendor["companyLocation"] = { $in: companyLocationIds };
-        queryPaymentEmployee["companyLocation"] = { $in: companyLocationIds };
-        queryAdvancePaymentEmployee["companyLocation"] = { $in: companyLocationIds };
+        query['companyLocation'] = { $in: companyLocationIds };
+        queryPaymentVendor['companyLocation'] = { $in: companyLocationIds };
+        queryAdvancePaymentVendor['companyLocation'] = { $in: companyLocationIds };
+        queryPaymentEmployee['companyLocation'] = { $in: companyLocationIds };
+        queryAdvancePaymentEmployee['companyLocation'] = { $in: companyLocationIds };
     }
-}
+};
 
 /**
  * Get from the database technician comissions linked to invoices
@@ -2315,10 +2315,10 @@ const _fillQueriesPayrollBalance = (params: any, query: any, queryPaymentVendor:
  * @returns {Promise<ITechnicianCommissionInvoice[]>}
  */
 const _getTechnicianCommisionsInvoices = async (query: any, company: ICompany): Promise<ITechnicianCommissionInvoice[]> => {
-    let invoiceQuery = {...query}
-    if (invoiceQuery["date"]) {
-        invoiceQuery["issuedDate"] = invoiceQuery["date"];
-        delete invoiceQuery["date"]
+    const invoiceQuery = {...query};
+    if (invoiceQuery['date']) {
+        invoiceQuery['issuedDate'] = invoiceQuery['date'];
+        delete invoiceQuery['date'];
     } 
     
     const techniciansCommissionsInvoices: ITechnicianCommissionInvoice[] = (await Invoice.find({
@@ -2338,12 +2338,12 @@ const _getTechnicianCommisionsInvoices = async (query: any, company: ICompany): 
                         workType: value.workType,
                         companyLocation: value.companyLocation
                     }
-                }
+                };
             });
         })
         .filter((value: any) => value !== undefined);
     return techniciansCommissionsInvoices;
-}
+};
 
 /**
  * Get from the database technician comissions linked to jobs
@@ -2352,10 +2352,10 @@ const _getTechnicianCommisionsInvoices = async (query: any, company: ICompany): 
  * @returns {Promise<ITechnicianCommissionInvoice[]>}
  */
 const _getTechnicianCommisionsJobs = async (query: any, company: ICompany): Promise<ITechnicianCommissionJob[]> => {
-    let jobQuery = {...query}
-    if (jobQuery["date"]) {
-        jobQuery["endTime"] = jobQuery["date"];
-        delete jobQuery["date"]
+    const jobQuery = {...query};
+    if (jobQuery['date']) {
+        jobQuery['endTime'] = jobQuery['date'];
+        delete jobQuery['date'];
     } 
 
     const techniciansCommissionsJobs: ITechnicianCommissionJob[] = (await Job.find({
@@ -2374,12 +2374,12 @@ const _getTechnicianCommisionsJobs = async (query: any, company: ICompany): Prom
                         workType: value.workType,
                         companyLocation: value.companyLocation
                     }
-                }
+                };
             });
         })
         .filter((value: any) => value !== undefined);
     return techniciansCommissionsJobs;
-}
+};
 
 
 /**
@@ -2390,7 +2390,7 @@ const _getTechnicianCommisionsJobs = async (query: any, company: ICompany): Prom
  */
 const _getTechniciansContrators = async (techniciansCommissionsInvoices: ITechnicianCommissionInvoice[],
     techniciansCommissionsJobs: ITechnicianCommissionJob[]): Promise<{ contractors: { [param: string]: ICompany }, technicians: { [param: string]: IUser } }> => {
-    const concatenation: Array<ITechnicianCommissionInvoice | ITechnicianCommissionJob> = [...techniciansCommissionsInvoices, ...techniciansCommissionsJobs]
+    const concatenation: Array<ITechnicianCommissionInvoice | ITechnicianCommissionJob> = [...techniciansCommissionsInvoices, ...techniciansCommissionsJobs];
     const { techniciansIds, contractorsIds } = concatenation
         .reduce((accumulator, technicianCommission) => {
             if (technicianCommission.contractor && !technicianCommission.paid) {
@@ -2404,21 +2404,21 @@ const _getTechniciansContrators = async (techniciansCommissionsInvoices: ITechni
 
     const contractors = (await Company.find({ _id: { $in: Array.from(new Set(contractorsIds)) } }))
         .reduce((accumulator: any, contractor) => {
-            accumulator[contractor._id.toString()] = contractor
+            accumulator[contractor._id.toString()] = contractor;
             return accumulator;
         }, {});
     const technicians = (await User.find({ _id: { $in: Array.from(new Set(techniciansIds)) } }))
         .reduce((accumulator: any, technician) => {
-            accumulator[technician._id.toString()] = technician
+            accumulator[technician._id.toString()] = technician;
             return accumulator;
         }, {});
     return { contractors, technicians };
-}
+};
 
 const _fillEmployeesAndVendorFromInvoices = (techniciansCommissionsInvoices: ITechnicianCommissionInvoice[],
     technicians: { [param: string]: IUser }, contractors: { [param: string]: ICompany }, employees: any[], vendors: any[]) => {
     for (const technicianCommission of techniciansCommissionsInvoices) {
-        const { invoice } = technicianCommission
+        const { invoice } = technicianCommission;
         if (technicianCommission.contractor && !technicianCommission.paid) {
             const contractor = contractors[technicianCommission.contractor.toString()];
             const contractorEntry = vendors.find((v: any) => v.contractor._id?.toString() === technicianCommission.contractor?.toString());
@@ -2463,13 +2463,13 @@ const _fillEmployeesAndVendorFromInvoices = (techniciansCommissionsInvoices: ITe
             }
         }
     }
-}
+};
 
 
 const _fillEmployeesAndVendorFromJobs = (techniciansCommissionsJobs: ITechnicianCommissionJob[],
     technicians: { [param: string]: IUser }, contractors: { [param: string]: ICompany }, employees: any[], vendors: any[]) => {
     for (const technicianCommission of techniciansCommissionsJobs) {
-        const { job } = technicianCommission
+        const { job } = technicianCommission;
         if (technicianCommission.contractor && !technicianCommission.paid) {
             const contractor = contractors[technicianCommission.contractor.toString()];
             const contractorEntry = vendors.find((v: any) => v.contractor._id?.toString() === technicianCommission.contractor?.toString());
@@ -2481,7 +2481,7 @@ const _fillEmployeesAndVendorFromJobs = (techniciansCommissionsJobs: ITechnician
                 if (contractorEntry?.jobIds) {
                     contractorEntry?.jobIds?.push(job.id);
                 } else {
-                    contractorEntry["jobIds"] = [job.id];
+                    contractorEntry['jobIds'] = [job.id];
                 }
             } else {
                 vendors.push({
@@ -2505,7 +2505,7 @@ const _fillEmployeesAndVendorFromJobs = (techniciansCommissionsJobs: ITechnician
                 if (technicianEntry?.jobIds) {
                     technicianEntry?.jobIds?.push(job.id);
                 } else {
-                    technicianEntry["jobIds"] = [job.id];
+                    technicianEntry['jobIds'] = [job.id];
                 }
             } else {
                 employees.push({
@@ -2518,7 +2518,7 @@ const _fillEmployeesAndVendorFromJobs = (techniciansCommissionsJobs: ITechnician
             }
         }
     }
-}
+};
 
 /**
  * To calculate invoice and customer payment amount related
@@ -2546,4 +2546,4 @@ export const _unpaidInvoice = async (invoice: IInvoice, customer: ICustomer): Pr
     await invoice.save();
 
     return;
-}
+};

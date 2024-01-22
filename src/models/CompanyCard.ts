@@ -1,14 +1,14 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ICompanyCard extends Document {
 
-    ending: String
-    expirationMonth: String,
-    expirationYear: String,
-    cardType: String,
-    name: String,
-    token: String
-    cardStripeId: String
+    ending: string
+    expirationMonth: string,
+    expirationYear: string,
+    cardType: string,
+    name: string,
+    token: string
+    cardStripeId: string
     date: Date
     company: Schema.Types.ObjectId
 }
@@ -37,9 +37,9 @@ const CompanyCardSchema = new Schema({
         required: true
     }
 
-})
+});
 
 //Indexes
 CompanyCardSchema.index({ company: 1 });
 
-export const CompanyCard = mongoose.model<ICompanyCard>('CompanyCard', CompanyCardSchema)
+export const CompanyCard = mongoose.model<ICompanyCard>('CompanyCard', CompanyCardSchema);

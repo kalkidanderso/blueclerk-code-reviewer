@@ -27,6 +27,6 @@ export const getSupplierId = () => {
         req.supplierId = supplier._id;
 
         next();
-    }
+    };
 
-}
+};

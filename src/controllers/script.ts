@@ -56,7 +56,7 @@ export const syncItemTier = async (req: Request, res: Response) => {
                 itemTier = createdItemTier;
                 updatedCompanies.push(company._id);
                 createdItemTiers.push(createdItemTier?._id);
-            })
+            });
         }
 
         // Find all customers owned by the company
@@ -88,7 +88,7 @@ export const syncItemTier = async (req: Request, res: Response) => {
         updatedCompanies, updatedCustomers, createdItemTiers
     });
 
-}
+};
 
 /**
  * To migrate the old job's type and old format tasks,
@@ -113,7 +113,7 @@ export const migrateJobTask = async (req: Request, res: Response) => {
             employeeType: job.employeeType,
             contractor: job.contractor,
             status: job.status
-        }
+        };
 
         // If job has type, it means this is a very old job
         if (job.type) {
@@ -129,7 +129,7 @@ export const migrateJobTask = async (req: Request, res: Response) => {
                 timeSpent: job.timeSpent,
                 equipmentScanned: job.equipment_scanned,
                 noOfEquipmentScanned: job.no_of_equipment_scanned,
-            })
+            });
 
             taskEntry.jobTypes = taskJobType;
         }
@@ -148,7 +148,7 @@ export const migrateJobTask = async (req: Request, res: Response) => {
                 taskJobType.push({
                     isSelfFinished,
                     ...oldTask
-                })
+                });
 
                 taskEntry.jobTypes = taskJobType;
             }
@@ -164,7 +164,7 @@ export const migrateJobTask = async (req: Request, res: Response) => {
         jobs
     });
 
-}
+};
 
 /**
  * To migrate the old `image` (single string) param to new `images` (array),
@@ -208,7 +208,7 @@ export const migrateTicketAndJobImage = async (req: Request, res: Response) => {
         serviceTickets, jobs
     });
 
-}
+};
 
 export const migrateTechnicianStatus = async (req: Request, res: Response) => {
     const jobs = await Job.find({ 'tasks.jobTypes': { $exists: true } });
@@ -223,16 +223,16 @@ export const migrateTechnicianStatus = async (req: Request, res: Response) => {
             // Add status to technician from job type status
             for (const jobTypeStatus of allTaskJobTypeStatus) {
                 if ([JobStatus.STARTED, JobStatus.PENDING, JobStatus.PAUSED].includes(jobTypeStatus)) {
-                    task.status = jobTypeStatus
+                    task.status = jobTypeStatus;
                 }
 
                 if (allTaskJobTypeStatus.every(status => status === jobTypeStatus)) {
-                    task.status = jobTypeStatus
+                    task.status = jobTypeStatus;
                 }
             }
         }
 
-        job.save()
+        job.save();
     }
 
     return res.json({
@@ -240,7 +240,7 @@ export const migrateTechnicianStatus = async (req: Request, res: Response) => {
         message: 'Technician status successfully migrated.',
         jobs
     });
-}
+};
 
 export const addJobTypeMongooseId = async (req: Request, res: Response) => {
 
@@ -254,7 +254,7 @@ export const addJobTypeMongooseId = async (req: Request, res: Response) => {
         job.tasks.forEach(task => {
             task._id = new mongoose.Types.ObjectId();
             task.jobTypes.forEach(jobType => {
-                jobType._id = new mongoose.Types.ObjectId()
+                jobType._id = new mongoose.Types.ObjectId();
             });
         });
 
@@ -267,7 +267,7 @@ export const addJobTypeMongooseId = async (req: Request, res: Response) => {
         jobs
     });
 
-}
+};
 
 export const addVendorBalance = async (req: Request, res: Response) => {
 
@@ -299,7 +299,7 @@ export const addVendorBalance = async (req: Request, res: Response) => {
     }
 
     return res.json({ status: Status.Success, message: 'Vendor and Technician balance successfully updated.' });
-}
+};
 
 export const addPaymentType = async (req: Request, res: Response) => {
 
@@ -311,7 +311,7 @@ export const addPaymentType = async (req: Request, res: Response) => {
     }
 
     return res.json({ status: Status.Success, message: 'Payment type successfully added.' });
-}
+};
 
 export const addInvoiceCommission = async (req: Request, res: Response) => {
 
@@ -348,7 +348,7 @@ export const addInvoiceCommission = async (req: Request, res: Response) => {
                         commission: contractor.commission,
                         commissionAmount: Number(contractorCommissionAmount.toFixed(2)),
                         paid: task.paid,
-                    })
+                    });
                 }
 
                 if (task.technician && !task.contractor) {
@@ -359,7 +359,7 @@ export const addInvoiceCommission = async (req: Request, res: Response) => {
                         commission: technician.commission,
                         commissionAmount: Number(technicianCommissionAmount.toFixed(2)),
                         paid: task.paid,
-                    })
+                    });
                 }
             }
 
@@ -374,13 +374,13 @@ export const addInvoiceCommission = async (req: Request, res: Response) => {
     }
 
     console.log('Invoice Commission script finished');
-    return
-}
+    return;
+};
 
 export const updatePaidTechnicians = async (req: Request, res: Response) => {
 
     const payments = await Payment.find({ __t: { $in: ['PaymentVendor', 'PaymentEmployee'] } }).exec();
-    await Job.updateMany({ 'tasks.paid': true }, { $set: { 'tasks.$[].paid': false, 'tasks.$[].paidAt': null } }).exec()
+    await Job.updateMany({ 'tasks.paid': true }, { $set: { 'tasks.$[].paid': false, 'tasks.$[].paidAt': null } }).exec();
 
     if (!payments.length) {
         return res.json({ status: Status.NotFound, message: 'Payment not found' });
@@ -406,13 +406,13 @@ export const updatePaidTechnicians = async (req: Request, res: Response) => {
                     technician.paidAt = payment.paidAt;
                 }
 
-                await job.save()
+                await job.save();
             }
         }
     }
 
-    return
-}
+    return;
+};
 
 export const migrateCustomer = async (req: Request, res: Response) => {
     const customers: any[] = await User.find({ __t: 'Customer' });
@@ -423,7 +423,7 @@ export const migrateCustomer = async (req: Request, res: Response) => {
     res.json({ status: Status.Success, message: 'Customer migration successfully' });
 
     for (const userCustomer of customers) {
-        const customer: ICustomer = userCustomer.toObject()
+        const customer: ICustomer = userCustomer.toObject();
         const customerEntry: any = {
             isActive: customer?.isActive,
             info: customer?.info,
@@ -450,7 +450,7 @@ export const migrateCustomer = async (req: Request, res: Response) => {
             commission: customer.commission,
             contactEmail: customer.contactEmail,
             contacts: customer.contacts
-        }
+        };
 
         // Create customer admin in user
         const customerUser = await new CustomerAdmin({
@@ -482,8 +482,8 @@ export const migrateCustomer = async (req: Request, res: Response) => {
         // }).save();
     }
 
-    return
-}
+    return;
+};
 
 // Create customer contact in user collection
 export const createCustomerContact = async ({
@@ -499,7 +499,7 @@ export const createCustomerContact = async ({
     });
 
     if (!customerContact) {
-        const contactName = contact.name?.split(' ')
+        const contactName = contact.name?.split(' ');
         const customerContactEntry: any = {
             info: { email: contact.email },
             profile: { firstName: contactName && contactName[0], lastName: contactName?.length > 1 ? contactName && contactName[contactName.length - 1] : '', displayName: contact.name },
@@ -509,7 +509,7 @@ export const createCustomerContact = async ({
             permissions: { role: Role.CUSTOMER_CONTACT, extra: [] },
             contactName: contact.name,
             location: customer?.location ?? {}
-        }
+        };
 
         customerContact = await new CustomerContact(customerContactEntry).save();
     }
@@ -518,7 +518,7 @@ export const createCustomerContact = async ({
     contact.save();
 
     return customerContact;
-}
+};
 
 export const updateQBCustomerJob = async (req: Request, res: Response) => {
 
@@ -527,7 +527,7 @@ export const updateQBCustomerJob = async (req: Request, res: Response) => {
     const jobLocations = await JobLocation.find({
         companyId,
         quickbookId: { $ne: null }
-    })
+    });
     // .limit(300)
     // .skip(300);
 
@@ -543,14 +543,14 @@ export const updateQBCustomerJob = async (req: Request, res: Response) => {
         await _updateQBCustomerJob(req, res, company, jobLocation, null, (err, errMsg, qbCustomerJob) => {
             console.log('== qbCustomerJob.Id:', qbCustomerJob?.Id);
             console.log('== qbCustomerJob.BillWithParent:', qbCustomerJob?.BillWithParent);
-        })
+        });
     }
 
     console.log('== done ==');
 
     return;
 
-}
+};
 
 export const revertBackInvoices = async (req: Request, res: Response) => {
     const params = req.body;
@@ -597,4 +597,4 @@ export const revertBackInvoices = async (req: Request, res: Response) => {
 
     return res.json({ ok: true, invoices });
 
-}
+};

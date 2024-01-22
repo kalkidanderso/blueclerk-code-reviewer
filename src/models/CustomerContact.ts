@@ -1,11 +1,11 @@
-import mongoose, { Document, Schema } from 'mongoose'
-import { User, IUser} from './User'
-import { IContact } from '../common/contact'
-import { IItem } from './Item'
-import { IPriceTier } from './PriceTier'
-import { IJobLocation } from './JobLocation'
-import { IPaymentTerm } from './PaymentTerm'
-import { ICustomer } from './Customer'
+import mongoose, { Document, Schema } from 'mongoose';
+import { User, IUser} from './User';
+import { IContact } from '../common/contact';
+import { IItem } from './Item';
+import { IPriceTier } from './PriceTier';
+import { IJobLocation } from './JobLocation';
+import { IPaymentTerm } from './PaymentTerm';
+import { ICustomer } from './Customer';
 
 export interface ICustomerContact extends IUser {
 
@@ -84,4 +84,4 @@ CustomerContactSchema.index({ jobLocations: 1 });
 CustomerContactSchema.index({ paymentTerm: 1 });
 CustomerContactSchema.index({ 'info.email': 1 });
 
-export const CustomerContact= User.discriminator<ICustomerContact>('CustomerContact', CustomerContactSchema)
+export const CustomerContact= User.discriminator<ICustomerContact>('CustomerContact', CustomerContactSchema);

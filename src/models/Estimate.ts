@@ -1,11 +1,11 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IEstimate extends Document {
     estimateId: string
     items: [{
         part: Schema.Types.ObjectId
-        name: String
-        itemCode: String
+        name: string
+        itemCode: string
         quantity: number
         cost: number
         tax: number
@@ -108,7 +108,7 @@ const EstimateSchema = new Schema({
         type: Boolean,
         default: false
     }
-})
+});
 
 //Indexes
 EstimateSchema.index({ company: 1 });
@@ -116,4 +116,4 @@ EstimateSchema.index({ customer: 1 });
 EstimateSchema.index({ purchaseOrder: 1 });
 EstimateSchema.index({ createdBy: 1 });
 
-export const Estimate = mongoose.model<IEstimate>('Estimate', EstimateSchema)
+export const Estimate = mongoose.model<IEstimate>('Estimate', EstimateSchema);

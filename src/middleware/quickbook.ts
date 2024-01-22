@@ -1,9 +1,9 @@
-import { NextFunction, Request, Response } from 'express'
+import { NextFunction, Request, Response } from 'express';
 import { Company, ICompany } from '../models/Company';
-import { Status, Messages } from '../common/constants'
+import { Status, Messages } from '../common/constants';
 import * as Sentry from '@sentry/node';
 
-var OAuthClient = require('intuit-oauth');
+const OAuthClient = require('intuit-oauth');
 
 export const refreshQBToken = () => {
 
@@ -15,7 +15,7 @@ export const refreshQBToken = () => {
             return next();
         }
     
-        var oauthClient = new OAuthClient({
+        const oauthClient = new OAuthClient({
             clientId: QB_CLIENT_ID,
             clientSecret: QB_CLIENT_SECRET,
             environment: QB_ENVIRONMENT,
@@ -23,41 +23,41 @@ export const refreshQBToken = () => {
         });
     
         oauthClient
-        .refreshUsingToken(company.qbRefreshToken)
-        .then(function (authResponse: any) {
-            const refresh_token = authResponse.token.refresh_token
-            const access_token = authResponse.token.access_token
+            .refreshUsingToken(company.qbRefreshToken)
+            .then(function (authResponse: any) {
+                const refresh_token = authResponse.token.refresh_token;
+                const access_token = authResponse.token.access_token;
     
-            var expiry = new Date();
-            expiry.setDate(expiry.getDate() + 99)
+                const expiry = new Date();
+                expiry.setDate(expiry.getDate() + 99);
     
-            company.updateOne({
-                qbAccessToken: access_token,
-                qbRefreshToken: refresh_token,
-                qbAuthorized: true,
-                qbRefeshTokenExpiry: expiry
-            }, (err: any, raw: any)=>{
-                if(err){
-                    return res.json({status: 0, message: Messages.GenericError});
-                }
-    
-                Company.findById(company._id, (err: any, newCompany: ICompany) => {
+                company.updateOne({
+                    qbAccessToken: access_token,
+                    qbRefreshToken: refresh_token,
+                    qbAuthorized: true,
+                    qbRefeshTokenExpiry: expiry
+                }, (err: any, raw: any)=>{
                     if(err){
-                        return res.json({status: Status.Error, message: Messages.GenericError});
+                        return res.json({status: 0, message: Messages.GenericError});
                     }
     
-                    req.company = newCompany;
-                    next();
-                    return
-                })
+                    Company.findById(company._id, (err: any, newCompany: ICompany) => {
+                        if(err){
+                            return res.json({status: Status.Error, message: Messages.GenericError});
+                        }
+    
+                        req.company = newCompany;
+                        next();
+                        return;
+                    });
+                });
             })
-        })
-        .catch(function (err: any) {
-            Sentry.captureException(err);
-            console.log('== error', err);
-            console.log('The error message is :', err.originalMessage);
-            console.log('Intuit error :', err.intuit_tid);
-            return res.json({ status: err.authResponse?.response?.status || Status.Error, message: 'Unable to refresh the token'});
-        });
-    }
-}
+            .catch(function (err: any) {
+                Sentry.captureException(err);
+                console.log('== error', err);
+                console.log('The error message is :', err.originalMessage);
+                console.log('Intuit error :', err.intuit_tid);
+                return res.json({ status: err.authResponse?.response?.status || Status.Error, message: 'Unable to refresh the token'});
+            });
+    };
+};

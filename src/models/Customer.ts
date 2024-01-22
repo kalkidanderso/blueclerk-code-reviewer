@@ -1,13 +1,13 @@
-import mongoose, { Document, Schema } from 'mongoose'
-import { User, IUser} from './User'
-import { IContact } from '../common/contact'
-import { IItem } from '../models/Item'
-import { IPriceTier } from '../models/PriceTier'
-import { IJobLocation } from '../models/JobLocation'
-import { IPaymentTerm } from '../models/PaymentTerm'
-import { IJobCosting } from './JobCosting'
-import moment from 'moment'
-import { Role } from 'src/common/constants'
+import mongoose, { Document, Schema } from 'mongoose';
+import { User, IUser} from './User';
+import { IContact } from '../common/contact';
+import { IItem } from '../models/Item';
+import { IPriceTier } from '../models/PriceTier';
+import { IJobLocation } from '../models/JobLocation';
+import { IPaymentTerm } from '../models/PaymentTerm';
+import { IJobCosting } from './JobCosting';
+import moment from 'moment';
+import { Role } from 'src/common/constants';
 
 export interface ICustomer extends Document {
 
@@ -37,9 +37,9 @@ export interface ICustomer extends Document {
         extra: [string]
     },
     emailPreferences: {
-        preferences: Number,
+        preferences: number,
         time: Date,
-        timeZone: String
+        timeZone: string
     },
     commission: number,
     isActive: boolean
@@ -119,7 +119,7 @@ const CustomerSchema = new Schema({
         lastName: String,
         displayName: {
             type: String,
-            index: "text"
+            index: 'text'
         },
         imageUrl: String,
     },
@@ -132,13 +132,13 @@ const CustomerSchema = new Schema({
     },
     location: {
         type: {
-          type: String,
-          enum: ['Point'],
-          required: false
+            type: String,
+            enum: ['Point'],
+            required: false
         },
         coordinates: {
-          type: [Number],
-          required: false
+            type: [Number],
+            required: false
         }
     },
     contact: {

@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IJobCharges extends Document {
 
@@ -44,7 +44,7 @@ const JobChargesSchema = new Schema({
         required: false
     },
 
-})
+});
 
 //Indexes
 JobChargesSchema.index({ jobType: 1 });
@@ -52,4 +52,4 @@ JobChargesSchema.index({ company: 1 });
 JobChargesSchema.index({ createdBy: 1 });
 JobChargesSchema.index({ salesTax: 1 });
 
-export const JobCharges = mongoose.model<IJobCharges>('JobCharges', JobChargesSchema)
+export const JobCharges = mongoose.model<IJobCharges>('JobCharges', JobChargesSchema);

@@ -62,21 +62,21 @@ export const createHomeOwner = async (req: Request, res: Response) => {
         }).save();
     }
 
-    let resMessage = 'Home Owner created successfully';
+    const resMessage = 'Home Owner created successfully';
 
     return res.json({ status: Status.Success, message: resMessage, homeOwner });
-}
+};
 
 /**
  * RETRIEVE ONE HOME OWNER GIVEN ITS ID
  */
 export const getHomeOwner = async (req: Request, res: Response) => {
 
-    const homeOwner = await HomeOwner.findOne({ '_id': req.query.id })
+    const homeOwner = await HomeOwner.findOne({ '_id': req.query.id });
     if(!homeOwner) return res.json({ status: Status.NotFound, message: 'Home Owner not found' });
     
     return res.json({ status: Status.Success, homeOwner });
-}
+};
 
 /**
  * RETRIEVES ALL HOME OWNERS, APPLYING A FILTER IF DESIRED
@@ -97,18 +97,18 @@ export const getHomeOwners = async(req: Request, res: Response) => {
             $and: [
                 { 'subdivision': subdivision }
             ]
-        }
+        };
     }
 
     if(address && address.length > 0) {
         query['$and'] ?
-        query['$and'].push({ 'address': address }) :
-        query = {
-            ...query,
-            $and: [
-                { 'address': address }
-            ]
-        }
+            query['$and'].push({ 'address': address }) :
+            query = {
+                ...query,
+                $and: [
+                    { 'address': address }
+                ]
+            };
     }
 
     if(keyword && keyword.length > 0) {
@@ -122,32 +122,32 @@ export const getHomeOwners = async(req: Request, res: Response) => {
                 { 'info.email': keyword},
                 { 'contact.fax': keyword },
             ]
-        }
+        };
     }
 
     const homeOwners = await HomeOwner.find(query);
 
     return res.json({ status: Status.Success, homeOwners });
-}
+};
 
 /**
  * DELETE ONE HOME OWNER GIVEN ITS ID
  */
 export const deleteHomeOwner = async (req: Request, res: Response) => {
 
-    const homeOwner = await HomeOwner.findOne({ '_id': req.query.id })
+    const homeOwner = await HomeOwner.findOne({ '_id': req.query.id });
     if(!homeOwner) return res.json({ status: Status.NotFound, message: 'Home Owner not found' });
     
     HomeOwner.deleteOne({_id: req.query.id})
         .exec((err: any) => {
 
             if (err) {
-                return res.json({'status': Status.InternalError, 'message': 'Failed deleting home owner'})
+                return res.json({'status': Status.InternalError, 'message': 'Failed deleting home owner'});
             }
 
-            return res.json({'status': Status.OK, 'message': "Home owner deleted successfully."})
-        })
-}
+            return res.json({'status': Status.OK, 'message': 'Home owner deleted successfully.'});
+        });
+};
 
 /**
  * UPDATE A EXISTING HOME OWNER
@@ -165,12 +165,12 @@ export const updateHomeOwner = async (req: Request, res: Response) => {
     } = req.body;
 
     const myquery = { '_id': id };
-    const homeOwner = await HomeOwner.findOne(myquery)
+    const homeOwner = await HomeOwner.findOne(myquery);
     if(!homeOwner) return res.json({ status: Status.NotFound, message: 'Home Owner not found' });
     
 
     // Update displayname if one firstname or lastname changes
-    var displayName = homeOwner.profile.displayName;
+    let displayName = homeOwner.profile.displayName;
     if (firstName || lastName) {
         displayName = (
             (firstName ?? homeOwner.profile.firstName) 
@@ -198,9 +198,9 @@ export const updateHomeOwner = async (req: Request, res: Response) => {
     }, (err: any, raw: any) => {
 
         if (err) {
-            return res.json({ 'status': Status.Error, 'message': 'Failed updating Home Owner' })
+            return res.json({ 'status': Status.Error, 'message': 'Failed updating Home Owner' });
         }
 
-        return res.json({ 'status': Status.OK, 'message': 'Home owner updated successfully' })
+        return res.json({ 'status': Status.OK, 'message': 'Home owner updated successfully' });
     });
-}
+};

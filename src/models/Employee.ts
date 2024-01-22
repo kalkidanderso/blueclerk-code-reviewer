@@ -1,10 +1,10 @@
-import mongoose, { Schema } from 'mongoose'
-import { User, IUser } from './User'
+import mongoose, { Schema } from 'mongoose';
+import { User, IUser } from './User';
 
 export interface IEmployee extends IUser {
 
     company: Schema.Types.ObjectId
-    status: Number,
+    status: number,
     extraPermissions: {
         on:[number],
         off: [number]
@@ -37,9 +37,9 @@ const EmployeeSchema = new Schema({
         default: false
     }
 
-})
+});
 
 //Indexes
 EmployeeSchema.index({ company: 1 });
 
-export const Employee = User.discriminator<IEmployee>('Employee', EmployeeSchema)
+export const Employee = User.discriminator<IEmployee>('Employee', EmployeeSchema);

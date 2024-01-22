@@ -1,6 +1,6 @@
-import mongoose, { Document, Schema } from 'mongoose'
-import { ICustomer } from '../models/Customer'
-import { IHomeOwner } from '../models/HomeOwner'
+import mongoose, { Document, Schema } from 'mongoose';
+import { ICustomer } from '../models/Customer';
+import { IHomeOwner } from '../models/HomeOwner';
 
 export interface IJobSite extends Document {
 
@@ -25,25 +25,25 @@ const JobSiteSchema = new Schema({
 
     name: { type: String, required: false, index: 'text'},
     location: {
-      type: {
-        type: String,
-        enum: ['Point'],
-        required: false
-      },
-      coordinates: {
-        type: [Number],
-        required: false
-      }
+        type: {
+            type: String,
+            enum: ['Point'],
+            required: false
+        },
+        coordinates: {
+            type: [Number],
+            required: false
+        }
     },
     isActive: {
-      type: Boolean,
-      default: true
+        type: Boolean,
+        default: true
     },
     address: {
-      city: { type: String, index: "text" },
-      state: { type: String, index: "text" },
-      street: { type: String, index: "text" },
-      zipcode: { type: String, index: "text" }, 
+        city: { type: String, index: 'text' },
+        state: { type: String, index: 'text' },
+        street: { type: String, index: 'text' },
+        zipcode: { type: String, index: 'text' }, 
     },
     locationId: {
         type: Schema.Types.ObjectId,

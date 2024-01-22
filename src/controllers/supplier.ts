@@ -76,4 +76,4 @@ export const createSupplier = async (req: Request, res: Response, sio: any) => {
     // Proceed to login and return token
     login(req, res, sio);
 
-}
+};

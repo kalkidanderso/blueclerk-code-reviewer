@@ -1,856 +1,856 @@
-import { Request, Response, NextFunction } from 'express'
+import { Request, Response, NextFunction } from 'express';
 import { check, param, validationResult, ValidationChain } from 'express-validator';
-import { Status, Messages, JobStatus } from '../common/constants'
+import { Status, Messages, JobStatus } from '../common/constants';
 
 
-let uniq = (a: any) => {
-  return a.sort().filter((item: any, pos: any, ary: any) => {
-    return !pos || item != ary[pos - 1];
-  });
-}
+const uniq = (a: any) => {
+    return a.sort().filter((item: any, pos: any, ary: any) => {
+        return !pos || item != ary[pos - 1];
+    });
+};
 
 export const validate = (validations: ValidationChain[]) => {
 
-  return async (req: Request, res: Response, next: NextFunction) => {
+    return async (req: Request, res: Response, next: NextFunction) => {
 
-    await Promise.all(validations.map(validation => validation.run(req)))
+        await Promise.all(validations.map(validation => validation.run(req)));
 
-    const errors: any = validationResult(req)
-    if (errors.isEmpty()) {
-      return next()
-    }
-    let errorMessages = errors.errors.reduce((acc: string, v: any) => {
-      return acc + 'parameter ' + v.param + ': ' + v.msg + '\n';
-    }, '').split('\n').filter((e: string) => e !== "");
+        const errors: any = validationResult(req);
+        if (errors.isEmpty()) {
+            return next();
+        }
+        let errorMessages = errors.errors.reduce((acc: string, v: any) => {
+            return acc + 'parameter ' + v.param + ': ' + v.msg + '\n';
+        }, '').split('\n').filter((e: string) => e !== '');
 
-    errorMessages = uniq(errorMessages);
-    return res.json({ 'status': Status.Error, 'message': errorMessages })
+        errorMessages = uniq(errorMessages);
+        return res.json({ 'status': Status.Error, 'message': errorMessages });
 
-  }
+    };
 
-}
+};
 
 
 export const Validations = {
-  //Auth
-  signUp: [
-    check('accountType').optional().isInt().toInt().withMessage('has to be interger'),
-    check('email').exists().withMessage(Messages.Required),
-    check('email').isEmail().withMessage('not in email format'),
-    check('password').exists().withMessage(Messages.Required),
-    check('firstName').exists().withMessage(Messages.Required),
-    check('lastName').exists().withMessage(Messages.Required),
-    check('phone').exists().withMessage(Messages.Required),
-    check('industryId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })
-  ],
+    //Auth
+    signUp: [
+        check('accountType').optional().isInt().toInt().withMessage('has to be interger'),
+        check('email').exists().withMessage(Messages.Required),
+        check('email').isEmail().withMessage('not in email format'),
+        check('password').exists().withMessage(Messages.Required),
+        check('firstName').exists().withMessage(Messages.Required),
+        check('lastName').exists().withMessage(Messages.Required),
+        check('phone').exists().withMessage(Messages.Required),
+        check('industryId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })
+    ],
 
-  //bounce email
-  bounceEmail: [check('email').exists(),check('email').isLength({min:1})],
+    //bounce email
+    bounceEmail: [check('email').exists(),check('email').isLength({min:1})],
 
-  login: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
+    login: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
 
-  socialLogin: [check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric()],
+    socialLogin: [check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric()],
 
-  socialSignUp: [check('email').exists(), check('email').isEmail(), check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],
+    socialSignUp: [check('email').exists(), check('email').isEmail(), check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],
 
-  customerImport: [check('customerSheet').exists()],
+    customerImport: [check('customerSheet').exists()],
 
-  agree: [check('agreedStatus').exists()],
+    agree: [check('agreedStatus').exists()],
 
-  adminSignUp: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
+    adminSignUp: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
 
-  contractorSignup: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
+    contractorSignup: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists(), check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
 
-  contractorSocialSignUp: [check('email').exists(), check('email').isEmail(), check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],
+    contractorSocialSignUp: [check('email').exists(), check('email').isEmail(), check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],
 
-  searchContractor: [check('email').exists().withMessage(Messages.Required), check('email').isEmail(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
+    searchContractor: [check('email').exists().withMessage(Messages.Required), check('email').isEmail(), check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
 
-  remindContractor: [check('contractId').exists().withMessage(Messages.Required), check('contractId').isMongoId().withMessage(Messages.WrongId)],
+    remindContractor: [check('contractId').exists().withMessage(Messages.Required), check('contractId').isMongoId().withMessage(Messages.WrongId)],
 
-  startContract: [check('contractorId').exists().withMessage(Messages.Required), check('contractorId').isMongoId().withMessage(Messages.WrongId)],
+    startContract: [check('contractorId').exists().withMessage(Messages.Required), check('contractorId').isMongoId().withMessage(Messages.WrongId)],
 
-  updateContract: [check('contractId').exists().withMessage(Messages.Required), check('contractId').isMongoId().withMessage(Messages.WrongId), check('status').exists().withMessage(Messages.Required)],
+    updateContract: [check('contractId').exists().withMessage(Messages.Required), check('contractId').isMongoId().withMessage(Messages.WrongId), check('status').exists().withMessage(Messages.Required)],
 
-  finishContract: [check('contractId').exists().withMessage(Messages.Required), check('contractId').isMongoId().withMessage(Messages.WrongId)],
+    finishContract: [check('contractId').exists().withMessage(Messages.Required), check('contractId').isMongoId().withMessage(Messages.WrongId)],
 
-  contractorPermissions: [check('contractorId').exists().withMessage(Messages.Required), check('contractorId').isMongoId().withMessage(Messages.WrongId), check('permissions').exists()],
+    contractorPermissions: [check('contractorId').exists().withMessage(Messages.Required), check('contractorId').isMongoId().withMessage(Messages.WrongId), check('permissions').exists()],
 
-  upgradeToCompany: [check('token').exists(), check('ending').exists()],
+    upgradeToCompany: [check('token').exists(), check('ending').exists()],
 
-  //Users
-  createManager: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
+    //Users
+    createManager: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
 
-  createTechnician: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
+    createTechnician: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
 
-  createOfficeAdmin: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
+    createOfficeAdmin: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
 
-  changeEmployeeRole: [check('employeeId').exists(), check('newRole').exists()],
+    changeEmployeeRole: [check('employeeId').exists(), check('newRole').exists()],
 
-  changeEmployeeLocPermission: [check('employeeId').exists(), check('canAccessAllLocations').exists()],
+    changeEmployeeLocPermission: [check('employeeId').exists(), check('canAccessAllLocations').exists()],
 
-  updateProfile: [check('firstName').exists(), check('lastName').exists()],
+    updateProfile: [check('firstName').exists(), check('lastName').exists()],
 
-  changePassword: [
-    check('currentPassword').exists().withMessage(Messages.Required),
-    check('newPassword').exists().withMessage(Messages.Required)
-  ],
+    changePassword: [
+        check('currentPassword').exists().withMessage(Messages.Required),
+        check('newPassword').exists().withMessage(Messages.Required)
+    ],
 
-  getContractorDetail: [
-    check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('employeeId').optional().isMongoId().withMessage(Messages.WrongId)
-  ],
+    getContractorDetail: [
+        check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('employeeId').optional().isMongoId().withMessage(Messages.WrongId)
+    ],
 
-  updateVendorDisplayName: [
-      check('contractorId').exists().isMongoId().withMessage(Messages.WrongId),
+    updateVendorDisplayName: [
+        check('contractorId').exists().isMongoId().withMessage(Messages.WrongId),
         check('displayName').exists().isString().withMessage(Messages.Required)
-  ],
+    ],
 
-  updateCompanyProfile: [check('companyName').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(), check('companyEmail').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }), check('phone').exists()],
+    updateCompanyProfile: [check('companyName').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(), check('companyEmail').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false }), check('phone').exists()],
 
-  getCompanyCustomer: [
-    check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('status').optional().isInt({ min: 0, max: 4 }).toInt().withMessage('status has to be number with value between 0 and 4'),
-    check('isPreferred').optional().isBoolean().toBoolean()
-  ],
+    getCompanyCustomer: [
+        check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('status').optional().isInt({ min: 0, max: 4 }).toInt().withMessage('status has to be number with value between 0 and 4'),
+        check('isPreferred').optional().isBoolean().toBoolean()
+    ],
 
-  updateCompanyCustomer: [
-    check('companyCustomerId').exists().isMongoId().withMessage(Messages.WrongId),
-    check('status').optional().isNumeric().toInt(),
-    check('isPreferred').optional().isBoolean().toBoolean(),
-  ],
+    updateCompanyCustomer: [
+        check('companyCustomerId').exists().isMongoId().withMessage(Messages.WrongId),
+        check('status').optional().isNumeric().toInt(),
+        check('isPreferred').optional().isBoolean().toBoolean(),
+    ],
 
-  updateItemTier: [check('itemTierId').exists().withMessage('is required')],
+    updateItemTier: [check('itemTierId').exists().withMessage('is required')],
 
-  deleteEmployee: [check('employeeId').exists()],
+    deleteEmployee: [check('employeeId').exists()],
 
-  getEmployeeDetails: [check('employeeId').exists()],
+    getEmployeeDetails: [check('employeeId').exists()],
 
-  updateEmployeeEmailPreferences: [check('employeeId').exists(), check('emailPreferences').isNumeric()],
+    updateEmployeeEmailPreferences: [check('employeeId').exists(), check('emailPreferences').isNumeric()],
 
-  updateCompanyContract: [
-    check('contractId').exists().withMessage(Messages.Required),
-    check('contractId').isMongoId().withMessage(Messages.WrongId),
-    check('status').isInt({ min: 1, max: 4 }).toInt().withMessage('status has to be number with value between 1 and 4')
-  ],
+    updateCompanyContract: [
+        check('contractId').exists().withMessage(Messages.Required),
+        check('contractId').isMongoId().withMessage(Messages.WrongId),
+        check('status').isInt({ min: 1, max: 4 }).toInt().withMessage('status has to be number with value between 1 and 4')
+    ],
 
-  updateContractorEmailPreferences: [check('contractorId').exists(), check('emailPreferences').isNumeric()],
+    updateContractorEmailPreferences: [check('contractorId').exists(), check('emailPreferences').isNumeric()],
 
-  updateCustomerEmailPreferences: [check('customerId').exists(), check('emailPreferences').isNumeric()],
+    updateCustomerEmailPreferences: [check('customerId').exists(), check('emailPreferences').isNumeric()],
 
-  forgotPassword: [check('email').exists(), check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
+    forgotPassword: [check('email').exists(), check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
 
-  // COMPANY LOCATIONS
-  createCompanyLocation: [
-    check('name').exists().withMessage(Messages.Required),
-    check('isMainLocation').optional().toBoolean(),
-    check('email').optional().isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }),
-  ],
+    // COMPANY LOCATIONS
+    createCompanyLocation: [
+        check('name').exists().withMessage(Messages.Required),
+        check('isMainLocation').optional().toBoolean(),
+        check('email').optional().isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false }),
+    ],
 
-  updateCompanyLocation: [
-    check('companyLocationId').exists().withMessage(Messages.Required),
-    check('companyLocationId').isMongoId().withMessage(Messages.WrongId),
-    check('name').exists().withMessage(Messages.Required),
-    check('isMainLocation').optional().toBoolean(),
-    check('email').optional().isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }),
-  ],
+    updateCompanyLocation: [
+        check('companyLocationId').exists().withMessage(Messages.Required),
+        check('companyLocationId').isMongoId().withMessage(Messages.WrongId),
+        check('name').exists().withMessage(Messages.Required),
+        check('isMainLocation').optional().toBoolean(),
+        check('email').optional().isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false }),
+    ],
 
-  //Industry
-  createIndustry: [check('title').exists()],
+    //Industry
+    createIndustry: [check('title').exists()],
 
-  removeIndustry: [check('industryId').exists()],
+    removeIndustry: [check('industryId').exists()],
 
-  //Equipment Type
-  createEquipmentType: [check('title').exists()],
+    //Equipment Type
+    createEquipmentType: [check('title').exists()],
 
-  //Equipment Brand
-  createEquipmentBrand: [check('title').exists()],
+    //Equipment Brand
+    createEquipmentBrand: [check('title').exists()],
 
-  //Customers
-  createCustomer: [check('name').exists(), check('email').optional({ nullable: true, checkFalsy: true }).isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
+    //Customers
+    createCustomer: [check('name').exists(), check('email').optional({ nullable: true, checkFalsy: true }).isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
 
-  updateCustomer: [check('customerId').exists(), check('email').optional({ nullable: true, checkFalsy: true }).isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false })],
+    updateCustomer: [check('customerId').exists(), check('email').optional({ nullable: true, checkFalsy: true }).isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
 
-  updateCustomPrices: [check('customerId').exists().withMessage('is required'), check('customerId').isMongoId().withMessage(Messages.WrongId)],
+    updateCustomPrices: [check('customerId').exists().withMessage('is required'), check('customerId').isMongoId().withMessage(Messages.WrongId)],
 
-  getCustomers: [check('includeActive').exists(), check('includeNonActive').exists()],
+    getCustomers: [check('includeActive').exists(), check('includeNonActive').exists()],
 
-  getCustomerDetail: [check('customerId').exists()],
+    getCustomerDetail: [check('customerId').exists()],
 
-  searchDuplicatedCustomers: [check('keyword').exists().withMessage(Messages.Required)],
+    searchDuplicatedCustomers: [check('keyword').exists().withMessage(Messages.Required)],
 
-  mergeCustomers: [
-    check('customerId').exists().withMessage(Messages.Required),
-    check('customerId').isMongoId().withMessage(Messages.WrongId),
-    check('unusedCustomerIds').exists().withMessage(Messages.Required),
-    check('email').optional().isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }).withMessage(Messages.InvalidEmail),
-  ],
+    mergeCustomers: [
+        check('customerId').exists().withMessage(Messages.Required),
+        check('customerId').isMongoId().withMessage(Messages.WrongId),
+        check('unusedCustomerIds').exists().withMessage(Messages.Required),
+        check('email').optional().isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false }).withMessage(Messages.InvalidEmail),
+    ],
 
-  //Customer Equipment
+    //Customer Equipment
 
-  createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists()],
+    createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists()],
 
-  getCustomerEquipments: [check('customerId').exists()],
+    getCustomerEquipments: [check('customerId').exists()],
 
-  getCustomerEquipmentInfo: [check('nfcTag').exists()],
+    getCustomerEquipmentInfo: [check('nfcTag').exists()],
 
-  linkEquipmentJob: [check('nfcTag').exists(), check('jobId').exists(), check('comment').exists()],
+    linkEquipmentJob: [check('nfcTag').exists(), check('jobId').exists(), check('comment').exists()],
 
-  getCustomerEquipmentJobs: [check('nfcTag').exists()],
+    getCustomerEquipmentJobs: [check('nfcTag').exists()],
 
-  // Job Type
-  createJobType: [check('title').exists()],
+    // Job Type
+    createJobType: [check('title').exists()],
 
-  editJobType: [check('jobTypeId').exists(), check('title').exists()],
+    editJobType: [check('jobTypeId').exists(), check('title').exists()],
 
-  changeJobTypeStatus: [check('jobTypeId').exists(), check('status').exists()],
+    changeJobTypeStatus: [check('jobTypeId').exists(), check('status').exists()],
 
-  // Item
-  getItems: [check('includeDiscountItems').optional().isBoolean().toBoolean()],
+    // Item
+    getItems: [check('includeDiscountItems').optional().isBoolean().toBoolean()],
 
-  createItem: [check('title').exists().withMessage(Messages.Required),
-  check('account').exists().withMessage(Messages.Required),
-  check("itemType").optional().isIn(['Product', 'Service']).withMessage('Item type must be either "Product" or "Service"'),
-  check("isFixed").optional({ checkFalsy: true }).custom((value: boolean, { req }: any) => {
-    // Check if itemType is "Product" and isFixed is not true
-      if (req.body.itemType === 'Product' && value !== true) {
-        throw new Error('isFixed must be true when itemType is "Product"');
-      }
-      return true;
-    }),
+    createItem: [check('title').exists().withMessage(Messages.Required),
+        check('account').exists().withMessage(Messages.Required),
+        check('itemType').optional().isIn(['Product', 'Service']).withMessage('Item type must be either "Product" or "Service"'),
+        check('isFixed').optional({ checkFalsy: true }).custom((value: boolean, { req }: any) => {
+            // Check if itemType is "Product" and isFixed is not true
+            if (req.body.itemType === 'Product' && value !== true) {
+                throw new Error('isFixed must be true when itemType is "Product"');
+            }
+            return true;
+        }),
     // check('productCost').if(check('itemType').equals('Product')).not().isEmpty().withMessage(Messages.Required),
-  // check('salePrice').if(check('itemType').equals('Product')).not().isEmpty().withMessage(Messages.Required)
-],
+        // check('salePrice').if(check('itemType').equals('Product')).not().isEmpty().withMessage(Messages.Required)
+    ],
 
-  // Discount Item
-  getDiscountItems: [
-    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-  ],
+    // Discount Item
+    getDiscountItems: [
+        check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+    ],
 
-  createDiscountItem: [
-    check('title').exists().withMessage(Messages.Required),
-    check('charges').exists().withMessage(Messages.Required),
-    check('noOfItems').optional().toInt()
-  ],
+    createDiscountItem: [
+        check('title').exists().withMessage(Messages.Required),
+        check('charges').exists().withMessage(Messages.Required),
+        check('noOfItems').optional().toInt()
+    ],
 
-  updateDiscountItem: [
-    check('discountItemId').exists().withMessage(Messages.Required),
-    check('discountItemId').isMongoId().withMessage(Messages.WrongId),
-    check('title').exists().withMessage(Messages.Required),
-    check('charges').exists().withMessage(Messages.Required),
-    check('noOfItems').optional().toInt()
-  ],
+    updateDiscountItem: [
+        check('discountItemId').exists().withMessage(Messages.Required),
+        check('discountItemId').isMongoId().withMessage(Messages.WrongId),
+        check('title').exists().withMessage(Messages.Required),
+        check('charges').exists().withMessage(Messages.Required),
+        check('noOfItems').optional().toInt()
+    ],
 
-  //Job
-  createJob: [
-    check('scheduleDate').exists().withMessage(Messages.Required),
-    check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
-    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
-    // check('jobTypes').exists().withMessage(Messages.Required),
-    // check('ticketId').exists().withMessage(Messages.Required),
-    // check('requestId').exists().withMessage(Messages.Required),
-    // check('employeeType').exists().withMessage(Messages.Required),
-    // check('employeeType').isNumeric(),
-    check('ticketId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('jobRequestId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('equipmentId').optional().isMongoId().withMessage(Messages.WrongId),
-    // check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
-    // check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('homeJobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('homeJobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('scheduleTimeAMPM').optional().isIn([0, 1, 2]).withMessage(Messages.InvalidAMPM),
-  ],
+    //Job
+    createJob: [
+        check('scheduleDate').exists().withMessage(Messages.Required),
+        check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
+        check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
+        // check('jobTypes').exists().withMessage(Messages.Required),
+        // check('ticketId').exists().withMessage(Messages.Required),
+        // check('requestId').exists().withMessage(Messages.Required),
+        // check('employeeType').exists().withMessage(Messages.Required),
+        // check('employeeType').isNumeric(),
+        check('ticketId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('jobRequestId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('equipmentId').optional().isMongoId().withMessage(Messages.WrongId),
+        // check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
+        // check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('homeJobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('homeJobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('scheduleTimeAMPM').optional().isIn([0, 1, 2]).withMessage(Messages.InvalidAMPM),
+    ],
 
-  createSubJob: [
-    check('parentJobId').exists().withMessage(Messages.Required),
-    check('parentJobId').isMongoId().withMessage(Messages.WrongId),
-    check('employeeType').exists().withMessage(Messages.Required),
-    check('employeeType').isNumeric(),
-    check('equipmentId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
-  ],
+    createSubJob: [
+        check('parentJobId').exists().withMessage(Messages.Required),
+        check('parentJobId').isMongoId().withMessage(Messages.WrongId),
+        check('employeeType').exists().withMessage(Messages.Required),
+        check('employeeType').isNumeric(),
+        check('equipmentId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
+    ],
 
-  getJobs: [
-    check('status').optional().toInt(),
-    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided'),
-    check('technicianIds').optional()
-  ],
+    getJobs: [
+        check('status').optional().toInt(),
+        check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided'),
+        check('technicianIds').optional()
+    ],
 
-  searchJob: [check('pageSize').isNumeric(), check('page').isNumeric()],
+    searchJob: [check('pageSize').isNumeric(), check('page').isNumeric()],
 
-  generalJob: [check('jobId').exists().withMessage(Messages.Required)],
+    generalJob: [check('jobId').exists().withMessage(Messages.Required)],
 
-  startJobTask: [
-    check('jobId').exists().withMessage(Messages.Required),
-    check('jobId').isMongoId().withMessage(Messages.WrongId),
-    check('jobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('taskJobTypeId').optional().isMongoId().withMessage(Messages.WrongId)
-  ],
+    startJobTask: [
+        check('jobId').exists().withMessage(Messages.Required),
+        check('jobId').isMongoId().withMessage(Messages.WrongId),
+        check('jobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('taskJobTypeId').optional().isMongoId().withMessage(Messages.WrongId)
+    ],
 
-  updateJobTask: [
-    check('jobId').exists().withMessage(Messages.Required),
-    check('jobId').isMongoId().withMessage(Messages.WrongId),
-    check('jobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('taskJobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('status').exists().withMessage(Messages.Required),
-    check('status').isIn([JobStatus.PAUSED, JobStatus.FINISHED, JobStatus.PARTIALLY_COMPLETED]).withMessage('Only paused and finished are allowed')
-  ],
+    updateJobTask: [
+        check('jobId').exists().withMessage(Messages.Required),
+        check('jobId').isMongoId().withMessage(Messages.WrongId),
+        check('jobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('taskJobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('status').exists().withMessage(Messages.Required),
+        check('status').isIn([JobStatus.PAUSED, JobStatus.FINISHED, JobStatus.PARTIALLY_COMPLETED]).withMessage('Only paused and finished are allowed')
+    ],
 
-  updateJob: [
-    check('jobId').exists().withMessage(Messages.Required),
-    check('jobId').isMongoId().withMessage(Messages.WrongId),
-    check('status').exists().withMessage(Messages.Required),
-    check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('homeJobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
-    check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('homeJobSiteId').optional().isMongoId().withMessage(Messages.WrongId)
-  ],
+    updateJob: [
+        check('jobId').exists().withMessage(Messages.Required),
+        check('jobId').isMongoId().withMessage(Messages.WrongId),
+        check('status').exists().withMessage(Messages.Required),
+        check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('homeJobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
+        check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('homeJobSiteId').optional().isMongoId().withMessage(Messages.WrongId)
+    ],
 
-  updateJoBRequestStatus: [
-    check('jobRequestId').exists().withMessage(Messages.Required),
-    check('jobRequestId').isMongoId().withMessage(Messages.WrongId),
-    check('status').exists().withMessage(Messages.Required),
-    check('status').isInt({ min: 4, max: 5 }).toInt().withMessage('has to be 4 (Accepted) or 5 (Rejected)'),
-  ],
+    updateJoBRequestStatus: [
+        check('jobRequestId').exists().withMessage(Messages.Required),
+        check('jobRequestId').isMongoId().withMessage(Messages.WrongId),
+        check('status').exists().withMessage(Messages.Required),
+        check('status').isInt({ min: 4, max: 5 }).toInt().withMessage('has to be 4 (Accepted) or 5 (Rejected)'),
+    ],
 
-  editJob: [
-    check('jobId').exists().withMessage(Messages.Required),
-    check('jobId').isMongoId().withMessage(Messages.WrongId),
-    check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('homeJobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('homeJobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
-    check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('scheduleDate').exists().withMessage(Messages.Required)
-  ],
+    editJob: [
+        check('jobId').exists().withMessage(Messages.Required),
+        check('jobId').isMongoId().withMessage(Messages.WrongId),
+        check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('homeJobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('homeJobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
+        check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('scheduleDate').exists().withMessage(Messages.Required)
+    ],
 
-  updateJobTime: [check('jobId').exists().withMessage(Messages.Required), check('jobId').isMongoId().withMessage(Messages.WrongId)],
+    updateJobTime: [check('jobId').exists().withMessage(Messages.Required), check('jobId').isMongoId().withMessage(Messages.WrongId)],
 
-  updateJobTechnicianStatus: [
-    check('jobId').exists().withMessage(Messages.Required),
-    check('jobId').isMongoId().withMessage(Messages.WrongId),
-    check('technicianId').exists().withMessage(Messages.Required),
-    check('technicianId').isMongoId().withMessage(Messages.WrongId),
-    check('status').optional().isInt().toInt()
-  ],
+    updateJobTechnicianStatus: [
+        check('jobId').exists().withMessage(Messages.Required),
+        check('jobId').isMongoId().withMessage(Messages.WrongId),
+        check('technicianId').exists().withMessage(Messages.Required),
+        check('technicianId').isMongoId().withMessage(Messages.WrongId),
+        check('status').optional().isInt().toInt()
+    ],
 
-  technicianJobs: [check('employeeId').exists().withMessage(Messages.Required), check('employeeId').isMongoId().withMessage(Messages.WrongId)],
+    technicianJobs: [check('employeeId').exists().withMessage(Messages.Required), check('employeeId').isMongoId().withMessage(Messages.WrongId)],
 
-  // Job Route
-  jobRoute: [
-    check('scheduleDate').exists().withMessage(Messages.Required),
-    // check('employeeType').exists().withMessage(Messages.Required),
-    // check('employeeType').isNumeric(),
-    check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('contractorId').optional().isMongoId().withMessage(Messages.WrongId)
-  ],
+    // Job Route
+    jobRoute: [
+        check('scheduleDate').exists().withMessage(Messages.Required),
+        // check('employeeType').exists().withMessage(Messages.Required),
+        // check('employeeType').isNumeric(),
+        check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('contractorId').optional().isMongoId().withMessage(Messages.WrongId)
+    ],
 
-  // Job Route
-  allJobRoutesByTechnician: [
-    check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('contractorId').optional().isMongoId().withMessage(Messages.WrongId)
-  ],
+    // Job Route
+    allJobRoutesByTechnician: [
+        check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('contractorId').optional().isMongoId().withMessage(Messages.WrongId)
+    ],
 
-  createJobRoute: [
-    check('routes').exists().withMessage(Messages.Required),
-  ],
+    createJobRoute: [
+        check('routes').exists().withMessage(Messages.Required),
+    ],
 
-  updateJobRoute: [
-    check('jobRouteId').exists().withMessage(Messages.Required),
-    check('jobRouteId').isMongoId().withMessage(Messages.WrongId),
-    check('routes').exists().withMessage(Messages.Required),
-  ],
+    updateJobRoute: [
+        check('jobRouteId').exists().withMessage(Messages.Required),
+        check('jobRouteId').isMongoId().withMessage(Messages.WrongId),
+        check('routes').exists().withMessage(Messages.Required),
+    ],
 
-  //Group
-  createGroup: [check('title').exists()],
+    //Group
+    createGroup: [check('title').exists()],
 
-  groupGeneric: [check('groupId').exists()],
+    groupGeneric: [check('groupId').exists()],
 
-  addManager: [check('groupId').exists(), check('managerId').exists()],
+    addManager: [check('groupId').exists(), check('managerId').exists()],
 
-  memberGeneric: [check('groupId').exists(), check('memberId').exists()],
+    memberGeneric: [check('groupId').exists(), check('memberId').exists()],
 
-  //Company Equipemnt
-  createCompanyEquipment: [check('imageUrl').exists(), check('model').exists(), check('serialNumber').exists(), check('typeId').exists(), check('brandId').exists()],
+    //Company Equipemnt
+    createCompanyEquipment: [check('imageUrl').exists(), check('model').exists(), check('serialNumber').exists(), check('typeId').exists(), check('brandId').exists()],
 
-  //Company Equipemnt History
-  createCompanyEquipmentHistory: [check('action').exists(), check('dateTime').exists()],
+    //Company Equipemnt History
+    createCompanyEquipmentHistory: [check('action').exists(), check('dateTime').exists()],
 
-  //Company Equipemnt Inventory
-  createEquipmentInventory: [check('dateTime').exists()],
+    //Company Equipemnt Inventory
+    createEquipmentInventory: [check('dateTime').exists()],
 
-  // Tags
-  placeOrder: [check('noOfTags').exists(), check('total').exists(), check('tax').exists(), check('cardId').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(),],
+    // Tags
+    placeOrder: [check('noOfTags').exists(), check('total').exists(), check('tax').exists(), check('cardId').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(),],
 
-  // Company Cards
-  addCompanyCard: [check('cardNumber').exists(), check('exp').exists(), check('cvc').exists(), check('name').exists(), check('address').exists(), check('city').exists(), check('state').exists(), check('zipcode').exists()],
+    // Company Cards
+    addCompanyCard: [check('cardNumber').exists(), check('exp').exists(), check('cvc').exists(), check('name').exists(), check('address').exists(), check('city').exists(), check('state').exists(), check('zipcode').exists()],
 
-  removeCompanyCard: [check('cardId').exists()],
+    removeCompanyCard: [check('cardId').exists()],
 
-  subscribe: [check('cardId').exists(), check('planId').exists()],
+    subscribe: [check('cardId').exists(), check('planId').exists()],
 
-  buySubscriptions: [check('noOfOfficeAdmins').exists(), check('noOfTechnicians').exists(), check('noOfManagers').exists()],
+    buySubscriptions: [check('noOfOfficeAdmins').exists(), check('noOfTechnicians').exists(), check('noOfManagers').exists()],
 
-  removeSubscription: [check('employeeId').exists(),],
+    removeSubscription: [check('employeeId').exists(),],
 
-  updateDefaultPermissions: [check('onPermissions').exists(), check('offPermissions').exists(), check('role').exists()],
+    updateDefaultPermissions: [check('onPermissions').exists(), check('offPermissions').exists(), check('role').exists()],
 
-  udpateUserPermissions: [check('onPermissions').exists(), check('offPermissions').exists()],
+    udpateUserPermissions: [check('onPermissions').exists(), check('offPermissions').exists()],
 
-  employeePermissions: [check('employeeId').exists()],
+    employeePermissions: [check('employeeId').exists()],
 
-  createTicket: [check('customerId').exists()],
+    createTicket: [check('customerId').exists()],
 
-  editTicket: [check('ticketId').exists(), check('status').exists(), check('status').isNumeric()],
+    editTicket: [check('ticketId').exists(), check('status').exists(), check('status').isNumeric()],
 
-  updateTicket: [
-    check('ticketId').exists().withMessage(Messages.Required),
-    check('ticketId').isMongoId().withMessage(Messages.WrongId),
-    check('note').exists(),
-    check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
-    check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
-  ],
+    updateTicket: [
+        check('ticketId').exists().withMessage(Messages.Required),
+        check('ticketId').isMongoId().withMessage(Messages.WrongId),
+        check('note').exists(),
+        check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
+        check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
+    ],
 
-  getTicketDetail: [check('ticketId').exists()],
+    getTicketDetail: [check('ticketId').exists()],
 
-  getJobReport: [check('jobReportId').exists()],
+    getJobReport: [check('jobReportId').exists()],
 
-  getAllJobReports: [check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided')],
+    getAllJobReports: [check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided')],
 
-  deleteJobReport: [check('jobReportId').exists()],
+    deleteJobReport: [check('jobReportId').exists()],
 
-  createQBCustomer: [check('customerId').exists().withMessage('is required'), check('customerId').isMongoId().withMessage(Messages.WrongId)],
+    createQBCustomer: [check('customerId').exists().withMessage('is required'), check('customerId').isMongoId().withMessage(Messages.WrongId)],
 
-  getQBUri: [check('redirectUri').exists()],
+    getQBUri: [check('redirectUri').exists()],
 
-  createSaleTax: [check('state').exists(), check('tax').exists()],
+    createSaleTax: [check('state').exists(), check('tax').exists()],
 
-  updateSaleTax: [check('salesTaxId').exists(), check('state').exists(), check('tax').exists()],
+    updateSaleTax: [check('salesTaxId').exists(), check('state').exists(), check('tax').exists()],
 
-  deleteSaleTax: [check('salesTaxId').exists()],
+    deleteSaleTax: [check('salesTaxId').exists()],
 
-  createJobCharges: [check('jobTypeId').exists(), check('charges').exists(), check('isFixed').exists()],
+    createJobCharges: [check('jobTypeId').exists(), check('charges').exists(), check('isFixed').exists()],
 
-  updateJobCharges: [check('jobChargesId').exists(), check('charges').exists(), check('isFixed').exists()],
+    updateJobCharges: [check('jobChargesId').exists(), check('charges').exists(), check('isFixed').exists()],
 
-  deleteJobCharges: [check('jobChargesId').exists()],
+    deleteJobCharges: [check('jobChargesId').exists()],
 
-  getInvoices: [
-    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
-    check('isVoid').optional().isBoolean().toBoolean().withMessage('isVoid has to be boolean'),
-    check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided'),
-    check('recentOnly').optional().isBoolean().toBoolean().withMessage('recentOnly has to be boolean')
-  ],
+    getInvoices: [
+        check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
+        check('isVoid').optional().isBoolean().toBoolean().withMessage('isVoid has to be boolean'),
+        check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided'),
+        check('recentOnly').optional().isBoolean().toBoolean().withMessage('recentOnly has to be boolean')
+    ],
 
-  createInvoice: [
-    check('jobId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('purchaseOrderId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('estimateId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('paymentTermId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
-  ],
+    createInvoice: [
+        check('jobId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('purchaseOrderId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('estimateId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('jobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('paymentTermId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
+    ],
 
-  getInvoiceEmailTemplate: [
+    getInvoiceEmailTemplate: [
     // check('emailType').exists().withMessage(Messages.Required),
-    check('invoiceId').optional().isMongoId().withMessage(Messages.WrongId),
-  ],
+        check('invoiceId').optional().isMongoId().withMessage(Messages.WrongId),
+    ],
 
-  sendInvoice: [
-    check('invoiceId').exists().withMessage(Messages.Required),
-    check('invoiceId').optional().isMongoId().withMessage(Messages.WrongId),
-  ],
+    sendInvoice: [
+        check('invoiceId').exists().withMessage(Messages.Required),
+        check('invoiceId').optional().isMongoId().withMessage(Messages.WrongId),
+    ],
 
-  sendInvoices: [
-    check('invoiceIds').exists().withMessage(Messages.Required),
-  ],
+    sendInvoices: [
+        check('invoiceIds').exists().withMessage(Messages.Required),
+    ],
 
-  generateInvoicePdf: [
-    check('customerId').exists().withMessage(Messages.Required),
-    check('customerId').isMongoId().withMessage(Messages.WrongId),
-    check('invoiceId').exists().withMessage(Messages.Required),
-    check('invoiceId').isMongoId().withMessage(Messages.WrongId),
-  ],
+    generateInvoicePdf: [
+        check('customerId').exists().withMessage(Messages.Required),
+        check('customerId').isMongoId().withMessage(Messages.WrongId),
+        check('invoiceId').exists().withMessage(Messages.Required),
+        check('invoiceId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
-  getJobReportEmailTemplate: [check('jobReportId').exists()],
+    getJobReportEmailTemplate: [check('jobReportId').exists()],
 
-  sendReport: [check('jobReportId').exists()],
+    sendReport: [check('jobReportId').exists()],
 
-  createPOInvoice: [check('purchaseOrderId').exists()],
+    createPOInvoice: [check('purchaseOrderId').exists()],
 
-  updateInvoice: [
-    check('invoiceId').exists().withMessage(Messages.Required),
-    check('invoiceId').isMongoId().withMessage(Messages.WrongId),
-    check('paymentTermId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('jobLocationId').optional({ nullable: true }).isMongoId().withMessage(Messages.WrongId),
-    check('jobSiteId').optional({ nullable: true }).isMongoId().withMessage(Messages.WrongId),
-    check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
-    check('showJobId').optional().isBoolean().toBoolean().withMessage('showJobId has to be boolean'),
-  ],
+    updateInvoice: [
+        check('invoiceId').exists().withMessage(Messages.Required),
+        check('invoiceId').isMongoId().withMessage(Messages.WrongId),
+        check('paymentTermId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('jobLocationId').optional({ nullable: true }).isMongoId().withMessage(Messages.WrongId),
+        check('jobSiteId').optional({ nullable: true }).isMongoId().withMessage(Messages.WrongId),
+        check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
+        check('showJobId').optional().isBoolean().toBoolean().withMessage('showJobId has to be boolean'),
+    ],
 
-  setCustomInvoiceNumber: [check('invoiceNumber').optional().isInt().toInt()],
+    setCustomInvoiceNumber: [check('invoiceNumber').optional().isInt().toInt()],
 
-  companyInvoice: [check('companyInvoiceId').exists()],
+    companyInvoice: [check('companyInvoiceId').exists()],
 
-  voidInvoice: [check('invoiceId').exists().withMessage(Messages.Required), check('invoiceId').isMongoId().withMessage(Messages.WrongId)],
-  unVoidInvoice: [check('invoiceId').exists().withMessage(Messages.Required), check('invoiceId').isMongoId().withMessage(Messages.WrongId)],
+    voidInvoice: [check('invoiceId').exists().withMessage(Messages.Required), check('invoiceId').isMongoId().withMessage(Messages.WrongId)],
+    unVoidInvoice: [check('invoiceId').exists().withMessage(Messages.Required), check('invoiceId').isMongoId().withMessage(Messages.WrongId)],
 
-  updateCommission: [
-    check('type').exists().withMessage(Messages.Required),
-    check('commissionEffectiveDate').exists().withMessage(Messages.Required),
-    check('id').exists().withMessage(Messages.Required),
-    check('id').isMongoId().withMessage(Messages.WrongId),
-    check('commission').optional().isInt().withMessage('invalid format')
-  ],
+    updateCommission: [
+        check('type').exists().withMessage(Messages.Required),
+        check('commissionEffectiveDate').exists().withMessage(Messages.Required),
+        check('id').exists().withMessage(Messages.Required),
+        check('id').isMongoId().withMessage(Messages.WrongId),
+        check('commission').optional().isInt().withMessage('invalid format')
+    ],
 
-  getInvoiceDetail: [check('invoiceId').exists()],
+    getInvoiceDetail: [check('invoiceId').exists()],
 
-  createPartInventory: [check('name').exists(), check('itemCode').exists(), check('cost').exists(), check('price').exists(), check('totalQuantity').exists()],
+    createPartInventory: [check('name').exists(), check('itemCode').exists(), check('cost').exists(), check('price').exists(), check('totalQuantity').exists()],
 
-  udpatePartInventory: [check('partId').exists(), check('name').exists(), check('itemCode').exists(), check('cost').exists(), check('price').exists(), check('totalQuantity').exists()],
+    udpatePartInventory: [check('partId').exists(), check('name').exists(), check('itemCode').exists(), check('cost').exists(), check('price').exists(), check('totalQuantity').exists()],
 
-  removePartInventory: [check('partId').exists()],
+    removePartInventory: [check('partId').exists()],
 
-  createPurchaseOrder: [check('customer').exists(), check('note').exists()],
+    createPurchaseOrder: [check('customer').exists(), check('note').exists()],
 
-  udpatePurchaseOrder: [check('purchaseOrderId').exists(), check('total').exists(), check('note').exists()],
+    udpatePurchaseOrder: [check('purchaseOrderId').exists(), check('total').exists(), check('note').exists()],
 
-  udpatePurchaseOrderStatus: [check('purchaseOrderId').exists(), check('status').exists()],
+    udpatePurchaseOrderStatus: [check('purchaseOrderId').exists(), check('status').exists()],
 
-  getEquipmentPO: [check('equipmentId').exists()],
+    getEquipmentPO: [check('equipmentId').exists()],
 
-  createPurchaseOrderEstimate: [check('estimateId').exists()],
+    createPurchaseOrderEstimate: [check('estimateId').exists()],
 
-  udpateEstimate: [check('estimateId').exists(), check('total').exists(), check('customer').exists()],
+    udpateEstimate: [check('estimateId').exists(), check('total').exists(), check('customer').exists()],
 
-  udpateEstimateStatus: [check('estimateId').exists()],
+    udpateEstimateStatus: [check('estimateId').exists()],
 
-  cancelEstimate: [check('estimateId').exists()],
+    cancelEstimate: [check('estimateId').exists()],
 
-  updateItem: [check('itemId').exists(), check('charges').exists(), check('isFixed').exists(), check('tax').exists()],
-  toggleItemStatus: [check('itemId').exists()],
-  itemExist: [check('name').exists()],
+    updateItem: [check('itemId').exists(), check('charges').exists(), check('isFixed').exists(), check('tax').exists()],
+    toggleItemStatus: [check('itemId').exists()],
+    itemExist: [check('name').exists()],
 
-  searchDuplicatedItems: [check('keyword').exists().withMessage(Messages.Required)],
+    searchDuplicatedItems: [check('keyword').exists().withMessage(Messages.Required)],
 
-  mergeItems: [
-    check('itemId').exists().withMessage(Messages.Required),
-    check('itemId').isMongoId().withMessage(Messages.WrongId),
-    check('unusedItemIds').exists().withMessage(Messages.Required),
-    check('unusedItemIds').isArray().withMessage('Must in array format'),
-  ],
+    mergeItems: [
+        check('itemId').exists().withMessage(Messages.Required),
+        check('itemId').isMongoId().withMessage(Messages.WrongId),
+        check('unusedItemIds').exists().withMessage(Messages.Required),
+        check('unusedItemIds').isArray().withMessage('Must in array format'),
+    ],
 
-  // Payment Term
+    // Payment Term
 
-  setCompanyDefaultPaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId)],
+    setCompanyDefaultPaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId)],
 
-  setCustomerPaymentTerm: [check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId), check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId)],
+    setCustomerPaymentTerm: [check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId), check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId)],
 
-  createPaymentTerm: [check('name').exists().withMessage(Messages.Required), check('dueDays').exists().withMessage(Messages.Required), check('dueDays').isInt().withMessage('invalid format')],
+    createPaymentTerm: [check('name').exists().withMessage(Messages.Required), check('dueDays').exists().withMessage(Messages.Required), check('dueDays').isInt().withMessage('invalid format')],
 
-  updatePaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId), check('dueDays').optional().isInt().withMessage('invalid format')],
+    updatePaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId), check('dueDays').optional().isInt().withMessage('invalid format')],
 
-  deletePaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId)],
+    deletePaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId)],
 
-  // Payment
+    // Payment
 
-  getInvoicesByCustomerId: [check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId)],
+    getInvoicesByCustomerId: [check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId)],
 
-  getPaymentsByCustomer: [check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId)],
+    getPaymentsByCustomer: [check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId)],
 
-  recordPayment: [
+    recordPayment: [
     // check('invoiceId').exists().withMessage(Messages.Required),
-    check('invoiceId').optional().isMongoId().withMessage(Messages.WrongId),
-    // check('amount').exists().withMessage(Messages.Required),
-    check('customerId').exists().withMessage(Messages.Required),
-    check('customerId').isMongoId().withMessage(Messages.WrongId)
+        check('invoiceId').optional().isMongoId().withMessage(Messages.WrongId),
+        // check('amount').exists().withMessage(Messages.Required),
+        check('customerId').exists().withMessage(Messages.Required),
+        check('customerId').isMongoId().withMessage(Messages.WrongId)
 
-  ],
+    ],
 
-  updatePayment: [
-    check('paymentId').exists().withMessage(Messages.Required),
-    check('paymentId').isMongoId().withMessage(Messages.WrongId),
-    check('customerId').exists().withMessage(Messages.Required),
-    check('customerId').isMongoId().withMessage(Messages.WrongId),
-  ],
+    updatePayment: [
+        check('paymentId').exists().withMessage(Messages.Required),
+        check('paymentId').isMongoId().withMessage(Messages.WrongId),
+        check('customerId').exists().withMessage(Messages.Required),
+        check('customerId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
-  recordPaymentContractor: [
-    check('type').exists().withMessage(Messages.Required),
-    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
-    check('id').exists().withMessage(Messages.Required),
-    check('id').isMongoId().withMessage(Messages.WrongId),
-    check('amount').exists().withMessage(Messages.Required),
-    check('creditUsed').optional().isFloat().toFloat().withMessage('has to be number/decimal'),
-  ],
+    recordPaymentContractor: [
+        check('type').exists().withMessage(Messages.Required),
+        check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+        check('id').exists().withMessage(Messages.Required),
+        check('id').isMongoId().withMessage(Messages.WrongId),
+        check('amount').exists().withMessage(Messages.Required),
+        check('creditUsed').optional().isFloat().toFloat().withMessage('has to be number/decimal'),
+    ],
 
-  updatePaymentContractor: [
-    check('type').exists().withMessage(Messages.Required),
-    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
-    check('id').exists().withMessage(Messages.Required),
-    check('id').isMongoId().withMessage(Messages.WrongId),
-    check('paymentId').exists().withMessage(Messages.Required),
-    check('paymentId').isMongoId().withMessage(Messages.WrongId),
-    check('amount').exists().withMessage(Messages.Required),
-  ],
+    updatePaymentContractor: [
+        check('type').exists().withMessage(Messages.Required),
+        check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+        check('id').exists().withMessage(Messages.Required),
+        check('id').isMongoId().withMessage(Messages.WrongId),
+        check('paymentId').exists().withMessage(Messages.Required),
+        check('paymentId').isMongoId().withMessage(Messages.WrongId),
+        check('amount').exists().withMessage(Messages.Required),
+    ],
 
-  voidPaymentContractor: [
-    check('type').exists().withMessage(Messages.Required),
-    check('type').isIn(['vendor', 'employee', 'customer']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
-    check('paymentId').exists().withMessage(Messages.Required),
-    check('paymentId').isMongoId().withMessage(Messages.WrongId),
-  ],
+    voidPaymentContractor: [
+        check('type').exists().withMessage(Messages.Required),
+        check('type').isIn(['vendor', 'employee', 'customer']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+        check('paymentId').exists().withMessage(Messages.Required),
+        check('paymentId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
-  // ADVANCE PAYMENT
-  recordAdvancePayment: [
-    check('type').exists().withMessage(Messages.Required),
-    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
-    check('id').exists().withMessage(Messages.Required),
-    check('id').isMongoId().withMessage(Messages.WrongId),
-    check('amount').exists().withMessage(Messages.Required),
-    check('amount').isFloat().toFloat().withMessage('has to be number/decimal'),
-  ],
+    // ADVANCE PAYMENT
+    recordAdvancePayment: [
+        check('type').exists().withMessage(Messages.Required),
+        check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+        check('id').exists().withMessage(Messages.Required),
+        check('id').isMongoId().withMessage(Messages.WrongId),
+        check('amount').exists().withMessage(Messages.Required),
+        check('amount').isFloat().toFloat().withMessage('has to be number/decimal'),
+    ],
 
-  getAdvancePayments: [
-    check('type').exists().withMessage(Messages.Required),
-    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
-    check('id').exists().withMessage(Messages.Required),
-    check('id').isMongoId().withMessage(Messages.WrongId),
-  ],
+    getAdvancePayments: [
+        check('type').exists().withMessage(Messages.Required),
+        check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+        check('id').exists().withMessage(Messages.Required),
+        check('id').isMongoId().withMessage(Messages.WrongId),
+    ],
 
-  updateAdvancePaymentContractor: [
-    check('type').exists().withMessage(Messages.Required),
-    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
-    check('id').exists().withMessage(Messages.Required),
-    check('id').isMongoId().withMessage(Messages.WrongId),
-    check('advancePaymentId').exists().withMessage(Messages.Required),
-    check('advancePaymentId').isMongoId().withMessage(Messages.WrongId),
-    check('amount').exists().withMessage(Messages.Required),
-    check('amount').isInt().toInt().withMessage('has to be number'),
-  ],
+    updateAdvancePaymentContractor: [
+        check('type').exists().withMessage(Messages.Required),
+        check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+        check('id').exists().withMessage(Messages.Required),
+        check('id').isMongoId().withMessage(Messages.WrongId),
+        check('advancePaymentId').exists().withMessage(Messages.Required),
+        check('advancePaymentId').isMongoId().withMessage(Messages.WrongId),
+        check('amount').exists().withMessage(Messages.Required),
+        check('amount').isInt().toInt().withMessage('has to be number'),
+    ],
 
-  voidAdvancePaymentContractor: [
-    check('type').exists().withMessage(Messages.Required),
-    check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
-    check('advancePaymentId').exists().withMessage(Messages.Required),
-    check('advancePaymentId').isMongoId().withMessage(Messages.WrongId),
-  ],
+    voidAdvancePaymentContractor: [
+        check('type').exists().withMessage(Messages.Required),
+        check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+        check('advancePaymentId').exists().withMessage(Messages.Required),
+        check('advancePaymentId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
-  // REPORT
-  generateIncomeReport: [
-    check('reportData').exists().withMessage(Messages.Required),
-    check('reportData').isInt().toInt().withMessage('has to be number'),
-    check('reportSource').optional().isInt().toInt().withMessage('has to be number')
-  ],
+    // REPORT
+    generateIncomeReport: [
+        check('reportData').exists().withMessage(Messages.Required),
+        check('reportData').isInt().toInt().withMessage('has to be number'),
+        check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+    ],
 
-  generateAccountReceivableReport: [
-    check('reportData').exists().withMessage(Messages.Required),
-    check('reportData').isInt().toInt().withMessage('has to be number'),
-    check('reportSource').optional().isInt().toInt().withMessage('has to be number')
-  ],
+    generateAccountReceivableReport: [
+        check('reportData').exists().withMessage(Messages.Required),
+        check('reportData').isInt().toInt().withMessage('has to be number'),
+        check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+    ],
 
-  generateAccountReceivableDetail: [
-    check('customerId').isMongoId().withMessage(Messages.WrongId),
-  ],
+    generateAccountReceivableDetail: [
+        check('customerId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
-  generateAccountReceivableInvoices: [
-    check('customerId').isMongoId().withMessage(Messages.WrongId),
-    check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
-  ],
+    generateAccountReceivableInvoices: [
+        check('customerId').isMongoId().withMessage(Messages.WrongId),
+        check('jobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
+    ],
 
-  generateReportPdf: [
-    check('reportType').exists().withMessage(Messages.Required),
-    check('reportData').exists().withMessage(Messages.Required),
-    check('reportData').isInt().toInt().withMessage('has to be number'),
-    check('reportSource').optional().isInt().toInt().withMessage('has to be number')
-  ],
+    generateReportPdf: [
+        check('reportType').exists().withMessage(Messages.Required),
+        check('reportData').exists().withMessage(Messages.Required),
+        check('reportData').isInt().toInt().withMessage('has to be number'),
+        check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+    ],
 
-  sendReportEmail: [
-    check('reportType').exists().withMessage(Messages.Required),
-    check('reportData').exists().withMessage(Messages.Required),
-    check('reportData').isInt().toInt().withMessage('has to be number'),
-    check('reportSource').optional().isInt().toInt().withMessage('has to be number'),
-    check('copyToMyself').optional().isBoolean().toBoolean().withMessage('has to be boolean'),
-  ],
+    sendReportEmail: [
+        check('reportType').exists().withMessage(Messages.Required),
+        check('reportData').exists().withMessage(Messages.Required),
+        check('reportData').isInt().toInt().withMessage('has to be number'),
+        check('reportSource').optional().isInt().toInt().withMessage('has to be number'),
+        check('copyToMyself').optional().isBoolean().toBoolean().withMessage('has to be boolean'),
+    ],
 
-  createMemorizedReport: [
-    check('reportType').exists().withMessage(Messages.Required),
-    check('reportType').isInt().toInt().withMessage('has to be number'),
-    check('reportSource').optional().isInt().toInt().withMessage('has to be number')
-  ],
+    createMemorizedReport: [
+        check('reportType').exists().withMessage(Messages.Required),
+        check('reportType').isInt().toInt().withMessage('has to be number'),
+        check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+    ],
 
-  updateMemorizedReport: [
-    check('memorizedReportId').exists().withMessage(Messages.Required),
-    check('memorizedReportId').isMongoId().withMessage(Messages.WrongId)
-  ],
+    updateMemorizedReport: [
+        check('memorizedReportId').exists().withMessage(Messages.Required),
+        check('memorizedReportId').isMongoId().withMessage(Messages.WrongId)
+    ],
 
-  // Code Location
+    // Code Location
 
-  codeLocationTag: [check('nfcTag').exists(), check('customerId').exists()],
+    codeLocationTag: [check('nfcTag').exists(), check('customerId').exists()],
 
-  getLocationTagInfo: [check('nfcTag').exists()],
+    getLocationTagInfo: [check('nfcTag').exists()],
 
-  updateLocationTag: [check('nfcTag').exists(), check('latitude').exists(), check('longitude').exists(), check('nfcTag').exists()],
+    updateLocationTag: [check('nfcTag').exists(), check('latitude').exists(), check('longitude').exists(), check('nfcTag').exists()],
 
-  getLocationTagJobs: [check('nfcTag').exists()],
+    getLocationTagJobs: [check('nfcTag').exists()],
 
-  getOpenServiceTickets: [check('page').exists().isNumeric(), check('pagesize').exists().isNumeric(), check('customerNames').optional(), check('homeOwnerNames').optional(), check('jobTypeTitle').optional(), check('dueDate').optional(), check('ticketId').optional()],
+    getOpenServiceTickets: [check('page').exists().isNumeric(), check('pagesize').exists().isNumeric(), check('customerNames').optional(), check('homeOwnerNames').optional(), check('jobTypeTitle').optional(), check('dueDate').optional(), check('ticketId').optional()],
 
-  getOpenServiceTicketsStream: [check('includeOpenJobRequest').optional().toBoolean()],
+    getOpenServiceTicketsStream: [check('includeOpenJobRequest').optional().toBoolean()],
 
-  // Home Owner
-  createHomeOwner: [
-    check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('firstName').exists().withMessage(Messages.Required),
-    check('email').optional().isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }).withMessage(Messages.InvalidEmail),
-    check('address').exists().withMessage(Messages.Required),
-    check('address').isMongoId().withMessage(Messages.WrongId),
-    check('subdivision').optional().isMongoId().withMessage(Messages.WrongId),
-  ],
+    // Home Owner
+    createHomeOwner: [
+        check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('firstName').exists().withMessage(Messages.Required),
+        check('email').optional().isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false }).withMessage(Messages.InvalidEmail),
+        check('address').exists().withMessage(Messages.Required),
+        check('address').isMongoId().withMessage(Messages.WrongId),
+        check('subdivision').optional().isMongoId().withMessage(Messages.WrongId),
+    ],
 
-  getHomeOwner: [
-    check('id').exists().withMessage(Messages.Required),
-    check('id').isMongoId().withMessage(Messages.WrongId)
-  ],
+    getHomeOwner: [
+        check('id').exists().withMessage(Messages.Required),
+        check('id').isMongoId().withMessage(Messages.WrongId)
+    ],
 
-  getHomeOwners: [
-    check('keyword').optional().isString(),
-    check('address').optional().isMongoId().withMessage(Messages.WrongId),
-    check('subdivision').optional().isMongoId().withMessage(Messages.WrongId),
-  ],
+    getHomeOwners: [
+        check('keyword').optional().isString(),
+        check('address').optional().isMongoId().withMessage(Messages.WrongId),
+        check('subdivision').optional().isMongoId().withMessage(Messages.WrongId),
+    ],
 
-  // Home Owner
-  updateHomeOwner: [
-    check('id').exists().withMessage(Messages.Required),
-    check('id').isMongoId().withMessage(Messages.WrongId),
-    check('email').optional().isEmail().normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }).withMessage(Messages.InvalidEmail),
-    check('firstName').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
-    check('lastName').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
-    check('phone').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
-    check('fax').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
-    check('address').optional().isMongoId().withMessage(Messages.WrongId),
-    check('subdivision').optional().isMongoId().withMessage(Messages.WrongId)
-  ],
+    // Home Owner
+    updateHomeOwner: [
+        check('id').exists().withMessage(Messages.Required),
+        check('id').isMongoId().withMessage(Messages.WrongId),
+        check('email').optional().isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false }).withMessage(Messages.InvalidEmail),
+        check('firstName').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+        check('lastName').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+        check('phone').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+        check('fax').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
+        check('address').optional().isMongoId().withMessage(Messages.WrongId),
+        check('subdivision').optional().isMongoId().withMessage(Messages.WrongId)
+    ],
 
-  // Job location
-  getJobLocation: [
-    check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('id').optional().isMongoId().withMessage(Messages.WrongId)
-  ],
+    // Job location
+    getJobLocation: [
+        check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('id').optional().isMongoId().withMessage(Messages.WrongId)
+    ],
 
-  createJobLocation: [
+    createJobLocation: [
     // check('customerId').exists().withMessage(Messages.Required),
-    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('name').exists().withMessage(Messages.Required)
-  ],
+        check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('name').exists().withMessage(Messages.Required)
+    ],
 
-  updateJobLocation: [
-    check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
-    check('id').exists().withMessage(Messages.Required),
-    check('id').isMongoId().withMessage(Messages.WrongId)
-  ],
+    updateJobLocation: [
+        check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('id').exists().withMessage(Messages.Required),
+        check('id').isMongoId().withMessage(Messages.WrongId)
+    ],
 
-  // Contact
-  addContact: [
-    check('type').exists().withMessage(Messages.Required),
-    check('type').isIn(['Customer', 'JobLocation']).withMessage('Only supported for Customer & JobLocation for now'),
-  ],
+    // Contact
+    addContact: [
+        check('type').exists().withMessage(Messages.Required),
+        check('type').isIn(['Customer', 'JobLocation']).withMessage('Only supported for Customer & JobLocation for now'),
+    ],
 
-  updateContact: [
-    check('_id').exists().withMessage(Messages.Required),
-    check('_id').isMongoId().withMessage(Messages.WrongId),
-    check('isActive').optional().isBoolean().toBoolean()
-  ],
+    updateContact: [
+        check('_id').exists().withMessage(Messages.Required),
+        check('_id').isMongoId().withMessage(Messages.WrongId),
+        check('isActive').optional().isBoolean().toBoolean()
+    ],
 
-  getCustomerAllContacts: [
-    check('customerId').exists().withMessage(Messages.Required),
-    check('customerId').isMongoId().withMessage(Messages.WrongId),
-  ],
+    getCustomerAllContacts: [
+        check('customerId').exists().withMessage(Messages.Required),
+        check('customerId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
-  removeContact: [
-    check('contactId').exists().withMessage(Messages.Required),
-    check('contactId').isMongoId().withMessage(Messages.WrongId),
-    check('type').exists().withMessage(Messages.Required),
-    check('referenceNumber').exists().withMessage(Messages.Required),
-    check('referenceNumber').isMongoId().withMessage(Messages.WrongId),
-  ],
+    removeContact: [
+        check('contactId').exists().withMessage(Messages.Required),
+        check('contactId').isMongoId().withMessage(Messages.WrongId),
+        check('type').exists().withMessage(Messages.Required),
+        check('referenceNumber').exists().withMessage(Messages.Required),
+        check('referenceNumber').isMongoId().withMessage(Messages.WrongId),
+    ],
 
-  // Image
-  deleteImage: [
-    check('type').exists().withMessage(Messages.Required),
-    check('type').isIn(['ServiceTicket', 'Job', 'Technician']).withMessage('Only supported for ServiceTicket & Job for now'),
-    check('id').exists().withMessage(Messages.Required),
-    check('id').isMongoId().withMessage(Messages.WrongId),
-    check('imageId').exists().withMessage(Messages.Required),
-    check('imageId').isMongoId().withMessage(Messages.WrongId)
-  ],
+    // Image
+    deleteImage: [
+        check('type').exists().withMessage(Messages.Required),
+        check('type').isIn(['ServiceTicket', 'Job', 'Technician']).withMessage('Only supported for ServiceTicket & Job for now'),
+        check('id').exists().withMessage(Messages.Required),
+        check('id').isMongoId().withMessage(Messages.WrongId),
+        check('imageId').exists().withMessage(Messages.Required),
+        check('imageId').isMongoId().withMessage(Messages.WrongId)
+    ],
 
-  // Notification
-  getNotifications: [check('isRead').optional().isIn(['ALL', true, false, 1, 0]), check('isDismissed').optional().isIn(['ALL', true, false, 1, 0])],
+    // Notification
+    getNotifications: [check('isRead').optional().isIn(['ALL', true, false, 1, 0]), check('isDismissed').optional().isIn(['ALL', true, false, 1, 0])],
 
-  updateNotification: [check('isRead').optional().isBoolean(), check('isDismissed').optional().isBoolean()],
+    updateNotification: [check('isRead').optional().isBoolean(), check('isDismissed').optional().isBoolean()],
 
-  createIntegrationServiceTicket: [
-    check('source').exists().withMessage(Messages.Required),
-    check('name').exists().withMessage(Messages.Required),
-    check('email').exists().withMessage(Messages.Required),
-    check('email').isEmail().withMessage(Messages.InvalidEmail),
-    check('email').normalizeEmail({ "all_lowercase": true, "gmail_remove_dots": false }),
-    check('street').exists().withMessage(Messages.Required),
-    check('city').exists().withMessage(Messages.Required),
-    check('state').exists().withMessage(Messages.Required),
-    check('zipCode').exists().withMessage(Messages.Required),
-    check('phone').exists().withMessage(Messages.Required)
-  ],
+    createIntegrationServiceTicket: [
+        check('source').exists().withMessage(Messages.Required),
+        check('name').exists().withMessage(Messages.Required),
+        check('email').exists().withMessage(Messages.Required),
+        check('email').isEmail().withMessage(Messages.InvalidEmail),
+        check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false }),
+        check('street').exists().withMessage(Messages.Required),
+        check('city').exists().withMessage(Messages.Required),
+        check('state').exists().withMessage(Messages.Required),
+        check('zipCode').exists().withMessage(Messages.Required),
+        check('phone').exists().withMessage(Messages.Required)
+    ],
 
-  // Chat
-  getJobRequestChats: [
-    param('id').exists().withMessage(Messages.Required),
-    param('id').isMongoId().withMessage(Messages.WrongId),
-  ],
+    // Chat
+    getJobRequestChats: [
+        param('id').exists().withMessage(Messages.Required),
+        param('id').isMongoId().withMessage(Messages.WrongId),
+    ],
 
-  createJobRequestChat: [
-    param('id').exists().withMessage(Messages.Required),
-    param('id').isMongoId().withMessage(Messages.WrongId),
-    param('replyTo').optional().isMongoId().withMessage(Messages.WrongId),
-  ],
+    createJobRequestChat: [
+        param('id').exists().withMessage(Messages.Required),
+        param('id').isMongoId().withMessage(Messages.WrongId),
+        param('replyTo').optional().isMongoId().withMessage(Messages.WrongId),
+    ],
 
-  markReadJobRequestChat: [
-    param('id').exists().withMessage(Messages.Required),
-    param('id').isMongoId().withMessage(Messages.WrongId),
-    check('lastReadChatId').exists().withMessage(Messages.Required),
-    check('lastReadChatId').isMongoId().withMessage(Messages.WrongId),
-  ],
+    markReadJobRequestChat: [
+        param('id').exists().withMessage(Messages.Required),
+        param('id').isMongoId().withMessage(Messages.WrongId),
+        check('lastReadChatId').exists().withMessage(Messages.Required),
+        check('lastReadChatId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
-  updateJobCosting: [check('costingTierId').exists().withMessage('is required')],
+    updateJobCosting: [check('costingTierId').exists().withMessage('is required')],
 
-  updateJobCommission: [
-    check('balance').exists().withMessage(Messages.Required),
-  ],
-}
+    updateJobCommission: [
+        check('balance').exists().withMessage(Messages.Required),
+    ],
+};
 

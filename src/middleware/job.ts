@@ -48,6 +48,6 @@ export const getTechnicianContractor = () => {
         }
 
         return next();
-    }
+    };
 
-}
+};

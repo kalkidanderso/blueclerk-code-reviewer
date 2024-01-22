@@ -6,4 +6,4 @@ export const compareUserPassword = async (user: IUser, password: string) => {
         return isMatching;
     });
 
-}
+};

@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IScan extends Document {
 
@@ -39,7 +39,7 @@ const ScanSchema = new Schema({
         type: Date
     }
 
-})
+});
 
 //Indexes
 ScanSchema.index({ job: 1 });
@@ -47,4 +47,4 @@ ScanSchema.index({ equipment: 1 });
 ScanSchema.index({ tag: 1 });
 ScanSchema.index({ user: 1 });
 
-export const Scan = mongoose.model<IScan>('Scan', ScanSchema)
+export const Scan = mongoose.model<IScan>('Scan', ScanSchema);

@@ -1,12 +1,12 @@
-import mongoose, {Document, Schema} from 'mongoose'
+import mongoose, {Document, Schema} from 'mongoose';
 
 export interface IOrder extends Document {
     info: {
-        noOfTags: String
+        noOfTags: string
         dateTime:  Date
-        total: String
-        tax: String
-        status: Number
+        total: string
+        tax: string
+        status: number
     }
     address: {
         street: string
@@ -15,7 +15,7 @@ export interface IOrder extends Document {
         zipCode: string
     }
     company: Schema.Types.ObjectId
-    stripeChargeId: String
+    stripeChargeId: string
 }
 
 const OrderSchema = new Schema({
@@ -42,10 +42,10 @@ const OrderSchema = new Schema({
         required: true
     },
     stripeChargeId: String
-})
+});
 
 
 //Indexes
 OrderSchema.index({ company: 1 });
 
-export const Order = mongoose.model<IOrder>('Order', OrderSchema )
+export const Order = mongoose.model<IOrder>('Order', OrderSchema );

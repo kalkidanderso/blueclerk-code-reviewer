@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ICompanyEquipment extends Document {
 
@@ -41,7 +41,7 @@ const CompanyEquipmentSchema = new Schema({
         required: true
     },
 
-})
+});
 
 //Indexes
 CompanyEquipmentSchema.index({ company: 1 });
@@ -51,4 +51,4 @@ CompanyEquipmentSchema.index({ 'info.nfcTag': 1, company: 1 });
 CompanyEquipmentSchema.index({ 'info.qrCode': 1, company: 1 });
 CompanyEquipmentSchema.index({ 'info.nfcTag': 1, 'info.qrCode': 1 });
 
-export const CompanyEquipment = mongoose.model<ICompanyEquipment>('CompanyEquipment', CompanyEquipmentSchema)
+export const CompanyEquipment = mongoose.model<ICompanyEquipment>('CompanyEquipment', CompanyEquipmentSchema);

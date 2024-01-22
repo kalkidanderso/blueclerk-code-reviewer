@@ -1,5 +1,5 @@
-import { Request, Response } from 'express'
-import { Status, Messages, QBEntityNames, QBEntityOperations } from '../common/constants'
+import { Request, Response } from 'express';
+import { Status, Messages, QBEntityNames, QBEntityOperations } from '../common/constants';
 
 import { ICompany, IQBCompany, Company } from '../models/Company';
 import { _resetCompanyQB } from './company';
@@ -18,8 +18,8 @@ import { deleteBCInvoice, updateBCInvoice, voidBCInvoice } from './quickbook.inv
 import * as Sentry from '@sentry/node';
 import { IQBAccount } from 'src/models/QuickBook';
 
-var QuickBooks = require('node-quickbooks')
-var OAuthClient = require("intuit-oauth");
+const QuickBooks = require('node-quickbooks');
+const OAuthClient = require('intuit-oauth');
 
 // ===========================================
 // =======[ PRIVATE & GENERIC FUNCTION ]======
@@ -39,14 +39,14 @@ export const _getQbo = (oauthToken: string, realmId: string, refreshToken: strin
         14, // set minorversion, or null for the latest version
         '2.0', //oAuth version
         refreshToken
-    )
+    );
 };
 
 export const _refreshToken = (req: Request, res: Response, company: ICompany, next: (error: number, errorMessage: string, company: ICompany) => void) => {
 
     const { QB_ENVIRONMENT, QB_CLIENT_ID, QB_CLIENT_SECRET, QB_REDIRECT_URI } = process.env;
 
-    var oauthClient = new OAuthClient({
+    const oauthClient = new OAuthClient({
         clientId: QB_CLIENT_ID,
         clientSecret: QB_CLIENT_SECRET,
         environment: QB_ENVIRONMENT,
@@ -56,11 +56,11 @@ export const _refreshToken = (req: Request, res: Response, company: ICompany, ne
     oauthClient
         .refreshUsingToken(company.qbRefreshToken)
         .then(function (authResponse: any) {
-            const refresh_token = authResponse.token.refresh_token
-            const access_token = authResponse.token.access_token
+            const refresh_token = authResponse.token.refresh_token;
+            const access_token = authResponse.token.access_token;
 
-            var expiry = new Date();
-            expiry.setDate(expiry.getDate() + 99)
+            const expiry = new Date();
+            expiry.setDate(expiry.getDate() + 99);
 
             company.updateOne({
                 qbAccessToken: access_token,
@@ -78,8 +78,8 @@ export const _refreshToken = (req: Request, res: Response, company: ICompany, ne
                     }
 
                     return next(1, '', newCompany);
-                })
-            })
+                });
+            });
         })
         .catch(function (err: any) {
             Sentry.captureException(err);
@@ -89,13 +89,13 @@ export const _refreshToken = (req: Request, res: Response, company: ICompany, ne
             return next(err.authResponse?.response?.status || Status.Error, 'Unable to refresh the token', null);
         });
 
-}
+};
 
 export const get = function (obj: any, key: any) {
-    return key.split(".").reduce(function (o: any, x: any) {
-        return (typeof o == "undefined" || o === null) ? '' : o[x];
+    return key.split('.').reduce(function (o: any, x: any) {
+        return (typeof o == 'undefined' || o === null) ? '' : o[x];
     }, obj);
-}
+};
 export const getQBAccounts = (req: Request, res: Response) => {
 
 
@@ -103,44 +103,44 @@ export const getQBAccounts = (req: Request, res: Response) => {
 
     Company.findById(req.companyId, (err: any, company: ICompany,next: (req: Request, res: Response, error: number, errorMessage: string, customers: any) => void) => {
         if (err) {
-            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
         }
         if (company == undefined || company == null) {
-            return res.json({ 'status': Status.Error, 'message': "Invalid company id" })
+            return res.json({ 'status': Status.Error, 'message': 'Invalid company id' });
         }
         _refreshToken(req, res, company, (error: number, newErrorMessage: string, newCompany: ICompany) => {
 
             if (error == 0) {
-                next(req, res, error, newErrorMessage, [])
-                return
+                next(req, res, error, newErrorMessage, []);
+                return;
             }
 
             if (error == 400) {
-                next(req, res, error, newErrorMessage, [])
-                return
+                next(req, res, error, newErrorMessage, []);
+                return;
             }
 
 
             const qbo = _getQbo(newCompany.qbAccessToken, newCompany.realmId, newCompany.qbRefreshToken);
-            qbo.findAccounts({AccountType :"Income"},(err:any,accounts:IQBAccount)=>{
+            qbo.findAccounts({AccountType :'Income'},(err:any,accounts:IQBAccount)=>{
                 
                 if(err){
-                        console.log('== _createQBCustomer > qbo.findCustomers > ERROR ==');
-                        console.log('== err.Fault:', err.Fault);
+                    console.log('== _createQBCustomer > qbo.findCustomers > ERROR ==');
+                    console.log('== err.Fault:', err.Fault);
                     
-                        const ErrorMessage=
+                    const ErrorMessage=
                         err.Fault?.Error[0]?.Message
                         || err.fault?.error[0]?.detail
                         || err.fault?.error[0]?.message
                         || Messages.GenericError;
-                        null
-                    return res.json({ 'status': Status.Error, 'message': ErrorMessage?ErrorMessage:Messages.GenericError })
+                    null;
+                    return res.json({ 'status': Status.Error, 'message': ErrorMessage?ErrorMessage:Messages.GenericError });
 
                 }
                 const accountsData=<IQBAccount[]>accounts?.QueryResponse?.Account;
-                return res.json({ 'status': Status.Success, 'message': "QB Accounts fetched",accounts:accountsData })
+                return res.json({ 'status': Status.Success, 'message': 'QB Accounts fetched',accounts:accountsData });
 
-            })
+            });
 
         });
       
@@ -153,45 +153,45 @@ export const getQBAccounts = (req: Request, res: Response) => {
 
         //     return res.json({ 'status': Status.Success, 'authUri': authUri })
         // })
-    })
-}
+    });
+};
 export const getQBUri = (req: Request, res: Response) => {
 
     const params = req.body;
 
     const { QB_ENVIRONMENT, QB_CLIENT_ID, QB_CLIENT_SECRET, QB_REDIRECT_URI } = process.env;
 
-    var oauthClient = new OAuthClient({
+    const oauthClient = new OAuthClient({
         clientId: QB_CLIENT_ID,
         clientSecret: QB_CLIENT_SECRET,
         environment: QB_ENVIRONMENT,
         redirectUri: params.redirectUri || QB_REDIRECT_URI,
     });
 
-    var authUri = oauthClient.authorizeUri({
+    const authUri = oauthClient.authorizeUri({
         scope: [OAuthClient.scopes.Accounting],
         state: req.companyId,
     });
 
     Company.findById(req.companyId, (err: any, company: ICompany) => {
         if (err) {
-            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+            return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
         }
         if (company == undefined || company == null) {
-            return res.json({ 'status': Status.Error, 'message': "Invalid company id" })
+            return res.json({ 'status': Status.Error, 'message': 'Invalid company id' });
         }
 
         company.updateOne({
             socketId: params.sessionID
         }, (err: any, raw: any) => {
             if (err) {
-                return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
             }
 
-            return res.json({ 'status': Status.Success, 'authUri': authUri })
-        })
-    })
-}
+            return res.json({ 'status': Status.Success, 'authUri': authUri });
+        });
+    });
+};
 
 export const getCallBackToken = (req: Request, res: Response, sio: any) => {
 
@@ -199,7 +199,7 @@ export const getCallBackToken = (req: Request, res: Response, sio: any) => {
 
     const { QB_ENVIRONMENT, QB_CLIENT_ID, QB_CLIENT_SECRET, QB_REDIRECT_URI } = process.env;
 
-    var oauthClient = new OAuthClient({
+    const oauthClient = new OAuthClient({
         clientId: QB_CLIENT_ID,
         clientSecret: QB_CLIENT_SECRET,
         environment: QB_ENVIRONMENT,
@@ -212,17 +212,17 @@ export const getCallBackToken = (req: Request, res: Response, sio: any) => {
 
             // var oauth2_token_json: any = JSON.stringify(authResponse.getJson(), null, 2);
 
-            const companyId = req.query.state
-            const refresh_token = authResponse.token.refresh_token
-            const access_token = authResponse.token.access_token
-            const realmId = req.query.realmId
+            const companyId = req.query.state;
+            const refresh_token = authResponse.token.refresh_token;
+            const access_token = authResponse.token.access_token;
+            const realmId = req.query.realmId;
 
             Company.findById(companyId, (err: any, company: ICompany) => {
                 if (err) {
-                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                    return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                 }
                 if (company == undefined || company == null) {
-                    return res.json({ 'status': Status.Error, 'message': "Invalid company id" })
+                    return res.json({ 'status': Status.Error, 'message': 'Invalid company id' });
                 }
 
                 // Initiate node-quickbooks object with the refreshed company token
@@ -233,7 +233,7 @@ export const getCallBackToken = (req: Request, res: Response, sio: any) => {
 
                     const qbCompany: IQBCompany = data?.QueryResponse?.CompanyInfo[0];
 
-                    var expiry = new Date();
+                    const expiry = new Date();
                     expiry.setDate(expiry.getDate() + 99);
                     company.updateOne({
                         qbAccessToken: access_token,
@@ -246,22 +246,22 @@ export const getCallBackToken = (req: Request, res: Response, sio: any) => {
                     }, (err: any, raw: any) => {
                         if (err) {
                             sio.emit(company.socketId, { 'status': Status.Error, 'message': Messages.GenericError });
-                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError })
+                            return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                         }
 
                         // sio.emit("authToken", oauth2_token_json);
 
                         sio.emit(company.socketId, { 'status': Status.Success, 'message': 'Quickbooks Connected Successfully' });
                         return res.json({ 'status': Status.Success, 'message': 'Quickbooks Connected Successfully' });
-                    })
-                })
-            })
+                    });
+                });
+            });
         })
         .catch(function (err: any) {
             Sentry.captureException(err);
             return res.json({ 'status': Status.Error, 'message': err.error_description || err.originalMessage || err.message || Messages.GenericError });
         });
-}
+};
 
 export const disconnectQB = async (req: Request, res: Response) => {
 
@@ -276,7 +276,7 @@ export const disconnectQB = async (req: Request, res: Response) => {
      */
     const message = company.qbAuthorized
         ? `Company successfully disconnected from QuickBooks: ${company.qbCompanyName}.`
-        : `Company already disconnected.`;
+        : 'Company already disconnected.';
 
     // Remove all quickbookId across company's stuff
     _resetCompanyQB(company);
@@ -289,7 +289,7 @@ export const disconnectQB = async (req: Request, res: Response) => {
 
     return res.json({ status: Status.Success, message });
 
-}
+};
 
 /**
  * Endpoint to handle webhook action from Quickbooks
@@ -330,95 +330,95 @@ export const blueclerkSyncWebhook = async (req: Request, res: Response) => {
         // Handle Entity Event Trigger
         switch (eventEntity?.name) {
 
-            // => CUSTOMER ENTITY EVENT
-            case QBEntityNames.CUSTOMER:
-                switch (eventEntity?.operation) {
-                    // => CUSTOMER CREATE ACTION
-                    case QBEntityOperations.CREATE:
-                        // Create BC Customer here
-                        await createBCCustomer(req, res, company, eventEntity?.id);
-                        break;
-
-                    case QBEntityOperations.UPDATE:
-                        // Update BC Customer / Job Location here
-                        await updateBCCustomer(req, res, company, eventEntity?.id, (err, errMsg, customer, jobLocation) => {
-                            // Implement another actions here
-                        });
-                        break;
-
-                    default:
-                        break;
-                }
+        // => CUSTOMER ENTITY EVENT
+        case QBEntityNames.CUSTOMER:
+            switch (eventEntity?.operation) {
+            // => CUSTOMER CREATE ACTION
+            case QBEntityOperations.CREATE:
+                // Create BC Customer here
+                await createBCCustomer(req, res, company, eventEntity?.id);
                 break;
 
-            // => ITEM ENTITY EVENT
-            case QBEntityNames.ITEM:
-                switch (eventEntity?.operation) {
-                    // => ITEM CREATE ACTION
-                    case QBEntityOperations.CREATE:
-                        // Create BC Job Type and Item here
-                        createBCItem(req, res, company, eventEntity?.id);
-                        break;
-
-                    case QBEntityOperations.UPDATE:
-                        // Update BC Job Type and Item here
-                        updateBCItem(req, res, company, eventEntity?.id);
-                        break;
-
-                    default:
-                        break;
-                }
-
-            case QBEntityNames.INVOICE:
-                switch (eventEntity?.operation) {
-                    case QBEntityOperations.UPDATE:
-                        // Update BC Invoice here
-                        // updateBCInvoice(req, res, company, eventEntity?.id);
-                        break;
-
-                    case QBEntityOperations.VOID:
-                        // Void BC Invoice here
-                        voidBCInvoice(req, res, company, eventEntity?.id);
-                        break;
-
-                    case QBEntityOperations.DELETE:
-                        // Delete BC Invoice here
-                        deleteBCInvoice(req, res, company, eventEntity?.id);
-                        break;
-                }
-            // => PAYMENT ENTITY EVENT
-            case QBEntityNames.PAYMENT:
-                switch (eventEntity?.operation) {
-                    // => PAYMENT CREATE ACTION
-                    case QBEntityOperations.CREATE:
-                        // Call quickbook payment to handle BC Payment
-                        createBCPayment(req, res, company, eventEntity?.id, (err, errMsg, payments) => {
-                            // Implement another actions here
-                        });
-                        break;
-
-                    default:
-                        break;
-                }
+            case QBEntityOperations.UPDATE:
+                // Update BC Customer / Job Location here
+                await updateBCCustomer(req, res, company, eventEntity?.id, (err, errMsg, customer, jobLocation) => {
+                    // Implement another actions here
+                });
                 break;
-
-            // => PAYMENT TERM ENTITY EVENT
-            case QBEntityNames.TERM:
-                switch (eventEntity?.operation) {
-                    // => PAYMENT TERM CREATE ACTION
-                    case QBEntityOperations.CREATE:
-                        // Create BC Payment Term here
-                        break;
-
-                    default:
-                        break;
-                }
 
             default:
                 break;
+            }
+            break;
+
+            // => ITEM ENTITY EVENT
+        case QBEntityNames.ITEM:
+            switch (eventEntity?.operation) {
+            // => ITEM CREATE ACTION
+            case QBEntityOperations.CREATE:
+                // Create BC Job Type and Item here
+                createBCItem(req, res, company, eventEntity?.id);
+                break;
+
+            case QBEntityOperations.UPDATE:
+                // Update BC Job Type and Item here
+                updateBCItem(req, res, company, eventEntity?.id);
+                break;
+
+            default:
+                break;
+            }
+
+        case QBEntityNames.INVOICE:
+            switch (eventEntity?.operation) {
+            case QBEntityOperations.UPDATE:
+                // Update BC Invoice here
+                // updateBCInvoice(req, res, company, eventEntity?.id);
+                break;
+
+            case QBEntityOperations.VOID:
+                // Void BC Invoice here
+                voidBCInvoice(req, res, company, eventEntity?.id);
+                break;
+
+            case QBEntityOperations.DELETE:
+                // Delete BC Invoice here
+                deleteBCInvoice(req, res, company, eventEntity?.id);
+                break;
+            }
+            // => PAYMENT ENTITY EVENT
+        case QBEntityNames.PAYMENT:
+            switch (eventEntity?.operation) {
+            // => PAYMENT CREATE ACTION
+            case QBEntityOperations.CREATE:
+                // Call quickbook payment to handle BC Payment
+                createBCPayment(req, res, company, eventEntity?.id, (err, errMsg, payments) => {
+                    // Implement another actions here
+                });
+                break;
+
+            default:
+                break;
+            }
+            break;
+
+            // => PAYMENT TERM ENTITY EVENT
+        case QBEntityNames.TERM:
+            switch (eventEntity?.operation) {
+            // => PAYMENT TERM CREATE ACTION
+            case QBEntityOperations.CREATE:
+                // Create BC Payment Term here
+                break;
+
+            default:
+                break;
+            }
+
+        default:
+            break;
         }
     }
 
     return res.status(200).json({});
 
-}
+};
