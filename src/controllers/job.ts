@@ -14,7 +14,13 @@ import {
     DefaultPageSize,
     JobRequestStatus,
 } from '../common/constants';
-import { sendJobEmailToAssignee, sendJobEmailToCustomer, sendReportEmailToCustomer, sendSMS } from '../services/aws';
+import {
+    sendJobEmailToAssignee,
+    sendJobEmailToCustomer,
+    sendReportEmailToCustomer,
+    sendSMS,
+    translateText,
+} from '../services/aws';
 import { IContact } from '../common/contact';
 
 import { Job, IJob, ITask, ITaskJobType, TaskEntry } from '../models/Job';
@@ -4691,11 +4697,6 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
                 status: Status.Error,
                 message: 'Note is required when you reschedule or make the job incomplete',
             });
-        } else {
-            if (params.language == 'es') {
-                const text = await translateText('es', 'en', params.note);
-                params.note = text.TranslatedText;
-            }
         }
 
         switch (params.status) {
@@ -4809,6 +4810,14 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
     job.track.push({ user: user._id, action, note: params.note, date: new Date() });
 
     try {
+        console.log(params.comment);
+        if (params.language == 'es') {
+            const text = await translateText('es', 'en', params.comment);
+            console.log(text.TranslatedText);
+            params.comment = text.TranslatedText + ' Original Text : (' + params.comment + ')';
+            params.comment = text.TranslatedText;
+        }
+
         task.comment = params.comment;
         if (req.files) {
             const paramsImageFile = JSON.parse(JSON.stringify(req.files));
