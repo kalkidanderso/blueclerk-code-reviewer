@@ -36,9 +36,13 @@ export const createHomeOwner = async (req: Request, res: Response) => {
     }
 
     const jobSite = await JobSite.findById(params.address)
-    let homeOwner: IHomeOwner | undefined = undefined
+    // Define the customer if there is a jobSite
+    if (!jobSite) {
+        return res.json({ status: Status.Error, message: 'A valid address/jobsite should be provided' });
+    }
+    
     // Construct the basic Home Owner object
-    let homeOwnerObj = {
+    const homeOwner = new HomeOwner({
         profile: {
             firstName: params.firstName?.trim(),
             lastName: params.lastName?.trim(),
@@ -54,19 +58,8 @@ export const createHomeOwner = async (req: Request, res: Response) => {
         },
         subdivision: params.subdivision,
         address: params.address,
-    }
-
-    // Define the customer if there is a jobSite
-    if (jobSite) {
-        homeOwner = new HomeOwner({
-            ...homeOwnerObj,
-            customer: jobSite.customerId
-        });
-    }
-    else {
-        return res.json({ status: Status.Error, message: 'A valid address/jobsite should be provided' });
-    }
-
+        customer: jobSite.customerId
+    })
 
     await homeOwner.save();
     if (companyId) {
