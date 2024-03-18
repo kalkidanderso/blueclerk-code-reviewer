@@ -53,6 +53,7 @@ export interface IServiceTicket extends Document {
         deliveryStatus: boolean
     }],
     lastEmailSent?: Date
+    request?: Schema.Types.ObjectId | any
 }
 
 const ServiceTicketSchema = new Schema({
@@ -217,7 +218,11 @@ const ServiceTicketSchema = new Schema({
     lastEmailSent: {
         type: Date
     },
-});
+    request: {
+        type: Schema.Types.ObjectId,
+        ref: 'JobRequest',
+    },
+})
 
 //Indexes
 ServiceTicketSchema.index({ customer: 1 });
