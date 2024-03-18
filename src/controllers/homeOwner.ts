@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import * as helper from '../services/helper';
 import { Status } from '../common/constants';
-import { HomeOwner } from '../models/HomeOwner';
+import { HomeOwner, IHomeOwner } from '../models/HomeOwner';
 import { Company } from '../models/Company';
 import { CompanyHomeOwner } from '../models/companyHomeOwner';
-
+import { JobSite } from '../models/JobSite';
 /**
  * CREATE NEW HOME OWNER
  */
@@ -35,8 +35,10 @@ export const createHomeOwner = async (req: Request, res: Response) => {
         companyId = company._id;
     }
 
+    const jobSite = await JobSite.findById(params.address)
+    let homeOwner: IHomeOwner | undefined = undefined
     // Construct the basic Home Owner object
-    const homeOwner = new HomeOwner({
+    let homeOwnerObj = {
         profile: {
             firstName: params.firstName?.trim(),
             lastName: params.lastName?.trim(),
@@ -51,8 +53,20 @@ export const createHomeOwner = async (req: Request, res: Response) => {
             fax: params.fax?.trim()
         },
         subdivision: params.subdivision,
-        address: params.address
-    });
+        address: params.address,
+    }
+
+    // Define the customer if there is a jobSite
+    if (jobSite) {
+        homeOwner = new HomeOwner({
+            ...homeOwnerObj,
+            customer: jobSite.customerId
+        });
+    }
+    else {
+        return res.json({ status: Status.Error, message: 'A valid address/jobsite should be provided' });
+    }
+
 
     await homeOwner.save();
     if (companyId) {
