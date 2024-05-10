@@ -436,6 +436,35 @@
         }
       }
     },
+    "/customers/name": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Get customers' names by query",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/logout": {
       "post": {
         "tags": [

@@ -5,7 +5,7 @@ import { Status, Messages, Role, AccountTypes } from '../common/constants';
 import { Company, ICompany } from '../models/Company';
 import { User, IUser } from '../models/User';
 import { Contact } from '../models/Contact';
-import { Customer, ICustomer, IQBCustomer } from '../models/Customer';
+import { Customer, ECustomerTypes, ICustomer, IQBCustomer } from '../models/Customer';
 import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer';
 import { Estimate } from '../models/Estimate';
 import { PurchaseOrder } from '../models/PurchaseOrder';
@@ -19,13 +19,13 @@ import { IPriceTier } from '../models/PriceTier';
 import { Invoice } from '../models/Invoice';
 import { Payment } from '../models/Payment';
 import { _createQBCustomer, _updateQBCustomer, _inactivateQBCustomers } from '../controllers/quickbook.customer';
-import { _getQBInvoices, _updateQBInvoice, _transferQBInvoices, _countQBInvoices } from '../controllers/quickbook.invoice';
-import { _getQBPayments, _updateQBPayment, _transferQBPayments, _countQBPayments } from '../controllers/quickbook.payment';
+import { _transferQBInvoices, _countQBInvoices } from '../controllers/quickbook.invoice';
+import { _getQBPayments, _transferQBPayments, _countQBPayments } from '../controllers/quickbook.payment';
 import { _refreshToken } from './quickbook';
-import { createCustomerContact } from './contact';
-import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin';
+import { CustomerAdmin } from '../models/CustomerAdmin';
 import { SupplierBuilder, ISupplierBuilder } from '../models/SupplierBuilder';
 import * as Sentry from '@sentry/node';
+import XLSX from 'xlsx';
 
 /**
  * To reset Customer quickbookId,
@@ -964,7 +964,6 @@ export const exportCustomersToExcel = async (req: Request, res: Response) => {
     const customers = await _getDataCustomersToExport(company);
     const rows = customers.map((customer: any) => _converCustomerToRowExcel(customer))
         .filter((row: any) => row.name && row.name !== '');
-    const XLSX = require('xlsx');
     const worksheet = XLSX.utils.json_to_sheet(rows);
     const headers = ['Customer Name', 'Email', 'Phone', 'Street', 'City', 'State', 'Zip', 'Pricing Tier', 'Payment Term', 'Active', 'PO Required'];
     XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: 'A1' });
@@ -1105,4 +1104,24 @@ const _converCustomerToRowExcel = (customer: any): any => {
         row.paymentTermName = payT.name;
     }
     return row;
+};
+
+export const getCustomerNames = async(req: Request, res: Response): Promise<Response> => {
+    const { keyword }: { keyword: string } = req.query;
+    
+    const keywordRegex = { $regex: keyword, $options: '$i' };
+    const query = {
+        '$and': [
+            { 'type': ECustomerTypes.BUILDER },
+            {
+                '$or': [
+                    { 'profile.displayName': keywordRegex },
+                    { 'info.email': keywordRegex },
+                ]
+            }
+        ]
+    };
+
+    const customers = await Customer.find({ ...query }, 'profile.displayName info.email');
+    return res.json({ status: Status.Success, customers });
 };

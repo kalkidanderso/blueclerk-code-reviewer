@@ -104,6 +104,12 @@ export default function (sio: any) {
         isLogin(),
         userController.logout
     );
+    router.get(
+        '/customers/name',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        validate(Validations.getCustomersNames),
+        customerController.getCustomerNames);
 
     router.post(
         '/subscribe',
