@@ -9,8 +9,11 @@ import { IJobCosting } from './JobCosting';
 import moment from 'moment';
 import { Role } from 'src/common/constants';
 
-export interface ICustomer extends Document {
+export enum ECustomerTypes {
+    BUILDER = 'Builder',
+}
 
+export interface ICustomer extends Document {
     profile: {
         firstName: string
         lastName: string
@@ -72,6 +75,7 @@ export interface ICustomer extends Document {
     admin: Schema.Types.ObjectId | IUser
     isPORequired?: boolean
     notes?: string
+    type: ECustomerTypes
 }
 
 export interface IQBCustomer {
@@ -264,6 +268,11 @@ const CustomerSchema = new Schema({
     notes: {
         type: String,
     },
+    type: {
+        type: String,
+        enum: Object.values(ECustomerTypes),
+        default: ECustomerTypes.BUILDER
+    }
 });
 
 //Indexes
