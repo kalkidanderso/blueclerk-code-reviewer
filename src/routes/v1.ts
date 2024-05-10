@@ -106,10 +106,10 @@ export default function (sio: any) {
     );
     router.get(
         '/customers/name',
-        passport.authenticate('jwt', { session: false }),
         isLogin(),
         validate(Validations.getCustomersNames),
-        customerController.getCustomerNames);
+        customerController.getCustomerNames
+    );
 
     router.post(
         '/subscribe',

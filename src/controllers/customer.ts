@@ -1109,10 +1109,10 @@ const _converCustomerToRowExcel = (customer: any): any => {
 export const getCustomerNames = async(req: Request, res: Response): Promise<Response> => {
     const { keyword }: { keyword: string } = req.query;
     
-    const keywordRegex = { $regex: keyword, $options: '$i' };
+    const keywordRegex = { $regex: keyword, $options: 'i' };
     const query = {
         '$and': [
-            { 'type': ECustomerTypes.BUILDER },
+            //TODO { 'type': ECustomerTypes.BUILDER },
             {
                 '$or': [
                     { 'profile.displayName': keywordRegex },
@@ -1122,6 +1122,6 @@ export const getCustomerNames = async(req: Request, res: Response): Promise<Resp
         ]
     };
 
-    const customers = await Customer.find({ ...query }, 'profile.displayName info.email');
+    const customers = await Customer.find({ ...query }, 'profile.displayName');
     return res.json({ status: Status.Success, customers });
 };
