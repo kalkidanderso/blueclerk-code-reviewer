@@ -119,13 +119,13 @@ export const createCustomer = async (req: Request, res: Response) => {
             }) : [];
 
             User.find({ _id: { $in: customerIds } },
-                'info.email',
+                'profile.displayName',
                 async (err: any, users: IUser[]) => {
 
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                     }
-                    if (users.length === 0 || (users.findIndex((element: any) => element?.info?.email === customer?.info?.email) < 0)) {
+                    if (users.length === 0 || (users.findIndex((element: any) => element?.profile?.displayName === customer?.profile?.displayName) < 0)) {
                         // Create contact customer
                         const customerAdmin = await new CustomerAdmin({
                             auth: {
@@ -190,7 +190,7 @@ export const createCustomer = async (req: Request, res: Response) => {
                             });
                         });
                     } else {
-                        return res.json({ 'status': Status.Error, 'message': 'This email is already registered so please try with other email again' });
+                        return res.json({ 'status': Status.Error, 'message': 'This name is already registered so please try with other name again' });
                     }
 
                 });
