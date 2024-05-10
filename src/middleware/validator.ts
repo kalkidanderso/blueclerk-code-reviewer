@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { check, param, validationResult, ValidationChain } from 'express-validator';
+import { check, param, validationResult, ValidationChain, query } from 'express-validator';
 import { Status, Messages, JobStatus } from '../common/constants';
-
 
 const uniq = (a: any) => {
     return a.sort().filter((item: any, pos: any, ary: any) => {
@@ -852,5 +851,12 @@ export const Validations = {
     updateJobCommission: [
         check('balance').exists().withMessage(Messages.Required),
     ],
+
+    getCustomersNames: [
+        query('keyword')
+            .exists().withMessage(Messages.Required)
+            .isString().withMessage('Only letters and digits allowed in title.')
+            .trim()
+    ]
 };
 

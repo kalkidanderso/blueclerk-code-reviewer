@@ -104,6 +104,12 @@ export default function (sio: any) {
         isLogin(),
         userController.logout
     );
+    router.get(
+        '/customers/name',
+        isLogin(),
+        validate(Validations.getCustomersNames),
+        customerController.getCustomerNames
+    );
 
     router.post(
         '/subscribe',
