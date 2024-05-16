@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import { User, IUser} from './User';
+import { IUser} from './User';
 import { IContact } from '../common/contact';
 import { IItem } from '../models/Item';
 import { IPriceTier } from '../models/PriceTier';
@@ -76,6 +76,7 @@ export interface ICustomer extends Document {
     isPORequired?: boolean
     notes?: string
     type: ECustomerTypes
+    companyId?: Schema.Types.ObjectId
 }
 
 export interface IQBCustomer {
@@ -272,6 +273,11 @@ const CustomerSchema = new Schema({
         type: String,
         enum: Object.values(ECustomerTypes),
         default: ECustomerTypes.BUILDER
+    },
+    companyId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Company',
+        required: false
     }
 });
 
