@@ -70,8 +70,8 @@ export const createCustomer = async (req: Request, res: Response) => {
     }
 
     // Create new builder company and attach it to the created customer
-    let companyCustomerId;
-    if(params.type === ECustomerTypes.BUILDER) {
+    let companyCustomerId = params.companyId;
+    if(!companyCustomerId && params.type === ECustomerTypes.BUILDER) {
         const chargeDate = new Date();   
         chargeDate.setDate(chargeDate.getDate() + 30);
         const companyCustomer = new Company({
@@ -255,8 +255,8 @@ export const _createCustomer = async (req: Request, res: Response, next: (err: a
     }
 
     try {
-        let companyCustomerId;
-        if(params.type === ECustomerTypes.BUILDER) {
+        let companyCustomerId = params.companyId;
+        if(!companyCustomerId && params.type === ECustomerTypes.BUILDER) {
             // Create new builder company and attach it to the created customer
             const chargeDate = new Date();   
             chargeDate.setDate(chargeDate.getDate() + 30);
