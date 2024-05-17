@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { check, param, validationResult, ValidationChain, query } from 'express-validator';
 import { Status, Messages, JobStatus } from '../common/constants';
+import { ECustomerTypes } from '../models/Customer';
 
 const uniq = (a: any) => {
     return a.sort().filter((item: any, pos: any, ary: any) => {
@@ -169,7 +170,11 @@ export const Validations = {
     createEquipmentBrand: [check('title').exists()],
 
     //Customers
-    createCustomer: [check('name').exists(), check('email').optional({ nullable: true, checkFalsy: true }).isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
+    createCustomer: [
+        check('name').exists(),
+        check('email').optional({ nullable: true, checkFalsy: true }).isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false }),
+        check('type').exists().isIn([ECustomerTypes.BUILDER])
+    ],
 
     updateCustomer: [check('customerId').exists(), check('email').optional({ nullable: true, checkFalsy: true }).isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
 

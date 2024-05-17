@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
-import { Status, Messages, Role, AccountTypes } from '../common/constants';
+import { Status, Messages, Role, AccountTypes, UserPermissions } from '../common/constants';
 
-import { Company, ICompany } from '../models/Company';
+import { Company, CompanyTypes, ICompany } from '../models/Company';
 import { User, IUser } from '../models/User';
 import { Contact } from '../models/Contact';
 import { Customer, ECustomerTypes, ICustomer, IQBCustomer } from '../models/Customer';
@@ -69,6 +69,39 @@ export const createCustomer = async (req: Request, res: Response) => {
         }
     }
 
+    // Create new builder company and attach it to the created customer
+    let companyCustomerId;
+    if(params.type === ECustomerTypes.BUILDER) {
+        const chargeDate = new Date();   
+        chargeDate.setDate(chargeDate.getDate() + 30);
+        const companyCustomer = new Company({
+            info: {
+                companyName: params.name,  
+                industry: null,
+                logoUrl: '',
+                companyEmail: params.email, 
+            },
+            address: {
+                street: '',
+                city: '',
+                state: '',
+                zipCode: '',
+            },
+            contact: {
+                phone: params.phone,
+            },
+            userPermissions: UserPermissions,
+            chargeDate: chargeDate,
+            maxTechnicians: 0,
+            maxAdmins: 1,
+            maxManagers: 0,
+            maxOfficeAdmins: 0,
+            type: CompanyTypes.BUILDER
+        });
+        await companyCustomer.save();
+        companyCustomerId = companyCustomer._id;
+    }
+
     const data: any = {
         info: {
             email: params.email,
@@ -98,7 +131,9 @@ export const createCustomer = async (req: Request, res: Response) => {
         itemTier: companyTier && companyTier.tier,
         contactName: params.contactName,
         vendorId: params.vendorId,
-        contacts: params.contacts
+        contacts: params.contacts,
+        type: ECustomerTypes.BUILDER,
+        companyId: companyCustomerId,
     };
 
     if (params.latitude && params.longitude) {
@@ -220,6 +255,38 @@ export const _createCustomer = async (req: Request, res: Response, next: (err: a
     }
 
     try {
+        let companyCustomerId;
+        if(params.type === ECustomerTypes.BUILDER) {
+            // Create new builder company and attach it to the created customer
+            const chargeDate = new Date();   
+            chargeDate.setDate(chargeDate.getDate() + 30);
+            const company = new Company({
+                info: {
+                    companyName: params.name,  
+                    industry: null,
+                    logoUrl: '',
+                    companyEmail: params.email, 
+                },
+                address: {
+                    street: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
+                },
+                contact: {
+                    phone: params.phone,
+                },
+                userPermissions: UserPermissions,
+                chargeDate: chargeDate,
+                maxTechnicians: 0,
+                maxAdmins: 1,
+                maxManagers: 0,
+                maxOfficeAdmins: 0,
+                type: CompanyTypes.BUILDER
+            });
+            await company.save();
+            companyCustomerId = company._id;
+        }
         // No existing customer found, create new customer
         customer = new Customer({
             info: {
@@ -250,7 +317,9 @@ export const _createCustomer = async (req: Request, res: Response, next: (err: a
             },
             contactName: params.contactName,
             vendorId: params.vendorId,
-            contacts: params.contacts
+            contacts: params.contacts,
+            type: params.type,
+            companyId: companyCustomerId,
         });
         if (params.latitude && params.longitude) {
             customer.location = {
@@ -385,7 +454,6 @@ export const getAllCustomers = async (req: Request, res: Response) => {
     const { ENVIRONMENT } = process.env;
     const params = req.query;
     const query: any = {};
-    const customerName = ['Westin Homes', 'Shea Homes', 'Perry Homes', 'Toll Brothers, Inc.'];
     const customerIds = ['615365a5cae446268ec35c07', '60244e3a9b846d6018bfdd99', '615365a3cae446a8bbc35b5f', '615365a4cae4462e66c35bdd'];
 
     switch (ENVIRONMENT) {
@@ -486,7 +554,7 @@ export const updateCustomer = (req: Request, res: Response) => {
             }
 
             await CustomerAdmin.findOneAndUpdate({ _id: customer.admin }, data);
-            customer.updateOne(data, { omitUndefined: true }, (err: any, raw: any) => {
+            customer.updateOne(data, { omitUndefined: true }, (err: any) => {
                 if (err) {
                     return res.json({ 'status': Status.Error, 'message': err.message });
                 }
@@ -799,7 +867,7 @@ export const mergeCustomers = async (req: Request, res: Response) => {
                             throw new Error(errMsg);
                         }
 
-                        await _updateQBCustomer(req, res, company, customer, async (err, errMsg, qbCustomer) => {
+                        await _updateQBCustomer(req, res, company, customer, async (err, errMsg) => {
                             if (err) {
                                 // return res.json({ status: err, message: errMsg });
                                 throw new Error(errMsg);
@@ -854,8 +922,6 @@ export const _getCustomerInvoicesPayments = async (customers: ICustomer[], compa
 };
 
 const _moveCustomer = async ({
-    req,
-    res,
     customerId,
     companyId,
     unusedCustomerIds,
