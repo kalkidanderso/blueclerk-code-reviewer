@@ -3822,7 +3822,7 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "name"
+                  "name", "type"
                 ],
                 "properties": {
                   "email": {
@@ -3859,6 +3859,9 @@
                     "type": "string"
                   },
                   "fax": {
+                    "type": "string"
+                  },
+                  "type": {
                     "type": "string"
                   }
                 }
