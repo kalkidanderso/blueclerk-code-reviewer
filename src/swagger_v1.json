@@ -3863,6 +3863,9 @@
                   },
                   "type": {
                     "type": "string"
+                  },
+                  "companyId": {
+                    "type": "string"
                   }
                 }
               }
