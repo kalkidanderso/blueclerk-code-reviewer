@@ -1,0 +1,74 @@
+name: Docker Build and Deploy
+
+on:
+  push:
+    branches:
+      - staging
+      - test
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push Docker image
+        id: build-image
+        env:
+          REPOSITORY_NAME: ${{ vars.REPOSITORY_NAME }}
+          SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+          SECRET_ID: ${{ vars.SECRET_ID }}
+          NODE_ENVIRONMENT: ${{ vars.NODE_ENVIRONMENT }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+          REGION: ${{ vars.REGION }}
+        run: |
+          DATABASE_URL=$(aws secretsmanager get-secret-value --secret-id $SECRET_ID --region $REGION --output text --query SecretString | jq ".DATABASE_URL" | tr -d '"')
+          docker build -t $ECR_REGISTRY/$REPOSITORY_NAME:$IMAGE_TAG --build-arg node_environment=$NODE_ENVIRONMENT --build-arg database_url=$DATABASE_URL .
+          docker push $ECR_REGISTRY/$REPOSITORY_NAME:$IMAGE_TAG
+          docker tag $ECR_REGISTRY/$REPOSITORY_NAME:$IMAGE_TAG $ECR_REGISTRY/$REPOSITORY_NAME:latest
+          docker push $ECR_REGISTRY/$REPOSITORY_NAME:latest
+          echo "image=$ECR_REGISTRY/$REPOSITORY_NAME:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Register new container task definition
+        env:
+          TASK_DEFINITION_NAME: ${{ vars.TASK_DEFINITION_NAME }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          CREATED_IMAGE: ${{ steps.build-image.outputs.image }}
+          REGION: ${{ vars.REGION }}
+        run: |
+          echo "Fetching task definition..."
+          TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition "$TASK_DEFINITION_NAME" --region $REGION)
+          NEW_CONTAINER_DEFINITION=$(echo $TASK_DEFINITION | jq --arg IMAGE "$CREATED_IMAGE" '.taskDefinition.containerDefinitions[0].image = $IMAGE | .taskDefinition.containerDefinitions[0]')
+          echo "${NEW_CONTAINER_DEFINITION}"
+
+          echo "Registering new container definition..."
+          aws ecs register-task-definition --region $REGION --family $TASK_DEFINITION_NAME --container-definitions "$NEW_CONTAINER_DEFINITION" --memory 2048 --execution-role-arn "arn:aws:iam::744236993133:role/ecs-task-secret-manager"
+      
+      - name: Update Amazon ECS Service
+        env:
+          CLUSTER_NAME: ${{ vars.CLUSTER_NAME }}
+          SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+          TASK_DEFINITION_NAME: ${{ vars.TASK_DEFINITION_NAME }}
+          REGION: ${{ vars.REGION }}
+        run: |
+          echo "Updating the service..."
+          aws ecs update-service --region $REGION --cluster $CLUSTER_NAME --service $SERVICE_NAME --task-definition $TASK_DEFINITION_NAME
