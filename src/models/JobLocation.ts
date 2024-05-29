@@ -1,7 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { IContact } from '../common/contact';
-import { ICustomer } from '../models/Customer';
-import { IHomeOwner } from '../models/HomeOwner';
 import { ICompany } from '../models/Company';
 import { IUser } from '../models/User';
 
@@ -20,9 +18,7 @@ export interface IJobLocation extends Document {
     },
     jobSites?: [Schema.Types.ObjectId]
     isActive?: boolean
-    customerId: Schema.Types.ObjectId | ICustomer
-    homeOwner: Schema.Types.ObjectId | IHomeOwner
-    companyId: Schema.Types.ObjectId | ICompany
+    customerId: Schema.Types.ObjectId | ICompany
     inactiveAt?: Date
     inactiveBy?: Schema.Types.ObjectId | IUser
     quickbookId?: string
@@ -66,17 +62,8 @@ const JobLocationSchema = new Schema({
     },
     customerId: {
         type: Schema.Types.ObjectId,
-        ref: 'Customer',
-        // required: true
-    },
-    homeOwner: {
-        type: Schema.Types.ObjectId,
-        ref: 'HomeOwner'
-    },
-    companyId: {
-        type: Schema.Types.ObjectId,
         ref: 'Company',
-        // required: true
+        require: true
     },
     inactiveAt: {
         type: Date
@@ -94,7 +81,6 @@ JobLocationSchema.index({ contacts: 1 });
 JobLocationSchema.index({ jobSites: 1 });
 JobLocationSchema.index({ companyId: 1 });
 JobLocationSchema.index({ customerId: 1 });
-JobLocationSchema.index({ homeOwner: 1 });
 JobLocationSchema.index({ isActive: 1 });
 JobLocationSchema.index({ contacts: 1 });
 JobLocationSchema.index({ 'address.street': 1 });
