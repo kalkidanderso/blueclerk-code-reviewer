@@ -1636,3 +1636,36 @@ export const updateJobCosting = async (req: Request, res: Response) => {
     }).execPopulate();
     return res.json({ status: Status.Success, message: 'Cost Tier updated successfully', costing: tier, conflictCustomers });
 };
+
+export const queryCompanies = async(req: Request, res: Response): Promise<Response> => {
+    const { keyword }: { keyword: string } = req.query;
+    
+    const keywordRegex = { $regex: keyword, $options: 'i' };
+    const query = {
+        '$or': [
+            { 'info.companyEmail': keywordRegex },
+            { 'info.companyName': keywordRegex },
+        ]
+    };
+
+    const companies = await Company.find({ ...query }, 'info.companyName');
+    return res.json({ status: Status.Success, companies });
+};
+
+export const getCompanyById = async(req: Request, res: Response) => {
+    Company.findById(req.params.id, async (err: any, company: ICompany) => {
+
+        if (err) {
+            return res.json({ status: Status.Error, message: Messages.GenericError });
+        }
+
+        if (!company) {
+            return res.json({ status: Status.Error, message: 'Company not found.' });
+        }
+        return res.json({ status: Status.Success, company: {
+            info: company.info,
+            address: company.address,
+            contact: company.contact,
+        }});
+    });
+};

@@ -860,8 +860,13 @@ export const Validations = {
     getCustomersNames: [
         query('keyword')
             .exists().withMessage(Messages.Required)
-            .isString().withMessage('Only letters and digits allowed in title.')
+            .isString().withMessage('Only letters and digits allowed in keyword.')
+            .isLength({ min: 3 }).withMessage('Minimum length for keyword is 3.')
             .trim()
+    ],
+
+    getCompanyById: [
+        param('id').exists().withMessage(Messages.Required),
     ]
 };
 

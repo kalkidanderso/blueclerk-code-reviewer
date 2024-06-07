@@ -1139,7 +1139,7 @@ export const updateBCInvoice = async (req: Request, res: Response, company: ICom
                     let customer: ICustomer;
                     const jobLocation = await JobLocation.findOne({ quickbookId: qbInvoice.CustomerRef.value });
                     if (jobLocation) {
-                        customer = await Customer.findById(jobLocation.customerId);
+                        customer = await Customer.findById(jobLocation.builderId);
                     } else {
                         customer = await Customer.findOne({ quickbookId: qbInvoice.CustomerRef.value });
                     }

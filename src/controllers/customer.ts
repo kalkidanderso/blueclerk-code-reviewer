@@ -662,7 +662,19 @@ export const customerDetail = (req: Request, res: Response) => {
         SupplierBuilder.findOne({ builder: params.customerId, supplier: companyId })
             .populate({
                 path: 'builder',
-                populate: [{ path: 'jobLocations', populate: { path: 'jobSites' } }, { path: 'equipments' }, { path: 'itemTier', select: '-companyId -__v' }, { path: 'paymentTerm', select: '-company -__v' }]
+                ppopulate: [
+                    {
+                        path: 'companyId',
+                        select: 'jobLocations',
+                        populate: {
+                            path: 'jobLocations',
+                            populate: { path: 'jobSites' }
+                        },
+                    },
+                    { path: 'equipments' },
+                    { path: 'itemTier', select: '-companyId -__v' },
+                    { path: 'paymentTerm', select: '-company -__v' }
+                ]
             })
             .exec().then((supplierCustomer: ISupplierBuilder) => {
                 const customer: any = supplierCustomer?.builder;
@@ -679,7 +691,19 @@ export const customerDetail = (req: Request, res: Response) => {
         CompanyCustomer.findOne({ 'customer': params.customerId, company: companyId })
             .populate({
                 path: 'customer',
-                populate: [{ path: 'jobLocations', populate: { path: 'jobSites' } }, { path: 'equipments' }, { path: 'itemTier', select: '-companyId -__v' }, { path: 'paymentTerm', select: '-company -__v' }]
+                populate: [
+                    {
+                        path: 'companyId',
+                        select: 'jobLocations',
+                        populate: {
+                            path: 'jobLocations',
+                            populate: { path: 'jobSites' }
+                        },
+                    },
+                    { path: 'equipments' },
+                    { path: 'itemTier', select: '-companyId -__v' },
+                    { path: 'paymentTerm', select: '-company -__v' }
+                ]
             })
             .exec().then((companyCustomer: ICompanyCustomer) => {
                 const customer: any = companyCustomer?.customer;
@@ -714,12 +738,15 @@ export const searchDuplicatedCustomers = async (req: Request, res: Response) => 
         .populate({ path: 'paymentTerm', select: '-__v -createdAt -updatedAt' })
         .populate({ path: 'contacts', select: '-__v' })
         .populate({
-            path: 'jobLocations',
-            select: '-__v -customerId -createdAt -updatedAt',
-            populate: [
-                { path: 'contacts', select: '-__v' },
-                { path: 'jobSites', select: '-__v -locationId -customerId' }
-            ]
+            path: 'companies',
+            populate: {
+                path: 'jobLocations',
+                select: '-__v -customerId -createdAt -updatedAt',
+                populate: [
+                    { path: 'contacts', select: '-__v' },
+                    { path: 'jobSites', select: '-__v -locationId -customerId' }
+                ]
+            }
         })
         .exec(async (err: any, customers: ICustomer[]) => {
             if (err || !customers.length) {
