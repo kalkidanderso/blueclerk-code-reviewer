@@ -80,13 +80,12 @@ const JobLocationSchema = new Schema({
 JobLocationSchema.index({ contacts: 1 });
 JobLocationSchema.index({ jobSites: 1 });
 JobLocationSchema.index({ companyId: 1 });
-JobLocationSchema.index({ customerId: 1 });
 JobLocationSchema.index({ isActive: 1 });
 JobLocationSchema.index({ contacts: 1 });
 JobLocationSchema.index({ 'address.street': 1 });
 JobLocationSchema.index({ 'address.city': 1 });
-JobLocationSchema.index({ _id: 1, customerId: 1, isActive: 1 });
+JobLocationSchema.index({ _id: 1, isActive: 1 });
 JobLocationSchema.index({ companyId: 1, quickbookId: 1 });
-JobLocationSchema.index({ customerId: 1, companyId: 1, name: 1, address: 1, location: 1 });
+JobLocationSchema.index({ companyId: 1, name: 1, address: 1, location: 1 });
 
 export const JobLocation = mongoose.model<IJobLocation>('JobLocation', JobLocationSchema);
