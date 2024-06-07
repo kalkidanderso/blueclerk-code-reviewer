@@ -503,7 +503,7 @@ export const createBCPayment = async (req: Request, res: Response, company: ICom
                      */
                     const jobLocation = await JobLocation.findOne({ quickbookId: qbCustomer.Id, companyId: company._id });
                     if (jobLocation) {
-                        customer = await Customer.findById(jobLocation.customerId);
+                        customer = await Customer.findById(jobLocation.builderId);
                     }
                 }
 

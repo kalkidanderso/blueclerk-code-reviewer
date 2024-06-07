@@ -160,7 +160,7 @@ export const uploadfile = (req: Request, res: Response) => {
                             location: jobLocationCoordinates
                         });
                         await customer.save().then((c: ICustomer) => {
-                            jobLocation.customerId = c._id;
+                            jobLocation.builderId = c._id;
                             customer = c;
                         });
                     }

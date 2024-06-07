@@ -3,7 +3,7 @@ import { Status } from '../common/constants';
 
 import { JobLocation, IJobLocation } from '../models/JobLocation';
 import { IUser } from '../models/User';
-import { ICompany } from '../models/Company';
+import { Company, ICompany } from '../models/Company';
 import { Customer } from '../models/Customer';
 import { Contact } from '../models/Contact';
 import { _createQBCustomerJob, _updateQBCustomerJob } from './quickbook.customer';
@@ -120,8 +120,9 @@ export const create = async (req: Request, res: Response) => {
         jobLocationData.location = {coordinates: [locationLong, locationLat]};
     }
     JobLocation.create(jobLocationData).then(async (jobLocation: IJobLocation) => {
-        const customer = await Customer.findById(customerId);
-        customer.jobLocations.push(jobLocation._id);
+        const customerCompany = await Company.findOne({ companyId: customerId });
+        const customer = await Customer.findById(companyId);
+        customerCompany.jobLocations.push(jobLocation._id);
         await customer.save();
 
         await jobLocation

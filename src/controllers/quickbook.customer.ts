@@ -574,7 +574,7 @@ export const _createQBCustomerJob = async (req: Request, res: Response, company:
         .execPopulate();
 
     // Customer of the job location
-    const customer = <ICustomer>jobLocation.customerId;
+    const customerCompany = <ICompany>jobLocation.builderId;
     const contact = <IContact>jobLocation.contacts[0];
 
     // Always refresh the token first because token valid only for 60 minutes
@@ -599,27 +599,24 @@ export const _createQBCustomerJob = async (req: Request, res: Response, company:
         // Construct QB Customer Entry
         const qbCustomerEntry: IQBCustomer = {
             PrimaryEmailAddr: {
-                Address: customer?.info?.email
+                Address: customerCompany?.info?.companyEmail
             },
             DisplayName: jobLocation.name,
-            GivenName: contact?.name?.split(/[ ,]+/)[0] || customer?.profile?.firstName,
-            FamilyName: contact?.name?.split(/[ ,]+/)[1] || customer?.profile?.lastName,
-            CompanyName: customer?.profile?.displayName,
+            GivenName: contact?.name?.split(/[ ,]+/)[0] || customerCompany?.info.companyName,
+            FamilyName: contact?.name?.split(/[ ,]+/)[1] || customerCompany?.info.companyName,
+            CompanyName: customerCompany?.info.companyName,
             Job: true,
             Active: jobLocation.isActive ?? true,
             ParentRef: { value: parentQBCustomerId },
             BillWithParent: true,
             PrimaryPhone: {
-                FreeFormNumber: customer?.contact?.phone
+                FreeFormNumber: customerCompany?.contact?.phone
             },
             BillAddr: {
-                Line1: customer?.address?.street,
-                Line2: customer?.address?.unit,
-                City: customer?.address?.city,
-                CountrySubDivisionCode: customer?.address?.state,
-                PostalCode: customer?.address?.zipCode,
-                Long: customer?.location?.coordinates[0]?.toString(),
-                Lat: customer?.location?.coordinates[1]?.toString(),
+                Line1: customerCompany?.address?.street,
+                City: customerCompany?.address?.city,
+                CountrySubDivisionCode: customerCompany?.address?.state,
+                PostalCode: customerCompany?.address?.zipCode,
             },
             ShipAddr: {
                 Line1: jobLocation?.address?.street,
@@ -668,10 +665,6 @@ export const _updateQBCustomerJob = async (req: Request, res: Response, company:
         .populate({ path: 'customerId' })
         .populate({ path: 'contacts ' })
         .execPopulate();
-
-    // Customer of the job location
-    const customer = <ICustomer>jobLocation.customerId;
-    const contact = <IContact>jobLocation.contacts[0];
 
     // Always refresh the token first because token valid only for 60 minutes
     _refreshToken(req, res, company, async (err, errMsg, company) => {
