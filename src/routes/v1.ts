@@ -106,9 +106,26 @@ export default function (sio: any) {
     );
     router.get(
         '/customers/name',
+        passport.authenticate('jwt', { session: false }),
         isLogin(),
         validate(Validations.getCustomersNames),
         customerController.getCustomerNames
+    );
+
+    router.get(
+        '/companies/name',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        validate(Validations.getCustomersNames),
+        companyController.queryCompanies
+    );
+
+    router.get(
+        '/companies/:id',
+        passport.authenticate('jwt', { session: false }),
+        isLogin(),
+        validate(Validations.getCompanyById),
+        companyController.getCompanyById
     );
 
     router.post(
