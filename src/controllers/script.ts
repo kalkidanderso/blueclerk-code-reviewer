@@ -540,7 +540,7 @@ export const updateQBCustomerJob = async (req: Request, res: Response) => {
     });
 
     for (const jobLocation of jobLocations) {
-        const company = await Company.findById(jobLocation.companyId);
+        const company = await Company.findById(jobLocation.builderId);
         await _updateQBCustomerJob(req, res, company, jobLocation, null, (err, errMsg, qbCustomerJob) => {
             console.log('== qbCustomerJob.Id:', qbCustomerJob?.Id);
             console.log('== qbCustomerJob.BillWithParent:', qbCustomerJob?.BillWithParent);
@@ -655,6 +655,38 @@ export const createCustomersBuilderCompany = async() => {
         }
         else {
             console.log(`- Company ID: ${customer.companyId}`);
+        }
+    }
+};
+
+export const moveJobLocationsFromCustomersToCompany = async() => {
+    console.log('<---- MOVING JOB LOCATIONS FROM CUSTOMER TO COMPANY ---->');
+    const customers = await Customer.find({});
+    for(const customer of customers) {
+        if(customer.companyId && customer.jobLocations && customer.jobLocations.length > 0) {
+            console.log(`Customer name: ${customer.profile.displayName}`);
+            const company = await Company.findById(customer.companyId);
+            company.jobLocations = customer.jobLocations;
+
+            console.log('- Saving company for customer');
+            await company.save(async (err: any) => {
+                if (err) {
+                    console.log(`- Error updating company for customer ${customer._id}`);
+                }
+                for(const locationId of customer.jobLocations) {
+                    console.log(`- Updating Location: ${locationId}`);
+                    const jobLocation = await JobLocation.findById(locationId);
+                    jobLocation.builderId = company._id;
+                    await jobLocation.save(async (err: any) => {
+                        if (err) {
+                            console.log(`- Error updating location ${locationId}`);
+                        }
+                    });
+                }
+            });
+        }
+        else {
+            console.log(`Do nothing for customer: ${customer.profile.displayName}`);
         }
     }
 };
