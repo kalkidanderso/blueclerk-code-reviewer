@@ -89,7 +89,6 @@ export const create = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: Messages.InternalServerError });
     }
     if (!jobLocation) return;
-    const { customerId = null, homeOwner = null } = jobLocation || {};
 
     await JobSite.create({
         name,
@@ -98,8 +97,6 @@ export const create = async (req: Request, res: Response) => {
         },
         address,
         locationId,
-        customerId,
-        homeOwner,
     }, (err: any, jobSite: IJobSite) => {
         if (err) {
             return res.json({ status: Status.Error, message: Messages.InternalServerError });
@@ -145,7 +142,6 @@ export const update = async (req: Request, res: Response) => {
         return res.json({ status: Status.Error, message: Messages.InternalServerError });
     }
     if (!jobLocation) return;
-    const { customerId = null, homeOwner = null } = jobLocation || {};
 
     const jobSite = await JobSite.findById(id).exec();
     const isJobSiteActive = isActive === undefined || isActive === null
@@ -162,8 +158,8 @@ export const update = async (req: Request, res: Response) => {
         isActive: isJobSiteActive,
         address: address,
         locationId: locationId,
-        customerId: customerId,
-        homeOwner: homeOwner || params.homeOwner,
+        customerId: jobSite.customerId,
+        homeOwner: jobSite.homeOwner || params.homeOwner,
     }, (err: any) => {
         if (err) {
             return res.json({ status: Status.Error, message: Messages.InternalServerError });
