@@ -173,7 +173,8 @@ export const Validations = {
     createCustomer: [
         check('name').exists(),
         check('email').optional({ nullable: true, checkFalsy: true }).isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false }),
-        check('type').exists().isIn([ECustomerTypes.BUILDER])
+        check('type').exists().isIn([ECustomerTypes.BUILDER]),
+        check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
     ],
 
     updateCustomer: [check('customerId').exists(), check('email').optional({ nullable: true, checkFalsy: true }).isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
@@ -759,9 +760,8 @@ export const Validations = {
 
     // Job location
     getJobLocation: [
-        check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('builderId').optional().isMongoId().withMessage(Messages.WrongId),
         check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-        check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
         check('id').optional().isMongoId().withMessage(Messages.WrongId)
     ],
 
