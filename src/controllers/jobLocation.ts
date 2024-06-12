@@ -24,21 +24,27 @@ export const _resetJobLocationQB = (company: ICompany): void => {
 
 };
 
-export const get = (req: Request, res: Response) => {
+export const get = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { query: queryParams = {} } = req;
     const loggedInCompanyId = req.companyId;
     const { isActive } = queryParams;
-    let { customerId } = queryParams;
+    let { customerId, builderId } = queryParams;
     let query = {};
+
+    if(customerId && !builderId) {
+        const customer = await Customer.findById(customerId);
+        builderId = customer.companyId;
+    }
 
     if (!id && !customerId && loggedInCompanyId) {
         customerId = loggedInCompanyId;
     }
     query = {
         ...(id ? { _id: id } : {}),
-        ...(customerId ? { customerId } : {}),
-    };    
+        ...(builderId ? { builderId } : {}),
+    };
+
 
     switch (isActive) {
     case 'true':
