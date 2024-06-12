@@ -5466,10 +5466,10 @@
         "tags": [
           "Subdivision"
         ],
-        "summary": "Get Subdivision by companyId and/or customerId",
+        "summary": "Get Subdivision by builderId and/or customerId",
         "parameters": [
           {
-            "name": "companyId",
+            "name": "builderId",
             "in": "query",
             "schema": {
               "type": "string"
@@ -5477,13 +5477,6 @@
           },
           {
             "name": "customerId",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "homeOwnerId",
             "in": "query",
             "schema": {
               "type": "string"
