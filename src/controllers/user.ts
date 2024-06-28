@@ -350,14 +350,39 @@ export const signup = async (req: Request, res: Response, sio: any) => {
         };
 
         switch (params.accountType) {
-        case AccountTypes.SERVICE_PROVIDER:
-            if (!params.companyId) {
-                return res.json({ status: Status.Error, message: 'companyId is required for Service Provider accountType' });
-            }
-
-            const company = await Company.findById(params.companyId);
+        case AccountTypes.SERVICE_PROVIDER: {
+            const chargeDate = new Date();   
+            chargeDate.setDate(chargeDate.getDate() + 30);
+            const company = !params.companyId 
+                ? new Company({
+                    info: {
+                        companyName: params.companyName || `${params.firstName} ${params.lastName}`,  
+                        industry: null,
+                        logoUrl: '',
+                        companyEmail: params.email, 
+                    },
+                    address: {
+                        street: params.street,
+                        unit: params.unit,
+                        city: params.city,
+                        state: params.state,
+                        zipCode: params.zipCode,
+                    },
+                    contact: {
+                        phone: params.phone,
+                        fax: params.fax,
+                    },
+                    userPermissions: UserPermissions,
+                    chargeDate: chargeDate,
+                    maxTechnicians: 0,
+                    maxAdmins: 1,
+                    maxManagers: 0,
+                    maxOfficeAdmins: 0,
+                    type: CompanyTypes.SERVICE_PROVIDER
+                })
+                : await Company.findById(params.companyId);
             if (!company) {
-                return res.json({ status: Status.Error, message: 'Company not found' });
+                return res.json({ status: Status.Error, message: 'Company not found or could not be created' });
             }
 
             req.company = company;
@@ -372,19 +397,18 @@ export const signup = async (req: Request, res: Response, sio: any) => {
                 company.employees.push(companyEmployee._id);
                 company.save();
 
-                    sendEmployeeEmail({
-                        to: params.email,
-                        company: company.info.companyName,
-                        replyTo: company.info.companyEmail,
-                        role: roles[companyEmployee.permissions.role],
-                        password: params.password
-                    });
-
-                    login(req, res, sio);
+                sendEmployeeEmail({
+                    to: params.email,
+                    company: company.info.companyName,
+                    replyTo: company.info.companyEmail,
+                    role: roles[companyEmployee.permissions.role],
+                    password: params.password
                 });
-                break;
-
-        case AccountTypes.BUILDER:
+                login(req, res, sio);
+            });
+            break;
+        }
+        case AccountTypes.BUILDER: {
             if (!params.customerId) {
                 return res.json({ status: Status.Error, message: 'customerId is required for Builder accountType' })
             }
@@ -417,7 +441,7 @@ export const signup = async (req: Request, res: Response, sio: any) => {
                 accountType: customerContact.accountType,
                 user: customerContact,
             });
-
+        }
         case AccountTypes.CONTRACTOR:
             // const { BC_COMPANY_ID } = process.env;
             // const bcCompany = await Company.findById(BC_COMPANY_ID);
