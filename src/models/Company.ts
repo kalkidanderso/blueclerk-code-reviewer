@@ -9,7 +9,9 @@ import { IJobCosting } from './JobCosting';
 export enum CompanyTypes {
     COMPANY = 0,
     CONTRACTOR = 1,
-    SUPPLIER = 2 // Manufacturer, Windows Supplier, ex: BFS, Throphy
+    SUPPLIER = 2, // Manufacturer, Windows Supplier, ex: BFS, Throphy
+    SERVICE_PROVIDER = 3,
+    BUILDER = 4,
 }
 
 export interface ICompany extends Document {
