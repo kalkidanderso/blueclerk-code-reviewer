@@ -1,13 +1,14 @@
+import * as _ from 'lodash';
 /**
  * @description Convert String to Hash for Pagination Cursor
  * @param str
  */
 export const toCursorHash = (str: string): string => {
-
-    if (!str) { return; }
+    if (!str) {
+        return;
+    }
 
     return Buffer.from(str).toString('base64');
-
 };
 
 /**
@@ -15,11 +16,11 @@ export const toCursorHash = (str: string): string => {
  * @param str
  */
 export const fromCursorHash = (str: string): string => {
-
-    if (!str) { return; }
+    if (!str) {
+        return;
+    }
 
     return Buffer.from(str, 'base64').toString();
-
 };
 
 /**
@@ -27,15 +28,17 @@ export const fromCursorHash = (str: string): string => {
  * @param num
  */
 export const roundTwoDecimal = (num: number): number => {
-
-    if (num === undefined || num === null) { return 0; }
+    if (num === undefined || num === null) {
+        return 0;
+    }
 
     return Math.round(num * 100) / 100;
 };
 
 export const delimiterEnUs = (num: number): string => {
-
-    if (num === undefined || num === null) { return ''; }
+    if (num === undefined || num === null) {
+        return '';
+    }
 
     return `$${roundTwoDecimal(num)?.toLocaleString('en-US')}`;
 };
@@ -45,8 +48,9 @@ export const delimiterEnUs = (num: number): string => {
  * @param password
  */
 export const checkPasswordRegex = async (password: string): Promise<boolean> => {
-
-    if (!password) { return false; }
+    if (!password) {
+        return false;
+    }
 
     const passwordRegex = new RegExp(/(?=.*\d)(?=.*[!@#$%^&*])(?=.*[a-z])(?=.*[A-Z])[!@#$%^&*0-9a-zA-Z]{8,}/);
 
@@ -58,7 +62,7 @@ export const checkPasswordRegex = async (password: string): Promise<boolean> => 
  * @param ms (milisecond)
  */
 export const waitTimer = (ms: any) => {
-    return new Promise(res => setTimeout(res, ms));
+    return new Promise((res) => setTimeout(res, ms));
 };
 
 /**
@@ -66,6 +70,14 @@ export const waitTimer = (ms: any) => {
  * @param str
  * @param regexOption optional additional regex option
  */
-export const getRegex = (str: string, regexOption: string): { $regex: string, $options: string } => {
+export const getRegex = (str: string, regexOption: string): { $regex: string; $options: string } => {
     return { $regex: str, $options: regexOption };
+};
+
+export const toTitleCase = (str: string): string => {
+    if (!str) {
+        return;
+    }
+
+    return _.startCase(_.lowerCase(str));
 };
