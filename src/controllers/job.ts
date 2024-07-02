@@ -4637,6 +4637,7 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
     const params = req.body;
     const user = <IUser>req.user;
     const companyId = req.companyId;
+    let isTranslated = false;
 
     const job = await Job.findOne({
         _id: params.jobId,
@@ -4697,6 +4698,12 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
                 status: Status.Error,
                 message: 'Note is required when you reschedule or make the job incomplete',
             });
+        } else {
+            if (params.language == 'es') {
+                const text = await translateText('es', 'en', params.note);
+                params.note = text.TranslatedText;
+                isTranslated = true;
+            }
         }
 
         switch (params.status) {
@@ -4816,9 +4823,11 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
             console.log(text.TranslatedText);
             params.comment = text.TranslatedText + ' Original Text : (' + params.comment + ')';
             params.comment = text.TranslatedText;
+            isTranslated = true;
         }
 
         task.comment = params.comment;
+        task.isTranslated = isTranslated;
         if (req.files) {
             const paramsImageFile = JSON.parse(JSON.stringify(req.files));
             // Push images from req.files to technicianImages
@@ -4826,7 +4835,6 @@ export const updateJobTechnicianStatus = async (req: Request, res: Response, sio
                 job.technicianImages.push({ imageUrl: image.location, uploadedBy: user._id, createdAt: new Date() }),
             );
         }
-
         await job.save();
     } catch (err) {
         Sentry.captureException(err);
