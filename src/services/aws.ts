@@ -42,17 +42,16 @@ export const translateText = function (sourceLanguageCode: string, targetLanguag
         Text: text,
     };
 
-        return new Promise((resolve, reject) => {
-            translate.translateText(params, (err, data) => {
-                if (err) {
-                    console.log(err);
-                    reject(err)
-                }
-                console.log(data);
-                resolve(data);
-            };
+    return new Promise((resolve, reject) => {
+        translate.translateText(params, (err, data) => {
+            if (err) {
+                console.log(err);
+                reject(err);
+            }
+            console.log(data);
+            resolve(data);
         });
-        
+    });
 };
 
 export const sendEmail = function (options: any) {
@@ -375,10 +374,10 @@ export const sendInvoiceEmailToCustomer = async function (options: any) {
         `To: ${RECIPIENT}`,
         `Reply-To: ${sender_email}`,
         `Subject: ${SUBJECT}`,
-        `MIME-Version: 1.0`,
+        'MIME-Version: 1.0',
         `Content-Type: multipart/mixed; boundary=\"${boundary}\"\n`,
         `--${boundary}`,
-        `Content-Type: text/html\n`,
+        'Content-Type: text/html\n',
         `${BODY_HTML}\n`,
         `--${boundary}`,
     ];
@@ -389,7 +388,7 @@ export const sendInvoiceEmailToCustomer = async function (options: any) {
         const ATTACHMENT = pdfFile.toString('base64').replace(/([^\0]{76})/g, '$1\n');
 
         rawMessage.push(`Content-Type: application/octet-stream; name=\"${invoice_pdf.invoice?.invoiceId}.pdf\"`);
-        rawMessage.push(`Content-Transfer-Encoding: base64`);
+        rawMessage.push('Content-Transfer-Encoding: base64');
         rawMessage.push(`Content-Disposition: attachment;filename=\"${invoice_pdf.invoice?.invoiceId}.pdf\"`);
         rawMessage.push(`Content-ID:<${invoice_pdf.invoice?.invoiceId}.pdf>\n`);
         rawMessage.push(`${ATTACHMENT}\n`);
@@ -475,10 +474,10 @@ export const sendPORequestEmailToCustomer = async function (options: any) {
         `To: ${RECIPIENT}`,
         `Reply-To: ${sender_email}`,
         `Subject: ${SUBJECT}`,
-        `MIME-Version: 1.0`,
+        'MIME-Version: 1.0',
         `Content-Type: multipart/mixed; boundary=\"${boundary}\"\n`,
         `--${boundary}`,
-        `Content-Type: text/html\n`,
+        'Content-Type: text/html\n',
         `${BODY_HTML}\n`,
         `--${boundary}`,
     ];
@@ -489,7 +488,7 @@ export const sendPORequestEmailToCustomer = async function (options: any) {
         const ATTACHMENT = pdfFile.toString('base64').replace(/([^\0]{76})/g, '$1\n');
 
         rawMessage.push(`Content-Type: application/octet-stream; name=\"${ticket_pdf.ticket?.ticketId}.pdf\"`);
-        rawMessage.push(`Content-Transfer-Encoding: base64`);
+        rawMessage.push('Content-Transfer-Encoding: base64');
         rawMessage.push(`Content-Disposition: attachment;filename=\"${ticket_pdf.ticket?.ticketId}.pdf\"`);
         rawMessage.push(`Content-ID:<${ticket_pdf.ticket?.ticketId}.pdf>\n`);
         rawMessage.push(`${ATTACHMENT}\n`);
@@ -577,10 +576,10 @@ export const sendReportPdf = async (options: any) => {
         `To: ${RECIPIENT}`,
         `Reply-To: ${company_email ?? ''}`,
         `Subject: ${SUBJECT}`,
-        `MIME-Version: 1.0`,
+        'MIME-Version: 1.0',
         `Content-Type: multipart/mixed; boundary=\"${boundary}\"\n`,
         `--${boundary}`,
-        `Content-Type: text/html\n`,
+        'Content-Type: text/html\n',
         `${BODY_HTML}\n`,
         `--${boundary}`,
     ];
@@ -591,8 +590,8 @@ export const sendReportPdf = async (options: any) => {
         const ATTACHMENT = pdfFile.toString('base64').replace(/([^\0]{76})/g, '$1\n');
 
         rawMessage.push(`Content-Type: application/octet-stream; name=\"${report_pdf_name}\"`);
-        rawMessage.push(`Content-Transfer-Encoding: base64`);
-        rawMessage.push(`Content-Disposition: attachment\n`);
+        rawMessage.push('Content-Transfer-Encoding: base64');
+        rawMessage.push('Content-Disposition: attachment\n');
         rawMessage.push(`${ATTACHMENT}\n`);
         rawMessage.push(`--${boundary}--`);
     }
@@ -665,10 +664,10 @@ export const sendReportEmailToCustomer = async (options: any) => {
         `To: ${RECIPIENT}`,
         `Reply-To: ${companyEmail ?? ''}`,
         `Subject: ${SUBJECT}`,
-        `MIME-Version: 1.0`,
+        'MIME-Version: 1.0',
         `Content-Type: multipart/mixed; boundary=\"${boundary}\"\n`,
         `--${boundary}`,
-        `Content-Type: text/html\n`,
+        'Content-Type: text/html\n',
         `${BODY_HTML}\n`,
         `--${boundary}`,
     ];
@@ -677,8 +676,8 @@ export const sendReportEmailToCustomer = async (options: any) => {
         const pdfFile = fs.readFileSync(jobReportPdf);
         const ATTACHMENT = pdfFile.toString('base64').replace(/([^\0]{76})/g, '$1\n');
         rawMessage.push(`Content-Type: application/octet-stream; name=\"${reportNumber}.pdf\"`);
-        rawMessage.push(`Content-Transfer-Encoding: base64`);
-        rawMessage.push(`Content-Disposition: attachment\n`);
+        rawMessage.push('Content-Transfer-Encoding: base64');
+        rawMessage.push('Content-Disposition: attachment\n');
         rawMessage.push(`${ATTACHMENT}\n`);
         rawMessage.push(`--${boundary}--`);
     }
@@ -1081,19 +1080,19 @@ export const sendJobEmailToAssignee = function (options: any) {
     const ses = new AWS.SES({ apiVersion: '2012-10-17' });
 
     return new Promise((resolve, reject) => {
-        let jobLocation = options.location;
-        let jobSite = options.jobSite;
+        const jobLocation = options.location;
+        const jobSite = options.jobSite;
         let contact;
         if (jobLocation && jobLocation.contacts.length > 0) {
             contact = jobLocation.contacts[0];
         }
-        let ticket = options.ticket;
+        const ticket = options.ticket;
         let coordinates = [];
         let locationName;
         let contactName;
         let contactPhone;
         let contactEmail;
-        let imageUrl = ticket.image ? ticket.image : null;
+        const imageUrl = ticket.image ? ticket.image : null;
         let optionsNameParameter;
         if (contact) {
             contactName = contact.name ? contact.name : null;
@@ -1233,12 +1232,12 @@ export const sendScheduledJobEmailToAssignee = function (
             .populate('ticket')
             .exec();
 
-        for (let job of jobs) {
-            let jobLocation: IJobLocation = job.jobLocation;
-            let jobSite = job.jobSite;
-            let ticket: IServiceTicket = job.ticket;
-            let contact: IContact = ticket.customerContactId;
-            var type: any = job.type && job.type.title;
+        for (const job of jobs) {
+            const jobLocation: IJobLocation = job.jobLocation;
+            const jobSite = job.jobSite;
+            const ticket: IServiceTicket = job.ticket;
+            const contact: IContact = ticket.customerContactId;
+            const type: any = job.type && job.type.title;
             // let jobTypes: string[] = job.jobTypes.map(jts => {
             let jobTypes: string[];
             job.tasks.forEach((task) => {
@@ -1253,10 +1252,10 @@ export const sendScheduledJobEmailToAssignee = function (
             // });
             const jobTitles = jobTypes.length > 0 ? jobTypes.join(', ') : type;
             let coordinates = [];
-            let contactDetails: any = {};
+            const contactDetails: any = {};
             let locationName;
-            let customer: ICustomer = job.customer;
-            let image = ticket.images ? ticket.images : [];
+            const customer: ICustomer = job.customer;
+            const image = ticket.images ? ticket.images : [];
             if (contact) {
                 contactDetails.contactName = contact.name ? contact.name : null;
                 contactDetails.contactPhone = contact.phone ? contact.phone : null;
@@ -1560,7 +1559,7 @@ export const sendAccountUpgradeEmail = async (options: any) => {
             BODY_HTML += `<tr> <td style="border:1px solid">${charge.description}</td> <td style="border:1px solid">$${charge.amount}</td> </tr>`;
         }
 
-        BODY_HTML += `</table>`;
+        BODY_HTML += '</table>';
     }
 
     // INVOICE URLs
@@ -1663,7 +1662,7 @@ export const sendCustomerContactNewPassword = function (options: any) {
 
 export const sendJobRequestEmail = async (options: any) => {
     const { AWS_SES_ACCESSKEYID, AWS_SES_SECRETACCESSKEY, APP_EMAIL_NOREPLY, AWS_REGION } = process.env;
-    let { sender, recipient, customer, contact, coordinates, locationName, address, imagesUrl } = options;
+    const { sender, recipient, customer, contact, coordinates, locationName, address, imagesUrl } = options;
 
     AWS.config.update({
         region: AWS_REGION,
@@ -1672,7 +1671,7 @@ export const sendJobRequestEmail = async (options: any) => {
     });
 
     const ses = new AWS.SES({ apiVersion: '2012-10-17' });
-    const footer = `<img src='https://blueclerk.com/wp-content/uploads/2020/07/logo.png' />`;
+    const footer = "<img src='https://blueclerk.com/wp-content/uploads/2020/07/logo.png' />";
     const imageArray: string[] = [];
     if (imagesUrl?.length) {
         imagesUrl.forEach((image: any) => {
@@ -1969,7 +1968,7 @@ export const sendJobRequestWarrantyEmail = async (options: any) => {
 
 // Generic partial method to get the BClerk logo footer
 const _getBcFooter = async (): Promise<string> => {
-    return `<div style="text-align: justify;"><br /><br />Sent By, <br /><a href='https://blueclerk.com'><img src='https://blueclerk.com/wp-content/uploads/2020/07/logo.png' ></a></div>`;
+    return "<div style=\"text-align: justify;\"><br /><br />Sent By, <br /><a href='https://blueclerk.com'><img src='https://blueclerk.com/wp-content/uploads/2020/07/logo.png' ></a></div>";
 };
 
 // Generic partial method to construct the whole AWS email format
