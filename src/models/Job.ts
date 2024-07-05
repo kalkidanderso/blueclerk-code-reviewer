@@ -89,6 +89,7 @@ export interface ITask extends Document {
     contractor?: Schema.Types.ObjectId | ICompany
     contractorCommissionTier?: Schema.Types.ObjectId | IJobCosting
     comment?: string
+    isTranslated: boolean;
     jobTypes?: ITaskJobType[]
     paid: boolean
     paidAt: Date
@@ -311,6 +312,7 @@ const JobSchema = new Schema({
             required: false
         },
         comment: String,
+        isTranslated: {type: Boolean, default: false},
         jobTypes: [{
             jobType: {
                 type: Schema.Types.ObjectId,
