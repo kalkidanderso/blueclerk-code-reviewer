@@ -6,7 +6,7 @@
 
 */
 -- AlterTable
-ALTER TABLE "HomeOwners" ADD COLUMN     "subdivisionId" INTEGER NOT NULL;
+ALTER TABLE "HomeOwners" ADD COLUMN     "subdivisionId" INTEGER;
 
 -- CreateIndex
 CREATE UNIQUE INDEX "HomeOwners_subdivisionId_key" ON "HomeOwners"("subdivisionId");

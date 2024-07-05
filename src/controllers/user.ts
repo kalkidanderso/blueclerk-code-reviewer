@@ -22,6 +22,7 @@ import { IndependentContractor } from '../models/IndependentContractor';
 import { ISession, Session } from '../models/Session';
 import { CompanyLocation } from '../models/CompanyLocation';
 import * as Sentry from '@sentry/node';
+import { Contact } from '../models/Contact';
 
 const generator = require('generate-password');
 const passwordValidator = require('password-validator');
@@ -349,14 +350,39 @@ export const signup = async (req: Request, res: Response, sio: any) => {
         };
 
         switch (params.accountType) {
-        case AccountTypes.SERVICE_PROVIDER:
-            if (!params.companyId) {
-                return res.json({ status: Status.Error, message: 'companyId is required for Service Provider accountType' });
-            }
-
-            const company = await Company.findById(params.companyId);
+        case AccountTypes.SERVICE_PROVIDER: {
+            const chargeDate = new Date();   
+            chargeDate.setDate(chargeDate.getDate() + 30);
+            const company = !params.companyId 
+                ? new Company({
+                    info: {
+                        companyName: params.companyName || `${params.firstName} ${params.lastName}`,  
+                        industry: null,
+                        logoUrl: '',
+                        companyEmail: params.email, 
+                    },
+                    address: {
+                        street: params.street,
+                        unit: params.unit,
+                        city: params.city,
+                        state: params.state,
+                        zipCode: params.zipCode,
+                    },
+                    contact: {
+                        phone: params.phone,
+                        fax: params.fax,
+                    },
+                    userPermissions: UserPermissions,
+                    chargeDate: chargeDate,
+                    maxTechnicians: 0,
+                    maxAdmins: 1,
+                    maxManagers: 0,
+                    maxOfficeAdmins: 0,
+                    type: CompanyTypes.SERVICE_PROVIDER
+                })
+                : await Company.findById(params.companyId);
             if (!company) {
-                return res.json({ status: Status.Error, message: 'Company not found' });
+                return res.json({ status: Status.Error, message: 'Company not found or could not be created' });
             }
 
             req.company = company;
@@ -378,27 +404,34 @@ export const signup = async (req: Request, res: Response, sio: any) => {
                     role: roles[companyEmployee.permissions.role],
                     password: params.password
                 });
-
                 login(req, res, sio);
             });
             break;
-
-        case AccountTypes.BUILDER:
+        }
+        case AccountTypes.BUILDER: {
             if (!params.customerId) {
-                return res.json({ status: Status.Error, message: 'customerId is required for Builder accountType' });
+                return res.json({ status: Status.Error, message: 'customerId is required for Builder accountType' })
             }
 
             const customer = await Customer.findById(params.customerId);
             if (!customer) {
-                return res.json({ status: Status.Error, message: 'Customer not found' });
+                return res.json({ status: Status.Error, message: 'Customer not found' })
             }
 
             userEntry.customer = customer;
             userEntry.accountType = AccountTypes.BUILDER;
             userEntry.permissions.role = Role.CUSTOMER_CONTACT;
-
             const customerContact = await new CustomerContact(userEntry).save();
-            customer.contacts.push(customerContact._id);
+
+            // Create New Contact to associated customer
+            const builderContact = await new Contact({
+                name: `${params.firstName} ${params.lastName}`,
+                phone: params.phone,
+                email: params.email,
+                isActive: true,
+                userId: customerContact._id,
+            }).save();
+            customer.contacts.push(builderContact._id);
             await customer.save();
 
             sendEmail({ to: params?.email });
@@ -408,7 +441,7 @@ export const signup = async (req: Request, res: Response, sio: any) => {
                 accountType: customerContact.accountType,
                 user: customerContact,
             });
-
+        }
         case AccountTypes.CONTRACTOR:
             // const { BC_COMPANY_ID } = process.env;
             // const bcCompany = await Company.findById(BC_COMPANY_ID);

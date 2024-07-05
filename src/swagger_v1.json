@@ -436,6 +436,110 @@
         }
       }
     },
+    "/customers/name": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Get customers' names by query",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/companies/name": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Get companies' names by query",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/companies/{id}": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Get one company by id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The id of the company to retrieve from the database",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralAPIResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/logout": {
       "post": {
         "tags": [
@@ -3793,7 +3897,7 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "name"
+                  "name", "type"
                 ],
                 "properties": {
                   "email": {
@@ -3830,6 +3934,12 @@
                     "type": "string"
                   },
                   "fax": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "companyId": {
                     "type": "string"
                   }
                 }
@@ -5356,10 +5466,10 @@
         "tags": [
           "Subdivision"
         ],
-        "summary": "Get Subdivision by companyId and/or customerId",
+        "summary": "Get Subdivision by builderId and/or customerId",
         "parameters": [
           {
-            "name": "companyId",
+            "name": "builderId",
             "in": "query",
             "schema": {
               "type": "string"
@@ -5367,13 +5477,6 @@
           },
           {
             "name": "customerId",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "homeOwnerId",
             "in": "query",
             "schema": {
               "type": "string"

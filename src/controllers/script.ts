@@ -1,10 +1,11 @@
+/* eslint-disable no-console */
 import mongoose from 'mongoose';
 import { Request, Response } from 'express';
 
-import { DefaultCommission, InvoiceStatus, JobStatus, Messages, Role, Status } from '../common/constants';
+import { DefaultCommission, InvoiceStatus, JobStatus, Role, Status, UserPermissions } from '../common/constants';
 
-import { Company, ICompany } from '../models/Company';
-import { Customer, ICustomer } from '../models/Customer';
+import { Company, CompanyTypes, ICompany } from '../models/Company';
+import { Customer, ECustomerTypes, ICustomer } from '../models/Customer';
 import { IPriceTier } from '../models/PriceTier';
 
 import { _addItemTier } from '../controllers/company';
@@ -16,7 +17,7 @@ import { User } from '../models/User';
 import { Payment, PaymentCustomer } from '../models/Payment';
 import { InvoiceCommission } from '../models/InvoiceCommission';
 import { IContact } from '../common/contact';
-import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin';
+import { CustomerAdmin } from '../models/CustomerAdmin';
 import { CustomerContact, ICustomerContact } from '../models/CustomerContact';
 import { JobLocation } from '../models/JobLocation';
 import { _updateQBCustomerJob } from '../controllers/quickbook.customer';
@@ -539,7 +540,7 @@ export const updateQBCustomerJob = async (req: Request, res: Response) => {
     });
 
     for (const jobLocation of jobLocations) {
-        const company = await Company.findById(jobLocation.companyId);
+        const company = await Company.findById(jobLocation.builderId);
         await _updateQBCustomerJob(req, res, company, jobLocation, null, (err, errMsg, qbCustomerJob) => {
             console.log('== qbCustomerJob.Id:', qbCustomerJob?.Id);
             console.log('== qbCustomerJob.BillWithParent:', qbCustomerJob?.BillWithParent);
@@ -596,5 +597,96 @@ export const revertBackInvoices = async (req: Request, res: Response) => {
     }
 
     return res.json({ ok: true, invoices });
+};
 
+export const createCustomersBuilderCompany = async() => {
+    console.log('<---- CREATING BUILDER COMPANY FOR CUSTOMER ---->');
+    const customers = await Customer.find({});
+    for(const customer of customers) {
+        console.log(`Customer name: ${customer.profile.displayName}`);
+        if(!customer.companyId) {
+            customer.type = ECustomerTypes.BUILDER;
+            const chargeDate = new Date();   
+            chargeDate.setDate(chargeDate.getDate() + 30);
+            const company = new Company(
+                {
+                    info: {
+                        companyName: customer.profile.displayName,  
+                        industry: null,
+                        logoUrl: '',
+                        companyEmail: customer.info.email, 
+                    },
+                    address: {
+                        street: '',
+                        city: '',
+                        state: '',
+                        zipCode: '',
+                    },
+                    contact: {
+                        phone: customer.contact.phone,
+                    },
+                    userPermissions: UserPermissions,
+                    chargeDate: chargeDate,
+                    maxTechnicians: 0,
+                    maxAdmins: 1,
+                    maxManagers: 0,
+                    maxOfficeAdmins: 0,
+                    type: CompanyTypes.BUILDER
+                }
+            );
+
+            console.log('- Saving new company for customer');
+            await company.save(async (err: any, result: ICompany) => {
+                if (err) {
+                    console.log(`- Error creating company for customer ${customer._id}`);
+                }
+                else {
+                    console.log(`- Company created for customer ${customer.profile.displayName}: ${result._id}`);
+                    customer.companyId = result._id;
+                    console.log('- Updating customer');
+                    await customer.save(async(err: any) => {
+                        console.log('- Customer updated');
+                        if (err) {
+                            console.log(`- Error updating customer ${customer._id}`);
+                        }
+                    });
+                }
+            });
+        }
+        else {
+            console.log(`- Company ID: ${customer.companyId}`);
+        }
+    }
+};
+
+export const moveJobLocationsFromCustomersToCompany = async() => {
+    console.log('<---- MOVING JOB LOCATIONS FROM CUSTOMER TO COMPANY ---->');
+    const customers = await Customer.find({});
+    for(const customer of customers) {
+        if(customer.companyId && customer.jobLocations && customer.jobLocations.length > 0) {
+            console.log(`Customer name: ${customer.profile.displayName}`);
+            const company = await Company.findById(customer.companyId);
+            company.jobLocations = customer.jobLocations;
+
+            console.log('- Saving company for customer');
+            await company.save(async (err: any) => {
+                if (err) {
+                    console.log(`- Error updating company for customer ${customer._id}`);
+                }
+                for(const locationId of customer.jobLocations) {
+                    console.log(`- Updating Location: ${locationId}`);
+                    const jobLocation = await JobLocation.findById(locationId);
+                    jobLocation.builderId = company._id;
+                    await jobLocation.save(async (err: any) => {
+                        if (err) {
+                            console.log(`- Error updating location ${locationId}`);
+                        }
+                    });
+                }
+            });
+        }
+        else {
+            console.log(`Do nothing for customer: ${customer.profile.displayName}`);
+        }
+    }
 };

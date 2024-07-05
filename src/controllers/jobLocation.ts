@@ -1,13 +1,12 @@
 import { Request, Response } from 'express';
-import { Status, Messages } from '../common/constants';
+import { Status } from '../common/constants';
 
 import { JobLocation, IJobLocation } from '../models/JobLocation';
 import { IUser } from '../models/User';
-import { ICompany } from '../models/Company';
+import { Company, ICompany } from '../models/Company';
 import { Customer } from '../models/Customer';
 import { Contact } from '../models/Contact';
 import { _createQBCustomerJob, _updateQBCustomerJob } from './quickbook.customer';
-import { HomeOwner } from '../models/HomeOwner';
 import * as Sentry from '@sentry/node';
 
 /**
@@ -25,45 +24,39 @@ export const _resetJobLocationQB = (company: ICompany): void => {
 
 };
 
-export const get = (req: Request, res: Response) => {
+export const get = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { query: queryParams = {} } = req;
     const loggedInCompanyId = req.companyId;
-    let { customerId, homeOwnerId, companyId, isActive } = queryParams;
+    const { isActive } = queryParams;
+    let { customerId, builderId } = queryParams;
     let query = {};
 
-    if (!id && !customerId && !companyId && loggedInCompanyId) {
-        companyId = loggedInCompanyId;
+    if(customerId && !builderId) {
+        const customer = await Customer.findById(customerId);
+        builderId = customer.companyId;
     }
-    if (id) {
-        query = { _id: id };
-    } else if (customerId && companyId) {
-        query = { customerId, companyId };
-    } else if (homeOwnerId && companyId) {
-        query = { homeOwner: homeOwnerId, companyId };
-    } else if (customerId && !homeOwnerId) {
-        query = { customerId };
-    } else if (homeOwnerId && !customerId) {
-        query = { homeOwner: homeOwnerId };
-    } else if(homeOwnerId && customerId) {
-        query =  { $or: [{ homeOwner: homeOwnerId }, { customerId }] };
-    } else if (companyId) {
-        query = { companyId };
+
+    if (!id && !customerId && loggedInCompanyId) {
+        customerId = loggedInCompanyId;
     }
+    query = {
+        ...(id ? { _id: id } : {}),
+        ...(builderId ? { builderId } : {}),
+    };
+
 
     switch (isActive) {
     case 'true':
     case true:
         query = { ...query, $or: [{ isActive: true }, { isActive: { $exists: false } }] };
         break;
-
     case 'false':
     case false:
         query = { ...query, isActive: false };
         break;
-
+    // Retrieve all job location, query is good at this point
     default:
-        // Retrieve all job location, query is good at this point
         break;
     }
 
@@ -80,11 +73,7 @@ export const get = (req: Request, res: Response) => {
 
 export const create = async (req: Request, res: Response) => {
     const params = req.body;
-    let companyId = req.companyId;
     const company = req.company;
-    if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId;
-    }
     const name = params.name;
     const contact = params.contact ? JSON.parse(params.contact) : {};
     const locationLat = params.locationLat;
@@ -94,11 +83,17 @@ export const create = async (req: Request, res: Response) => {
     const state = params.state;
     const zipcode = params.zipcode;
     const customerId = params.customerId;
-    const homeOwnerId = params.homeOwnerId;
 
     if (!(locationLat && locationLong) && !(street && city && state && zipcode)) {
         return res.json({'status': Status.Error, 'message': 'Either location or address is required.'});
     }
+
+    if (!customerId) {
+        return res.json({ status: Status.Error, message: 'BuilderId should be provided'});
+    }
+
+    const customer = await Customer.findById(customerId);
+
     const jobLocationData: any = {
         name,
         address: {
@@ -108,22 +103,8 @@ export const create = async (req: Request, res: Response) => {
             zipcode: zipcode
         },
         contacts: [],
-        companyId
+        builderId: customer.companyId
     };
-
-    if (!customerId && !homeOwnerId) {
-        return res.json({ status: Status.Error, message: 'Either one of customerId or homeOwnerId should be provided'});
-    }
-
-    if (homeOwnerId) {
-        jobLocationData.homeOwner = homeOwnerId;
-    }
-
-    // default to customer
-    if (customerId) {
-        jobLocationData.homeOwner = null;
-        jobLocationData.customerId = customerId;
-    }
 
     if (contact?.name || contact?.phone || contact?.email) {
         const contactEntry = new Contact({
@@ -139,14 +120,12 @@ export const create = async (req: Request, res: Response) => {
         jobLocationData.location = {coordinates: [locationLong, locationLat]};
     }
     JobLocation.create(jobLocationData).then(async (jobLocation: IJobLocation) => {
-        const customer = await Customer.findById(customerId);
-        const homeOwner = await HomeOwner.findById(homeOwnerId);
-
-        customer ? customer.jobLocations.push(jobLocation._id) : homeOwner.subdivision = jobLocation._id;
-        customer ? await customer.save() : await homeOwner.save();
+        const customerCompany = await Company.findOne({ companyId: customer.companyId });
+        customerCompany.jobLocations.push(jobLocation._id);
+        await customer.save();
 
         await jobLocation
-            .populate({ path: 'jobSites', select: '-__v -locationId -customerId -homeOwner' })
+            .populate({ path: 'jobSites', select: '-__v -locationId -customerId' })
             .populate({ path: 'contacts', select: '-__v' })
             .execPopulate();
 
@@ -183,40 +162,19 @@ export const update = async (req: Request, res: Response) => {
     const company = <ICompany>req.company;
 
     // Find and check if customer existed
+    if (!params.customerId) {
+        return res.json({ status: Status.Error, message: 'CustomerId must be provided' });
+    }
+
     const customer = await Customer.findOne({ _id: params.customerId });
-    const homeOwner = await HomeOwner.findById(params?.homeOwnerId);
 
-    if (!params.customerId && !params.homeOwnerId) {
-        return res.json({ status: Status.Error, message: 'Either one of customerId or homeOwnerId should be provided' });
-    }
-
-    if (!customer && !homeOwner) {
-        return res.json({ status: Status.NotFound, message: 'Customer or home owner not found.' });
-    }
-
-    if (params.customerId && !customer) {
+    if (!customer) {
         return res.json({ status: Status.NotFound, message: 'Customer not found.' });
     }
 
-    if (params.homeOwnerId && !homeOwner) {
-        return res.json({ status: Status.NotFound, message: 'Home owner not found.' });
-    }
-
-    let query;
-    if (customer) {
-        query = { customerId: customer?._id };
-    }
-
-    if (homeOwner) {
-        query = { homeOwner: homeOwner?._id };
-    }
 
     // Find and check if job locatino existed
-    const jobLocation = await JobLocation.findOne({
-        companyId: company._id,
-        ...query,
-        _id: id
-    });
+    const jobLocation = await JobLocation.findById(id);
 
     if (!jobLocation) {
         return res.json({ status: Status.Error, message: 'Subdivision not found.' });
@@ -250,7 +208,7 @@ export const update = async (req: Request, res: Response) => {
     await jobLocation.save();
 
     await jobLocation
-        .populate({ path: 'jobSites', select: '-__v -locationId -customerId -homeOwner' })
+        .populate({ path: 'jobSites', select: '-__v -locationId -customerId' })
         .populate({ path: 'contacts', select: '-__v' })
         .execPopulate();
 
@@ -279,6 +237,4 @@ export const update = async (req: Request, res: Response) => {
     } else {
         return res.json({ status: Status.Success, message: 'Subdivision updated successfully.', jobLocation });
     }
-
-
 };

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { check, param, validationResult, ValidationChain } from 'express-validator';
+import { check, param, validationResult, ValidationChain, query } from 'express-validator';
 import { Status, Messages, JobStatus } from '../common/constants';
-
+import { ECustomerTypes } from '../models/Customer';
 
 const uniq = (a: any) => {
     return a.sort().filter((item: any, pos: any, ary: any) => {
@@ -170,7 +170,12 @@ export const Validations = {
     createEquipmentBrand: [check('title').exists()],
 
     //Customers
-    createCustomer: [check('name').exists(), check('email').optional({ nullable: true, checkFalsy: true }).isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
+    createCustomer: [
+        check('name').exists(),
+        check('email').optional({ nullable: true, checkFalsy: true }).isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false }),
+        check('type').exists().isIn([ECustomerTypes.BUILDER]),
+        check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
+    ],
 
     updateCustomer: [check('customerId').exists(), check('email').optional({ nullable: true, checkFalsy: true }).isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
 
@@ -755,9 +760,8 @@ export const Validations = {
 
     // Job location
     getJobLocation: [
-        check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('builderId').optional().isMongoId().withMessage(Messages.WrongId),
         check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-        check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
         check('id').optional().isMongoId().withMessage(Messages.WrongId)
     ],
 
@@ -852,5 +856,17 @@ export const Validations = {
     updateJobCommission: [
         check('balance').exists().withMessage(Messages.Required),
     ],
+
+    getCustomersNames: [
+        query('keyword')
+            .exists().withMessage(Messages.Required)
+            .isString().withMessage('Only letters and digits allowed in keyword.')
+            .isLength({ min: 3 }).withMessage('Minimum length for keyword is 3.')
+            .trim()
+    ],
+
+    getCompanyById: [
+        param('id').exists().withMessage(Messages.Required),
+    ]
 };
 

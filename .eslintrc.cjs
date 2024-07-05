@@ -9,7 +9,8 @@ module.exports = {
         '@typescript-eslint/semi': 'error',
         'quotes': 'off',
         '@typescript-eslint/quotes': ['error', 'single'],
+        '@typescript-eslint/no-explicit-any': 'off',
         'indent': ['error', 4],
-        'no-console': 2
+        'no-console': 0,
     }
 };

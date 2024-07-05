@@ -5,11 +5,14 @@ import { IPriceTier } from '../models/PriceTier';
 import { IPaymentTerm } from '../models/PaymentTerm';
 import { IUser } from '../models/User';
 import { IJobCosting } from './JobCosting';
+import { IJobLocation } from './JobLocation';
 
 export enum CompanyTypes {
     COMPANY = 0,
     CONTRACTOR = 1,
-    SUPPLIER = 2 // Manufacturer, Windows Supplier, ex: BFS, Throphy
+    SUPPLIER = 2, // Manufacturer, Windows Supplier, ex: BFS, Throphy
+    SERVICE_PROVIDER = 3,
+    BUILDER = 4,
 }
 
 export interface ICompany extends Document {
@@ -121,7 +124,8 @@ export interface ICompany extends Document {
         verifiedBy: Schema.Types.ObjectId | IUser
         deniedAt: Date,
         deniedBy: Schema.Types.ObjectId | IUser
-    }
+    };
+    jobLocations: [Schema.Types.ObjectId | IJobLocation];
 }
 
 export interface IQBCompany {
@@ -372,7 +376,12 @@ const CompanySchema = new Schema({
             type: Schema.Types.ObjectId,
             ref: 'User'
         }
-    }
+    },
+    jobLocations: [{
+        type: Schema.Types.ObjectId,
+        ref: 'JobLocation',
+        required: false
+    }],
 
 }, { timestamps: { createdAt: true, updatedAt: true } });
 
@@ -385,6 +394,7 @@ CompanySchema.index({ admin: 1 });
 CompanySchema.index({ paymentTerm: 1 });
 CompanySchema.index({ 'info.companyEmail': 1 });
 CompanySchema.index({ plan: 1, chargeDate: 1 });
+CompanySchema.index({ jobLocations: 1 });
 
 // export const Company = User.discriminator<ICompany>('Company', CompanySchema)
 export const Company = mongoose.model<ICompany>('Company', CompanySchema);

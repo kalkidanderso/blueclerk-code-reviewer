@@ -337,6 +337,14 @@ const JobRequestSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: 'CompanyLocation',
         },
+        ticketCreated: {
+            type: Boolean,
+            default: false,
+        },
+        ticket: {
+            type: Schema.Types.ObjectId,
+            ref: 'Ticket',
+        },
     },
     { timestamps: { createdAt: true, updatedAt: true } },
 );

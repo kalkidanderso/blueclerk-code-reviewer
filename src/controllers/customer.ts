@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
-import { Status, Messages, Role, AccountTypes } from '../common/constants';
+import { Status, Messages, Role, AccountTypes, UserPermissions } from '../common/constants';
 
-import { Company, ICompany } from '../models/Company';
+import { Company, CompanyTypes, ICompany } from '../models/Company';
 import { User, IUser } from '../models/User';
 import { Contact } from '../models/Contact';
-import { Customer, ICustomer, IQBCustomer } from '../models/Customer';
+import { Customer, ECustomerTypes, ICustomer, IQBCustomer } from '../models/Customer';
 import { CompanyCustomer, ICompanyCustomer } from '../models/CompanyCustomer';
 import { Estimate } from '../models/Estimate';
 import { PurchaseOrder } from '../models/PurchaseOrder';
@@ -19,13 +19,13 @@ import { IPriceTier } from '../models/PriceTier';
 import { Invoice } from '../models/Invoice';
 import { Payment } from '../models/Payment';
 import { _createQBCustomer, _updateQBCustomer, _inactivateQBCustomers } from '../controllers/quickbook.customer';
-import { _getQBInvoices, _updateQBInvoice, _transferQBInvoices, _countQBInvoices } from '../controllers/quickbook.invoice';
-import { _getQBPayments, _updateQBPayment, _transferQBPayments, _countQBPayments } from '../controllers/quickbook.payment';
+import { _transferQBInvoices, _countQBInvoices } from '../controllers/quickbook.invoice';
+import { _getQBPayments, _transferQBPayments, _countQBPayments } from '../controllers/quickbook.payment';
 import { _refreshToken } from './quickbook';
-import { createCustomerContact } from './contact';
-import { CustomerAdmin, ICustomerAdmin } from '../models/CustomerAdmin';
+import { CustomerAdmin } from '../models/CustomerAdmin';
 import { SupplierBuilder, ISupplierBuilder } from '../models/SupplierBuilder';
 import * as Sentry from '@sentry/node';
+import XLSX from 'xlsx';
 
 /**
  * To reset Customer quickbookId,
@@ -69,6 +69,39 @@ export const createCustomer = async (req: Request, res: Response) => {
         }
     }
 
+    // Create new builder company and attach it to the created customer
+    let companyCustomerId = params.companyId;
+    if(!companyCustomerId && params.type === ECustomerTypes.BUILDER) {
+        const chargeDate = new Date();   
+        chargeDate.setDate(chargeDate.getDate() + 30);
+        const companyCustomer = new Company({
+            info: {
+                companyName: params.name,  
+                industry: null,
+                logoUrl: '',
+                companyEmail: params.email, 
+            },
+            address: {
+                street: '',
+                city: '',
+                state: '',
+                zipCode: '',
+            },
+            contact: {
+                phone: params.phone,
+            },
+            userPermissions: UserPermissions,
+            chargeDate: chargeDate,
+            maxTechnicians: 0,
+            maxAdmins: 1,
+            maxManagers: 0,
+            maxOfficeAdmins: 0,
+            type: CompanyTypes.BUILDER
+        });
+        await companyCustomer.save();
+        companyCustomerId = companyCustomer._id;
+    }
+
     const data: any = {
         info: {
             email: params.email,
@@ -98,7 +131,9 @@ export const createCustomer = async (req: Request, res: Response) => {
         itemTier: companyTier && companyTier.tier,
         contactName: params.contactName,
         vendorId: params.vendorId,
-        contacts: params.contacts
+        contacts: params.contacts,
+        type: ECustomerTypes.BUILDER,
+        companyId: companyCustomerId,
     };
 
     if (params.latitude && params.longitude) {
@@ -119,13 +154,13 @@ export const createCustomer = async (req: Request, res: Response) => {
             }) : [];
 
             User.find({ _id: { $in: customerIds } },
-                'info.email',
+                'profile.displayName',
                 async (err: any, users: IUser[]) => {
 
                     if (err) {
                         return res.json({ 'status': Status.Error, 'message': Messages.GenericError });
                     }
-                    if (users.length === 0 || (users.findIndex((element: any) => element?.info?.email === customer?.info?.email) < 0)) {
+                    if (users.length === 0 || (users.findIndex((element: any) => element?.profile?.displayName === customer?.profile?.displayName) < 0)) {
                         // Create contact customer
                         const customerAdmin = await new CustomerAdmin({
                             auth: {
@@ -190,7 +225,7 @@ export const createCustomer = async (req: Request, res: Response) => {
                             });
                         });
                     } else {
-                        return res.json({ 'status': Status.Error, 'message': 'This email is already registered so please try with other email again' });
+                        return res.json({ 'status': Status.Error, 'message': 'This name is already registered so please try with other name again' });
                     }
 
                 });
@@ -220,6 +255,38 @@ export const _createCustomer = async (req: Request, res: Response, next: (err: a
     }
 
     try {
+        let companyCustomerId = params.companyId;
+        if(!companyCustomerId && params.type === ECustomerTypes.BUILDER) {
+            // Create new builder company and attach it to the created customer
+            const chargeDate = new Date();   
+            chargeDate.setDate(chargeDate.getDate() + 30);
+            const company = new Company({
+                info: {
+                    companyName: params.name,  
+                    industry: null,
+                    logoUrl: '',
+                    companyEmail: params.email, 
+                },
+                address: {
+                    street: '',
+                    city: '',
+                    state: '',
+                    zipCode: '',
+                },
+                contact: {
+                    phone: params.phone,
+                },
+                userPermissions: UserPermissions,
+                chargeDate: chargeDate,
+                maxTechnicians: 0,
+                maxAdmins: 1,
+                maxManagers: 0,
+                maxOfficeAdmins: 0,
+                type: CompanyTypes.BUILDER
+            });
+            await company.save();
+            companyCustomerId = company._id;
+        }
         // No existing customer found, create new customer
         customer = new Customer({
             info: {
@@ -250,7 +317,9 @@ export const _createCustomer = async (req: Request, res: Response, next: (err: a
             },
             contactName: params.contactName,
             vendorId: params.vendorId,
-            contacts: params.contacts
+            contacts: params.contacts,
+            type: params.type,
+            companyId: companyCustomerId,
         });
         if (params.latitude && params.longitude) {
             customer.location = {
@@ -385,7 +454,6 @@ export const getAllCustomers = async (req: Request, res: Response) => {
     const { ENVIRONMENT } = process.env;
     const params = req.query;
     const query: any = {};
-    const customerName = ['Westin Homes', 'Shea Homes', 'Perry Homes', 'Toll Brothers, Inc.'];
     const customerIds = ['615365a5cae446268ec35c07', '60244e3a9b846d6018bfdd99', '615365a3cae446a8bbc35b5f', '615365a4cae4462e66c35bdd'];
 
     switch (ENVIRONMENT) {
@@ -486,7 +554,7 @@ export const updateCustomer = (req: Request, res: Response) => {
             }
 
             await CustomerAdmin.findOneAndUpdate({ _id: customer.admin }, data);
-            customer.updateOne(data, { omitUndefined: true }, (err: any, raw: any) => {
+            customer.updateOne(data, { omitUndefined: true }, (err: any) => {
                 if (err) {
                     return res.json({ 'status': Status.Error, 'message': err.message });
                 }
@@ -594,7 +662,19 @@ export const customerDetail = (req: Request, res: Response) => {
         SupplierBuilder.findOne({ builder: params.customerId, supplier: companyId })
             .populate({
                 path: 'builder',
-                populate: [{ path: 'jobLocations', populate: { path: 'jobSites' } }, { path: 'equipments' }, { path: 'itemTier', select: '-companyId -__v' }, { path: 'paymentTerm', select: '-company -__v' }]
+                ppopulate: [
+                    {
+                        path: 'companyId',
+                        select: 'jobLocations',
+                        populate: {
+                            path: 'jobLocations',
+                            populate: { path: 'jobSites' }
+                        },
+                    },
+                    { path: 'equipments' },
+                    { path: 'itemTier', select: '-companyId -__v' },
+                    { path: 'paymentTerm', select: '-company -__v' }
+                ]
             })
             .exec().then((supplierCustomer: ISupplierBuilder) => {
                 const customer: any = supplierCustomer?.builder;
@@ -611,7 +691,19 @@ export const customerDetail = (req: Request, res: Response) => {
         CompanyCustomer.findOne({ 'customer': params.customerId, company: companyId })
             .populate({
                 path: 'customer',
-                populate: [{ path: 'jobLocations', populate: { path: 'jobSites' } }, { path: 'equipments' }, { path: 'itemTier', select: '-companyId -__v' }, { path: 'paymentTerm', select: '-company -__v' }]
+                populate: [
+                    {
+                        path: 'companyId',
+                        select: 'jobLocations',
+                        populate: {
+                            path: 'jobLocations',
+                            populate: { path: 'jobSites' }
+                        },
+                    },
+                    { path: 'equipments' },
+                    { path: 'itemTier', select: '-companyId -__v' },
+                    { path: 'paymentTerm', select: '-company -__v' }
+                ]
             })
             .exec().then((companyCustomer: ICompanyCustomer) => {
                 const customer: any = companyCustomer?.customer;
@@ -646,12 +738,15 @@ export const searchDuplicatedCustomers = async (req: Request, res: Response) => 
         .populate({ path: 'paymentTerm', select: '-__v -createdAt -updatedAt' })
         .populate({ path: 'contacts', select: '-__v' })
         .populate({
-            path: 'jobLocations',
-            select: '-__v -customerId -createdAt -updatedAt',
-            populate: [
-                { path: 'contacts', select: '-__v' },
-                { path: 'jobSites', select: '-__v -locationId -customerId' }
-            ]
+            path: 'companies',
+            populate: {
+                path: 'jobLocations',
+                select: '-__v -customerId -createdAt -updatedAt',
+                populate: [
+                    { path: 'contacts', select: '-__v' },
+                    { path: 'jobSites', select: '-__v -locationId -customerId' }
+                ]
+            }
         })
         .exec(async (err: any, customers: ICustomer[]) => {
             if (err || !customers.length) {
@@ -799,7 +894,7 @@ export const mergeCustomers = async (req: Request, res: Response) => {
                             throw new Error(errMsg);
                         }
 
-                        await _updateQBCustomer(req, res, company, customer, async (err, errMsg, qbCustomer) => {
+                        await _updateQBCustomer(req, res, company, customer, async (err, errMsg) => {
                             if (err) {
                                 // return res.json({ status: err, message: errMsg });
                                 throw new Error(errMsg);
@@ -854,8 +949,6 @@ export const _getCustomerInvoicesPayments = async (customers: ICustomer[], compa
 };
 
 const _moveCustomer = async ({
-    req,
-    res,
     customerId,
     companyId,
     unusedCustomerIds,
@@ -964,7 +1057,6 @@ export const exportCustomersToExcel = async (req: Request, res: Response) => {
     const customers = await _getDataCustomersToExport(company);
     const rows = customers.map((customer: any) => _converCustomerToRowExcel(customer))
         .filter((row: any) => row.name && row.name !== '');
-    const XLSX = require('xlsx');
     const worksheet = XLSX.utils.json_to_sheet(rows);
     const headers = ['Customer Name', 'Email', 'Phone', 'Street', 'City', 'State', 'Zip', 'Pricing Tier', 'Payment Term', 'Active', 'PO Required'];
     XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: 'A1' });
@@ -1105,4 +1197,24 @@ const _converCustomerToRowExcel = (customer: any): any => {
         row.paymentTermName = payT.name;
     }
     return row;
+};
+
+export const getCustomerNames = async(req: Request, res: Response): Promise<Response> => {
+    const { keyword }: { keyword: string } = req.query;
+    
+    const keywordRegex = { $regex: keyword, $options: 'i' };
+    const query = {
+        '$and': [
+            //TODO { 'type': ECustomerTypes.BUILDER },
+            {
+                '$or': [
+                    { 'profile.displayName': keywordRegex },
+                    { 'info.email': keywordRegex },
+                ]
+            }
+        ]
+    };
+
+    const customers = await Customer.find({ ...query }, 'profile.displayName');
+    return res.json({ status: Status.Success, customers });
 };
