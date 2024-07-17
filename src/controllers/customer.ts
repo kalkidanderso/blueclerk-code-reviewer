@@ -72,10 +72,16 @@ export const createCustomer = async (req: Request, res: Response) => {
     // Create new builder company and attach it to the created customer
     let companyCustomerId = params.companyId;
     if(!companyCustomerId && params.type === ECustomerTypes.BUILDER) {
+
         // validation for existing company/builder
-        const companyExists = await Company.find({
-          'info.companyName': params.name
-        })
+        const keywordRegex = { $regex: params.name, $options: 'i' };
+        const query = {
+            '$or': [
+                { 'info.companyName': keywordRegex },
+            ]
+        };
+        
+        const companyExists = await Company.find({...query}, 'info.companyName')
         if (!companyExists || companyExists.length == 0) {
             const chargeDate = new Date();   
             chargeDate.setDate(chargeDate.getDate() + 30);
@@ -106,7 +112,7 @@ export const createCustomer = async (req: Request, res: Response) => {
             await companyCustomer.save();
             companyCustomerId = companyCustomer._id;
         } else {
-            return res.status(400).json({ 'status': 'Company already exists, Please select company from the list'});
+            return res.status(400).json({ 'status': 'Customer already exists, Please select company from the list'});
         }
     }
 
