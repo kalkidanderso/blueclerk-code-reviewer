@@ -1,11 +1,7 @@
 import express from 'express';
 import { validate, Validations } from '../middleware/validator';
 import passport from 'passport';
-import {
-    checkPermissions,
-    checkSpecificPermissions,
-    checkUserScanPermissions
-} from '../middleware/permissions';
+import { checkPermissions, checkSpecificPermissions, checkUserScanPermissions } from '../middleware/permissions';
 import { uploadInvoices, uploadImageInS3 } from '../middleware/multer';
 import { getCompanyId } from '../middleware/company';
 import { refreshQBToken } from '../middleware/quickbook';
@@ -68,7 +64,6 @@ import blockchain from './blockchain';
 import { isLogin } from '../middleware/session';
 
 export default function (sio: any) {
-
     const router: express.Router = express.Router();
 
     router.use('/homeOwner', homeOwner);
@@ -78,38 +73,23 @@ export default function (sio: any) {
     router.use('/blockchain', blockchain);
 
     // Auth
-    router.post(
-        '/login',
-        validate(Validations.login),
-        (req, res) => {
-            userController.login(req, res, sio);
-        }
-    );
+    router.post('/login', validate(Validations.login), (req, res) => {
+        userController.login(req, res, sio);
+    });
 
     // Used for Service Provider Sign Up
-    router.get(
-        '/getAllCompanies',
-        companyController.getAllCompanies
-    );
+    router.get('/getAllCompanies', companyController.getAllCompanies);
 
     // Used for Builder Sign Up
-    router.get(
-        '/getAllCustomers',
-        customerController.getAllCustomers
-    );
+    router.get('/getAllCustomers', customerController.getAllCustomers);
 
-    router.post(
-        '/logout',
-        passport.authenticate('jwt', { session: false }),
-        isLogin(),
-        userController.logout
-    );
+    router.post('/logout', passport.authenticate('jwt', { session: false }), isLogin(), userController.logout);
     router.get(
         '/customers/name',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         validate(Validations.getCustomersNames),
-        customerController.getCustomerNames
+        customerController.getCustomerNames,
     );
 
     router.get(
@@ -117,7 +97,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         validate(Validations.getCustomersNames),
-        companyController.queryCompanies
+        companyController.queryCompanies,
     );
 
     router.get(
@@ -125,7 +105,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         validate(Validations.getCompanyById),
-        companyController.getCompanyById
+        companyController.getCompanyById,
     );
 
     router.post(
@@ -133,14 +113,14 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        userController.companySubscribe
+        userController.companySubscribe,
     );
 
     router.post(
         '/agreeTermAndCondition',
         passport.authenticate('jwt', { session: false }),
         validate(Validations.agree),
-        userController.agreeToTermAndConditions
+        userController.agreeToTermAndConditions,
     );
 
     // router.post(
@@ -151,27 +131,19 @@ export default function (sio: any) {
     //     }
     // )
 
-    router.post(
-        '/signup',
-        validate(Validations.signUp),
-        (req, res) => {
-            userController.signup(req, res, sio);
-        }
-    );
+    router.post('/signup', validate(Validations.signUp), (req, res) => {
+        userController.signup(req, res, sio);
+    });
 
-    router.post(
-        '/adminSignUp',
-        validate(Validations.adminSignUp),
-        (req, res) => {
-            userController.createGlobalAdmin(req, res, sio);
-        }
-    );
+    router.post('/adminSignUp', validate(Validations.adminSignUp), (req, res) => {
+        userController.createGlobalAdmin(req, res, sio);
+    });
 
     router.get(
         '/getCompanyProfile/:companyId',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
-        userController.getCompanyProfile
+        userController.getCompanyProfile,
     );
 
     router.post(
@@ -179,7 +151,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        permissionController.getAllPermissions
+        permissionController.getAllPermissions,
     );
 
     router.post(
@@ -188,7 +160,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateDefaultPermissions),
-        permissionController.updateDefaultPermissions
+        permissionController.updateDefaultPermissions,
     );
 
     router.post(
@@ -196,7 +168,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        permissionController.getOfficeAdminPermissions
+        permissionController.getOfficeAdminPermissions,
     );
 
     router.post(
@@ -204,7 +176,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        permissionController.getTechPermissions
+        permissionController.getTechPermissions,
     );
 
     router.post(
@@ -212,7 +184,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        permissionController.getManagerPermissions
+        permissionController.getManagerPermissions,
     );
 
     router.post(
@@ -221,7 +193,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.udpateUserPermissions),
-        permissionController.updateUserPermissions
+        permissionController.updateUserPermissions,
     );
 
     router.post(
@@ -231,7 +203,7 @@ export default function (sio: any) {
         getCompanyId(),
         checkPermissions(Role.TECHNICIAN),
         validate(Validations.updateEmployeeEmailPreferences),
-        companyController.updateEmployeeEmailPreferences
+        companyController.updateEmployeeEmailPreferences,
     );
     router.post(
         '/updateContractorEmailPreferences',
@@ -240,7 +212,7 @@ export default function (sio: any) {
         getCompanyId(),
         checkPermissions(Role.ADMIN_EMPLOYEE),
         validate(Validations.updateContractorEmailPreferences),
-        companyController.updateContractorEmailPreferences
+        companyController.updateContractorEmailPreferences,
     );
     router.post(
         '/updateCustomerEmailPreferences',
@@ -249,8 +221,7 @@ export default function (sio: any) {
         getCompanyId(),
         checkPermissions(Role.ADMIN_EMPLOYEE),
         validate(Validations.updateCustomerEmailPreferences),
-        companyController.updateCustomerEmailPreferences
-
+        companyController.updateCustomerEmailPreferences,
     );
     router.post(
         '/getEmployeePermissions',
@@ -258,9 +229,8 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.employeePermissions),
-        permissionController.getUserPermissions
+        permissionController.getUserPermissions,
     );
-
 
     //Industry
     router.post(
@@ -269,13 +239,10 @@ export default function (sio: any) {
         isLogin(),
         checkPermissions(Role.GLOBAL_ADMIN),
         validate(Validations.createIndustry),
-        industryController.createIndustry
+        industryController.createIndustry,
     );
 
-    router.post(
-        '/getIndustries',
-        industryController.getIndustries
-    );
+    router.post('/getIndustries', industryController.getIndustries);
 
     // router.post(
     //     '/removeIndustry',
@@ -293,7 +260,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createManager),
         getCompanyId(),
-        userController.createManager
+        userController.createManager,
     );
 
     router.post(
@@ -303,7 +270,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createTechnician),
         getCompanyId(),
-        userController.createTechnician
+        userController.createTechnician,
     );
 
     router.post(
@@ -313,7 +280,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createOfficeAdmin),
         getCompanyId(),
-        userController.createOfficeAdmin
+        userController.createOfficeAdmin,
     );
 
     router.post(
@@ -323,7 +290,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createOfficeAdmin),
         getCompanyId(),
-        userController.createAdminEmployee
+        userController.createAdminEmployee,
     );
 
     router.post(
@@ -332,7 +299,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.changeEmployeeRole),
-        userController.updateEmployeeRole
+        userController.updateEmployeeRole,
     );
 
     router.post(
@@ -341,7 +308,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.changeEmployeeLocPermission),
-        userController.updateEmployeeLocPermission
+        userController.updateEmployeeLocPermission,
     );
 
     router.post(
@@ -350,7 +317,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         getCompanyId(),
-        userController.getManagersList
+        userController.getManagersList,
     );
 
     router.post(
@@ -359,7 +326,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         getCompanyId(),
-        userController.getTechniciansList
+        userController.getTechniciansList,
     );
 
     router.post(
@@ -368,7 +335,8 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         getCompanyId(),
-        userController.getOfficeAdminsList);
+        userController.getOfficeAdminsList,
+    );
 
     router.post(
         '/updateProfile',
@@ -376,7 +344,8 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         //validate(Validations.updateProfile),
-        userController.updateProfile);
+        userController.updateProfile,
+    );
 
     router.post(
         '/changePassword',
@@ -384,13 +353,10 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.changePassword),
-        userController.changePassword);
+        userController.changePassword,
+    );
 
-    router.post(
-        '/forgotPassword',
-        validate(Validations.forgotPassword),
-        userController.forgotPassword);
-
+    router.post('/forgotPassword', validate(Validations.forgotPassword), userController.forgotPassword);
 
     router.post(
         '/deleteEmployee',
@@ -398,7 +364,8 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.deleteEmployee),
-        userController.deleteEmployee);
+        userController.deleteEmployee,
+    );
 
     router.post(
         '/activateEmployee',
@@ -406,9 +373,8 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.deleteEmployee),
-        userController.activateEmployee);
-
-
+        userController.activateEmployee,
+    );
 
     //Equipment types
     router.post(
@@ -417,7 +383,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createEquipmentType),
-        equipmentTypeController.createEquipmentType
+        equipmentTypeController.createEquipmentType,
     );
 
     router.post(
@@ -425,7 +391,8 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        equipmentTypeController.getEquipmentTypes);
+        equipmentTypeController.getEquipmentTypes,
+    );
 
     //Equipment brands
     router.post(
@@ -434,7 +401,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createEquipmentBrand),
-        equipmentBrandController.createEquipmentBrand
+        equipmentBrandController.createEquipmentBrand,
     );
 
     router.post(
@@ -442,7 +409,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        equipmentBrandController.getEquipmentBrands
+        equipmentBrandController.getEquipmentBrands,
     );
 
     // COMPANY LOCATION
@@ -451,7 +418,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyLocationController.getCompanyLocations
+        companyLocationController.getCompanyLocations,
     );
 
     router.get(
@@ -459,7 +426,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyLocationController.getCompanyLocationById
+        companyLocationController.getCompanyLocationById,
     );
 
     router.post(
@@ -468,7 +435,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createCompanyLocation),
-        companyLocationController.createCompanyLocation
+        companyLocationController.createCompanyLocation,
     );
 
     router.put(
@@ -477,7 +444,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateCompanyLocation),
-        companyLocationController.updateCompanyLocation
+        companyLocationController.updateCompanyLocation,
     );
 
     router.put(
@@ -485,7 +452,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyLocationController.updateCompanyLocationAssignments
+        companyLocationController.updateCompanyLocationAssignments,
     );
 
     router.put(
@@ -493,7 +460,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyLocationController.updateCompanyLocationBillingAddress
+        companyLocationController.updateCompanyLocationBillingAddress,
     );
 
     router.post(
@@ -501,7 +468,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyLocationController.getUserDivision
+        companyLocationController.getUserDivision,
     );
 
     // Customers
@@ -511,7 +478,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createCustomer),
-        customerController.createCustomer
+        customerController.createCustomer,
     );
 
     router.post(
@@ -520,7 +487,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getCustomers),
-        customerController.getCustomers
+        customerController.getCustomers,
     );
 
     router.post(
@@ -529,7 +496,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getCustomerDetail),
-        customerController.customerDetail
+        customerController.customerDetail,
     );
 
     router.post(
@@ -538,7 +505,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateCustomer),
-        customerController.updateCustomer
+        customerController.updateCustomer,
     );
 
     router.post(
@@ -547,7 +514,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateCustomPrices),
-        customerController.updateCustomPrices
+        customerController.updateCustomPrices,
     );
 
     router.post(
@@ -557,7 +524,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.searchDuplicatedCustomers),
         refreshQBToken(),
-        customerController.searchDuplicatedCustomers
+        customerController.searchDuplicatedCustomers,
     );
 
     router.post(
@@ -566,7 +533,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.mergeCustomers),
-        customerController.mergeCustomers
+        customerController.mergeCustomers,
     );
 
     router.get(
@@ -574,7 +541,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        customerController.getSupplierBuilders
+        customerController.getSupplierBuilders,
     );
 
     //Customer equipments
@@ -584,7 +551,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createCustomerEquipment),
-        customerEquipmentController.createCustomerEquipment
+        customerEquipmentController.createCustomerEquipment,
     );
 
     router.post(
@@ -593,7 +560,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getCustomerEquipments),
-        customerEquipmentController.getCustomerEquipments
+        customerEquipmentController.getCustomerEquipments,
     );
 
     router.post(
@@ -602,7 +569,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getCustomerEquipmentJobs),
-        customerEquipmentController.getCustomerEquipmentJobs
+        customerEquipmentController.getCustomerEquipmentJobs,
     );
 
     router.post(
@@ -611,7 +578,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getCustomerEquipmentInfo),
-        customerEquipmentController.getCustomerEquipmentInfo
+        customerEquipmentController.getCustomerEquipmentInfo,
     );
 
     router.post(
@@ -620,7 +587,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getCustomerEquipmentInfo),
-        customerEquipmentController.getEquipmentJobs
+        customerEquipmentController.getEquipmentJobs,
     );
 
     router.post(
@@ -629,7 +596,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.linkEquipmentJob),
-        customerEquipmentController.linkJobToEquipment
+        customerEquipmentController.linkJobToEquipment,
     );
 
     router.post(
@@ -639,7 +606,7 @@ export default function (sio: any) {
         getCompanyId(),
         checkUserScanPermissions(Permissions.Scan_Tag),
         validate(Validations.getCustomerEquipmentJobs),
-        customerEquipmentController.checkTagAssociation
+        customerEquipmentController.checkTagAssociation,
     );
 
     // Job Type
@@ -650,7 +617,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createJobType),
-        jobTypeController.createJobType
+        jobTypeController.createJobType,
     );
 
     router.post(
@@ -659,7 +626,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.editJobType),
-        jobTypeController.editJobType
+        jobTypeController.editJobType,
     );
 
     router.post(
@@ -668,7 +635,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.changeJobTypeStatus),
-        jobTypeController.changeJobTypeStatus
+        jobTypeController.changeJobTypeStatus,
     );
 
     router.post(
@@ -676,7 +643,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        jobTypeController.getJobTypes
+        jobTypeController.getJobTypes,
     );
 
     // Item
@@ -687,7 +654,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getItems),
-        itemController.getItems
+        itemController.getItems,
     );
 
     router.post(
@@ -696,7 +663,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createItem),
-        itemController.createItem
+        itemController.createItem,
     );
 
     router.post(
@@ -705,7 +672,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateItem),
-        itemController.updateItem
+        itemController.updateItem,
     );
     router.post(
         '/toggleItemStatus',
@@ -713,7 +680,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.toggleItemStatus),
-        itemController.toggleItemStatus
+        itemController.toggleItemStatus,
     );
     router.post(
         '/checkItemExist',
@@ -721,7 +688,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.itemExist),
-        itemController.disabledItemExists
+        itemController.disabledItemExists,
     );
 
     router.post(
@@ -729,7 +696,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        itemController.updateItems
+        itemController.updateItems,
     );
 
     router.post(
@@ -738,7 +705,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.searchDuplicatedItems),
-        itemController.searchDuplicatedItems
+        itemController.searchDuplicatedItems,
     );
 
     router.post(
@@ -747,7 +714,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.mergeItems),
-        itemController.mergeItems
+        itemController.mergeItems,
     );
 
     // Discount Item
@@ -758,7 +725,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getDiscountItems),
-        itemController.getDiscountItems
+        itemController.getDiscountItems,
     );
 
     router.post(
@@ -767,7 +734,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createDiscountItem),
-        itemController.createDiscountItem
+        itemController.createDiscountItem,
     );
 
     router.put(
@@ -776,7 +743,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateDiscountItem),
-        itemController.updateDiscountItem
+        itemController.updateDiscountItem,
     );
 
     // Job
@@ -789,7 +756,7 @@ export default function (sio: any) {
         // uploadImageInS3.array('images'),
         uploadImageInS3.fields([{ name: 'image' }, { name: 'images' }]),
         validate(Validations.createJob),
-        jobController.createJob
+        jobController.createJob,
     );
 
     router.post(
@@ -798,7 +765,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createSubJob),
-        jobController.createSubJob
+        jobController.createSubJob,
     );
 
     router.post(
@@ -807,7 +774,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getJobs),
-        jobController.getJobs
+        jobController.getJobs,
     );
 
     router.get(
@@ -817,7 +784,7 @@ export default function (sio: any) {
         getCompanyId(),
         (req, res) => {
             jobController.getJobsStream(req, res, sio);
-        }
+        },
     );
 
     router.post(
@@ -826,7 +793,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.searchJob),
-        jobController.getFilteredJobs
+        jobController.getFilteredJobs,
     );
 
     router.post(
@@ -835,7 +802,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.technicianJobs),
-        jobController.getJobsByTechnicianId
+        jobController.getJobsByTechnicianId,
     );
 
     router.post(
@@ -844,7 +811,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.technicianJobs),
-        jobController.getTodaysJobsByTechnicianId
+        jobController.getTodaysJobsByTechnicianId,
     );
 
     router.get(
@@ -854,7 +821,7 @@ export default function (sio: any) {
         getCompanyId(),
         (req, res) => {
             jobController.getJobsStream(req, res, sio);
-        }
+        },
     );
 
     router.post(
@@ -867,7 +834,7 @@ export default function (sio: any) {
         validate(Validations.updateJob),
         (req, res) => {
             jobController.updateJob(req, res, sio);
-        }
+        },
     );
 
     router.post(
@@ -876,7 +843,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.generalJob),
-        jobController.startJob
+        jobController.startJob,
     );
 
     router.post(
@@ -885,7 +852,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.startJobTask),
-        jobController.startJobTask
+        jobController.startJobTask,
     );
 
     router.post(
@@ -894,7 +861,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateJobTask),
-        jobController.updateJobTask
+        jobController.updateJobTask,
     );
 
     router.post(
@@ -903,7 +870,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.generalJob),
-        jobController.getJobDetails
+        jobController.getJobDetails,
     );
 
     router.get(
@@ -911,7 +878,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        jobController.getJobReportPDF
+        jobController.getJobReportPDF,
     );
 
     router.post(
@@ -922,7 +889,7 @@ export default function (sio: any) {
         // uploadImageInS3.array('images'),
         uploadImageInS3.fields([{ name: 'image' }, { name: 'images' }]),
         validate(Validations.editJob),
-        jobController.editJob
+        jobController.editJob,
     );
 
     router.put(
@@ -931,7 +898,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateJoBRequestStatus),
-        jobController.updateJobRequestStatus
+        jobController.updateJobRequestStatus,
     );
 
     router.post(
@@ -943,7 +910,7 @@ export default function (sio: any) {
         validate(Validations.updateJobTechnicianStatus),
         (req, res) => {
             jobController.updateJobTechnicianStatus(req, res, sio);
-        }
+        },
     );
 
     router.post(
@@ -952,7 +919,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateJobTime),
-        jobController.updateJobTime
+        jobController.updateJobTime,
     );
 
     // JOB ROUTE
@@ -962,7 +929,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        jobRouteController.getAllJobRoutes
+        jobRouteController.getAllJobRoutes,
     );
 
     router.get(
@@ -972,7 +939,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.jobRoute),
         getTechnicianContractor(),
-        jobRouteController.getJobRoute
+        jobRouteController.getJobRoute,
     );
 
     router.get(
@@ -982,7 +949,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.allJobRoutesByTechnician),
         getTechnicianContractor(),
-        jobRouteController.getAllJobRoutesByTechnician
+        jobRouteController.getAllJobRoutesByTechnician,
     );
 
     router.post(
@@ -992,7 +959,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.jobRoute),
         validate(Validations.createJobRoute),
-        jobRouteController.createJobRoute
+        jobRouteController.createJobRoute,
     );
 
     router.put(
@@ -1001,7 +968,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateJobRoute),
-        jobRouteController.updateJobRoute
+        jobRouteController.updateJobRoute,
     );
 
     // JOB REPORT
@@ -1012,7 +979,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getJobReport),
-        jobController.getJobReportDetails
+        jobController.getJobReportDetails,
     );
 
     router.get(
@@ -1021,7 +988,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getAllJobReports),
-        jobController.getAllJobReports
+        jobController.getAllJobReports,
     );
 
     router.delete(
@@ -1030,7 +997,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.deleteJobReport),
-        jobController.deleteJobReportById
+        jobController.deleteJobReportById,
     );
 
     //Image upload
@@ -1038,7 +1005,7 @@ export default function (sio: any) {
         '/uploadImage',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
-        imageController.uploadImage
+        imageController.uploadImage,
     );
 
     router.delete(
@@ -1047,7 +1014,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.deleteImage),
-        imageController.deleteImage
+        imageController.deleteImage,
     );
 
     //Group
@@ -1057,7 +1024,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createGroup),
-        groupController.createGroup
+        groupController.createGroup,
     );
 
     router.post(
@@ -1065,7 +1032,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        groupController.getGroups
+        groupController.getGroups,
     );
 
     router.post(
@@ -1074,7 +1041,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.groupGeneric),
-        groupController.deleteGroup
+        groupController.deleteGroup,
     );
 
     router.post(
@@ -1083,7 +1050,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.addManager),
-        groupController.addManager
+        groupController.addManager,
     );
 
     router.post(
@@ -1092,7 +1059,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.memberGeneric),
-        groupController.addMember
+        groupController.addMember,
     );
 
     router.post(
@@ -1101,9 +1068,8 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.memberGeneric),
-        groupController.removeMember
+        groupController.removeMember,
     );
-
 
     //Company Equipment
     router.post(
@@ -1112,7 +1078,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createCompanyEquipment),
-        companyEquipmentController.createCompanyEquipment
+        companyEquipmentController.createCompanyEquipment,
     );
 
     router.post(
@@ -1120,7 +1086,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyEquipmentController.getCompanyEquipments
+        companyEquipmentController.getCompanyEquipments,
     );
 
     // Company Equipment History
@@ -1130,7 +1096,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createCompanyEquipmentHistory),
-        companyEquipmentHistoryController.createCompanyEquipmentHistory
+        companyEquipmentHistoryController.createCompanyEquipmentHistory,
     );
 
     // Company Equipment Inventory
@@ -1140,7 +1106,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createEquipmentInventory),
-        companyEquipmentInventoryController.createCompanyEquipmentInventory
+        companyEquipmentInventoryController.createCompanyEquipmentInventory,
     );
 
     router.post(
@@ -1148,9 +1114,8 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyEquipmentInventoryController.getIventoryHistory
+        companyEquipmentInventoryController.getIventoryHistory,
     );
-
 
     // Company cards
     router.post(
@@ -1159,7 +1124,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.addCompanyCard),
-        companyCardController.createCompanyCard
+        companyCardController.createCompanyCard,
     );
 
     router.post(
@@ -1168,7 +1133,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.removeCompanyCard),
-        companyCardController.removeCompanyCard
+        companyCardController.removeCompanyCard,
     );
 
     router.post(
@@ -1176,7 +1141,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyCardController.getCompanyCards
+        companyCardController.getCompanyCards,
     );
 
     // place tags orders
@@ -1186,7 +1151,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.placeOrder),
-        orderController.placeOrder
+        orderController.placeOrder,
     );
 
     router.post(
@@ -1194,9 +1159,8 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        orderController.getOrders
+        orderController.getOrders,
     );
-
 
     router.post(
         '/buySubscriptions',
@@ -1204,7 +1168,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.buySubscriptions),
-        subscriptionController.addCompanySubscriptions
+        subscriptionController.addCompanySubscriptions,
     );
     router.get(
         '/getAllSubscriptions',
@@ -1212,7 +1176,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         checkSpecificPermissions([Role.ADMIN_EMPLOYEE, Role.COMPANY_ADMIN]),
-        subscriptionController.getAllSubscriptions
+        subscriptionController.getAllSubscriptions,
     );
 
     router.post(
@@ -1221,20 +1185,14 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.removeSubscription),
-        subscriptionController.removeCompanySubscriptions
+        subscriptionController.removeCompanySubscriptions,
     );
 
-    router.get(
-        '/chargeSubscription',
-        subscriptionController.chargeCompanySubscription
-    );
+    router.get('/chargeSubscription', subscriptionController.chargeCompanySubscription);
 
-    router.get(
-        '/finalizeStripeInvoices',
-        (req, res) => {
-            subscriptionController.finalizeCompanyInvoices(req, res, sio);
-        }
-    );
+    router.get('/finalizeStripeInvoices', (req, res) => {
+        subscriptionController.finalizeCompanyInvoices(req, res, sio);
+    });
 
     // router.post(
     //     '/updateSubscription',
@@ -1252,7 +1210,7 @@ export default function (sio: any) {
     router.post(
         '/searchContractor',
         // validate(Validations.searchContractor),
-        vendorController.searchContractor
+        vendorController.searchContractor,
     );
 
     router.post(
@@ -1263,7 +1221,7 @@ export default function (sio: any) {
         validate(Validations.startContract),
         (req, res) => {
             vendorController.startContract(req, res, sio);
-        }
+        },
     );
 
     router.post(
@@ -1272,7 +1230,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.searchContractor),
-        vendorController.inviteContractor
+        vendorController.inviteContractor,
     );
 
     router.post(
@@ -1281,7 +1239,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.remindContractor),
-        vendorController.remindContractor
+        vendorController.remindContractor,
     );
 
     // limit only for contractors
@@ -1290,7 +1248,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        vendorController.getAllContracts
+        vendorController.getAllContracts,
     );
 
     // limit only for contractors
@@ -1312,7 +1270,7 @@ export default function (sio: any) {
         validate(Validations.updateContract),
         (req, res) => {
             vendorController.cancelOrFinishContract(req, res, sio);
-        }
+        },
     );
 
     router.post(
@@ -1323,7 +1281,7 @@ export default function (sio: any) {
         validate(Validations.finishContract),
         (req, res) => {
             vendorController.finishContract(req, res, sio);
-        }
+        },
     );
 
     router.post(
@@ -1332,7 +1290,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.contractorPermissions),
-        permissionController.addContractorPermissions
+        permissionController.addContractorPermissions,
     );
 
     router.post(
@@ -1340,7 +1298,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         validate(Validations.upgradeToCompany),
-        vendorController.upgradeToCompany
+        vendorController.upgradeToCompany,
     );
 
     router.get(
@@ -1348,32 +1306,24 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        vendorController.getContractors
+        vendorController.getContractors,
     );
 
     router.post(
         '/updateVendorDisplayName',
         passport.authenticate('jwt', { session: false }),
         validate(Validations.updateVendorDisplayName),
-        vendorController.updateVendorDisplayName
+        vendorController.updateVendorDisplayName,
     );
 
-    router.post(
-        '/checkAndGet',
-        validate(Validations.socialLogin),
-        userController.checkAndGetUser
-    );
+    router.post('/checkAndGet', validate(Validations.socialLogin), userController.checkAndGetUser);
 
-    router.post(
-        '/signUpSocial',
-        validate(Validations.socialSignUp),
-        userController.createCompanySocial
-    );
+    router.post('/signUpSocial', validate(Validations.socialSignUp), userController.createCompanySocial);
 
     router.post(
         '/contractorSignUpSocial',
         validate(Validations.contractorSocialSignUp),
-        userController.createContractorSocial
+        userController.createContractorSocial,
     );
     router.post(
         '/importCustomer',
@@ -1381,7 +1331,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         // validate(Validations.customerImport),
-        customerImportController.uploadfile
+        customerImportController.uploadfile,
     );
 
     // Service Ticket
@@ -1390,7 +1340,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        serviceTicketController.getServiceTickets
+        serviceTicketController.getServiceTickets,
     );
 
     router.post(
@@ -1399,7 +1349,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getOpenServiceTickets),
-        serviceTicketController.getOpenServiceTickets
+        serviceTicketController.getOpenServiceTickets,
     );
 
     router.get(
@@ -1410,7 +1360,7 @@ export default function (sio: any) {
         validate(Validations.getOpenServiceTicketsStream),
         (req, res) => {
             serviceTicketController.getOpenServiceTicketsStream(req, res, sio);
-        }
+        },
     );
 
     router.post(
@@ -1420,7 +1370,7 @@ export default function (sio: any) {
         getCompanyId(),
         (req, res) => {
             serviceTicketController.createServiceTicket(req, res, sio);
-        }
+        },
     );
 
     router.post(
@@ -1429,7 +1379,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.editTicket),
-        serviceTicketController.editServiceTicket
+        serviceTicketController.editServiceTicket,
     );
 
     router.post(
@@ -1438,7 +1388,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         //validate(Validations.updateTicket),
-        serviceTicketController.updateServiceTicket
+        serviceTicketController.updateServiceTicket,
     );
     router.post(
         '/getServiceTicketDetail',
@@ -1446,9 +1396,8 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getTicketDetail),
-        serviceTicketController.getServiceTicketDetail
+        serviceTicketController.getServiceTicketDetail,
     );
-
 
     // Quickbooks
     /**
@@ -1468,7 +1417,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        quickBookCustomerController.syncQBCustomers
+        quickBookCustomerController.syncQBCustomers,
     );
 
     router.post(
@@ -1478,7 +1427,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createQBCustomer),
         refreshQBToken(),
-        quickBookCustomerController.createQBCustomer
+        quickBookCustomerController.createQBCustomer,
     );
 
     router.post(
@@ -1486,14 +1435,14 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        quickBookItemController.syncQBItems
+        quickBookItemController.syncQBItems,
     );
     router.post(
         '/syncQBItem',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        quickBookItemController.syncQBItem
+        quickBookItemController.syncQBItem,
     );
 
     router.post(
@@ -1501,7 +1450,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        quickBookPaymentTermController.syncQBPaymentTerms
+        quickBookPaymentTermController.syncQBPaymentTerms,
     );
 
     router.post(
@@ -1510,7 +1459,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         refreshQBToken(),
-        quickBookInvoiceController.createQBInvoice
+        quickBookInvoiceController.createQBInvoice,
     );
 
     router.post(
@@ -1518,7 +1467,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         refreshQBToken(),
-        quickBookInvoiceController.createQBInvoices
+        quickBookInvoiceController.createQBInvoices,
     );
 
     router.post(
@@ -1526,7 +1475,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        quickBookInvoiceController.syncQBInvoices
+        quickBookInvoiceController.syncQBInvoices,
     );
 
     router.post(
@@ -1535,7 +1484,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         refreshQBToken(),
-        quickBookPaymentController.createQBPayment
+        quickBookPaymentController.createQBPayment,
     );
 
     router.post(
@@ -1544,7 +1493,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         refreshQBToken(),
-        quickBookPaymentController.createQBPayments
+        quickBookPaymentController.createQBPayments,
     );
 
     router.post(
@@ -1552,7 +1501,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        quickBookPaymentController.syncQBPayments
+        quickBookPaymentController.syncQBPayments,
     );
 
     router.post(
@@ -1561,7 +1510,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getQBUri),
-        quickBookController.getQBUri
+        quickBookController.getQBUri,
     );
     router.post(
         '/getQBAccounts',
@@ -1569,28 +1518,22 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         // validate(Validations.getQBUri),
-        quickBookController.getQBAccounts
+        quickBookController.getQBAccounts,
     );
 
-    router.get(
-        '/QBCallback',
-        (req, res) => {
-            quickBookController.getCallBackToken(req, res, sio);
-        }
-    );
+    router.get('/QBCallback', (req, res) => {
+        quickBookController.getCallBackToken(req, res, sio);
+    });
 
     router.post(
         '/disconnectQB',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        quickBookController.disconnectQB
+        quickBookController.disconnectQB,
     );
 
-    router.post(
-        '/blueclerkSyncWebhook',
-        quickBookController.blueclerkSyncWebhook
-    );
+    router.post('/blueclerkSyncWebhook', quickBookController.blueclerkSyncWebhook);
 
     // Company
 
@@ -1599,7 +1542,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyController.getContractorForJob
+        companyController.getContractorForJob,
     );
 
     router.post(
@@ -1607,7 +1550,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyController.getCompanyContracts
+        companyController.getCompanyContracts,
     );
 
     router.post(
@@ -1616,7 +1559,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getContractorDetail),
-        companyController.getContractorDetail
+        companyController.getContractorDetail,
     );
 
     router.put(
@@ -1627,7 +1570,7 @@ export default function (sio: any) {
         validate(Validations.updateCompanyContract),
         (req, res) => {
             vendorController.updateContract(req, res, sio);
-        }
+        },
     );
 
     router.post(
@@ -1636,7 +1579,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateCompanyProfile),
-        companyController.updateCompanyProfile
+        companyController.updateCompanyProfile,
     );
 
     router.get(
@@ -1644,7 +1587,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         validate(Validations.getCompanyCustomer),
-        companyController.getCompanyCustomer
+        companyController.getCompanyCustomer,
     );
 
     router.put(
@@ -1653,7 +1596,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateCompanyCustomer),
-        companyController.updateCompanyCustomer
+        companyController.updateCompanyCustomer,
     );
 
     // Item Tier
@@ -1663,7 +1606,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyController.getItemTierList
+        companyController.getItemTierList,
     );
 
     router.post(
@@ -1671,7 +1614,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyController.addItemTier
+        companyController.addItemTier,
     );
 
     router.put(
@@ -1680,7 +1623,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateItemTier),
-        companyController.updateItemTier
+        companyController.updateItemTier,
     );
 
     // Email Default
@@ -1689,7 +1632,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        emailDefaultController.getCompanyEmailDefault
+        emailDefaultController.getCompanyEmailDefault,
     );
 
     router.put(
@@ -1697,7 +1640,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        emailDefaultController.updateCompanyEmailDefault
+        emailDefaultController.updateCompanyEmailDefault,
     );
 
     router.post(
@@ -1705,7 +1648,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyController.setCustomWorkNumber
+        companyController.setCustomWorkNumber,
     );
 
     router.post(
@@ -1713,7 +1656,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyController.getCustomWorkNumber
+        companyController.getCustomWorkNumber,
     );
 
     router.post(
@@ -1721,7 +1664,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyController.getSyncInfo
+        companyController.getSyncInfo,
     );
 
     router.post(
@@ -1729,7 +1672,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyController.getAllEmployees
+        companyController.getAllEmployees,
     );
     router.get(
         '/getEmployeeDetail',
@@ -1737,20 +1680,17 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getEmployeeDetails),
-        companyController.getEmployeeDetail
+        companyController.getEmployeeDetail,
     );
     router.post(
         '/getEmployeesForJob',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyController.getEmployeesForJob
+        companyController.getEmployeesForJob,
     );
 
-    router.get(
-        '/downgradeCompanies',
-        companyController.downgradeCompanies
-    );
+    router.get('/downgradeCompanies', companyController.downgradeCompanies);
 
     router.post(
         '/setCustomInvoiceNumber',
@@ -1758,7 +1698,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.setCustomInvoiceNumber),
-        invoiceController.setCustomInvoiceNumber
+        invoiceController.setCustomInvoiceNumber,
     );
 
     router.post(
@@ -1766,7 +1706,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        invoiceController.getInvoiceNumber
+        invoiceController.getInvoiceNumber,
     );
 
     // Sales Taxes
@@ -1776,7 +1716,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createSaleTax),
-        companyController.createSalesTax
+        companyController.createSalesTax,
     );
 
     router.post(
@@ -1785,7 +1725,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateSaleTax),
-        companyController.updateSalesTax
+        companyController.updateSalesTax,
     );
 
     router.post(
@@ -1794,7 +1734,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.deleteSaleTax),
-        companyController.deleteSalesTax
+        companyController.deleteSalesTax,
     );
 
     router.post(
@@ -1802,7 +1742,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyController.getSalesTaxes
+        companyController.getSalesTaxes,
     );
     // Invoice Logs
     router.post(
@@ -1811,7 +1751,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         // checkUserPermissions(Permissions.Get_Invoice_Detail),
-        invoiceLogsController.get
+        invoiceLogsController.get,
     );
 
     // Job Charges
@@ -1821,7 +1761,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createJobCharges),
-        companyController.createJobCharges
+        companyController.createJobCharges,
     );
 
     router.post(
@@ -1830,7 +1770,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateJobCharges),
-        companyController.updateJobCharges
+        companyController.updateJobCharges,
     );
 
     router.post(
@@ -1839,7 +1779,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.deleteJobCharges),
-        companyController.deleteJobCharges
+        companyController.deleteJobCharges,
     );
 
     router.post(
@@ -1847,7 +1787,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyController.getJobCharges
+        companyController.getJobCharges,
     );
 
     // Invoice
@@ -1858,7 +1798,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.createInvoice),
         refreshQBToken(),
-        invoiceController.createInvoice
+        invoiceController.createInvoice,
     );
 
     router.get(
@@ -1867,7 +1807,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getInvoiceEmailTemplate),
-        invoiceController.getInvoiceEmailTemplate
+        invoiceController.getInvoiceEmailTemplate,
     );
 
     router.post(
@@ -1877,7 +1817,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.sendInvoice),
-        invoiceController.sendInvoiceEmail
+        invoiceController.sendInvoiceEmail,
     );
 
     router.post(
@@ -1886,7 +1826,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.sendInvoices),
-        invoiceController.sendInvoicesEmail
+        invoiceController.sendInvoicesEmail,
     );
 
     router.get(
@@ -1895,7 +1835,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.sendInvoice),
-        invoiceController.generateInvoicePdf
+        invoiceController.generateInvoicePdf,
     );
 
     router.post(
@@ -1904,7 +1844,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.sendReport),
-        jobController.sendJobReport
+        jobController.sendJobReport,
     );
 
     router.get(
@@ -1913,8 +1853,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getJobReportEmailTemplate),
-        jobController.getJobReportEmailTemplate
-        
+        jobController.getJobReportEmailTemplate,
     );
 
     router.post(
@@ -1923,7 +1862,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createPOInvoice),
-        invoiceController.createPOInvoice
+        invoiceController.createPOInvoice,
     );
 
     router.post(
@@ -1933,7 +1872,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateInvoice),
         refreshQBToken(),
-        invoiceController.updateInvoice
+        invoiceController.updateInvoice,
     );
 
     router.post(
@@ -1943,7 +1882,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.updateInvoice),
         refreshQBToken(),
-        invoiceController.updateInvoiceMessages
+        invoiceController.updateInvoiceMessages,
     );
 
     router.post(
@@ -1951,7 +1890,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        invoiceController.getInvoiceDetail
+        invoiceController.getInvoiceDetail,
     );
 
     router.post(
@@ -1960,14 +1899,14 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getInvoices),
-        invoiceController.getInvoices
+        invoiceController.getInvoices,
     );
 
     router.get(
         '/getUnsyncedInvoices',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        invoiceController.getUnsyncedInvoices
+        invoiceController.getUnsyncedInvoices,
     );
 
     router.get(
@@ -1975,7 +1914,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        invoiceController.getCompanyInvoices
+        invoiceController.getCompanyInvoices,
     );
     router.get(
         '/getCompanyInvoiceDetails',
@@ -1983,7 +1922,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.companyInvoice),
-        invoiceController.getCompanyInvoiceDetails
+        invoiceController.getCompanyInvoiceDetails,
     );
     router.post(
         '/unvoidInvoice',
@@ -1991,8 +1930,8 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         // checkUserPermissions(Permissions.Get_Invoices),
-        validate(Validations.unVoidInvoice),    
-        invoiceController.unVoidInvoice
+        validate(Validations.unVoidInvoice),
+        invoiceController.unVoidInvoice,
     );
     router.delete(
         '/voidInvoice',
@@ -2000,13 +1939,10 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.voidInvoice),
-        invoiceController.voidInvoice
+        invoiceController.voidInvoice,
     );
 
-    router.post(
-        '/updateCompaniesDefaultPermissions',
-        permissionController.updateAllCompaniesPermissions
-    );
+    router.post('/updateCompaniesDefaultPermissions', permissionController.updateAllCompaniesPermissions);
 
     router.put(
         '/updateCommission',
@@ -2014,28 +1950,25 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateCommission),
-        invoiceController.updateCommission
+        invoiceController.updateCommission,
     );
 
-    router.get(
-        '/updateCommissionCron',
-        (req, res) => {
-            invoiceController.updateCommissionCron(req, res);
-        }
-    );
+    router.get('/updateCommissionCron', (req, res) => {
+        invoiceController.updateCommissionCron(req, res);
+    });
 
     router.get(
         '/getCommissionHistory/:beneficiaryId',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
-        invoiceController.getCommissionHistory
+        invoiceController.getCommissionHistory,
     );
 
     router.get(
         '/getCommissionHistoryByJob/:jobId',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
-        invoiceController.getCommissionHistoryByJob
+        invoiceController.getCommissionHistoryByJob,
     );
 
     router.get(
@@ -2043,7 +1976,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        invoiceController.getInvoicesByContractor
+        invoiceController.getInvoicesByContractor,
     );
 
     //Parts Inventory
@@ -2053,7 +1986,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        partController.getPartInventory
+        partController.getPartInventory,
     );
 
     router.post(
@@ -2062,7 +1995,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createPartInventory),
-        partController.createPartInventory
+        partController.createPartInventory,
     );
 
     router.post(
@@ -2071,7 +2004,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.udpatePartInventory),
-        partController.updatePartInventory
+        partController.updatePartInventory,
     );
 
     router.post(
@@ -2080,7 +2013,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.removePartInventory),
-        partController.removePartInventory
+        partController.removePartInventory,
     );
 
     // Purchase Order
@@ -2090,7 +2023,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createPurchaseOrder),
-        purchaseOrderController.createPO
+        purchaseOrderController.createPO,
     );
 
     router.post(
@@ -2098,7 +2031,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        purchaseOrderController.getAllPO
+        purchaseOrderController.getAllPO,
     );
 
     router.post(
@@ -2107,7 +2040,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getEquipmentPO),
-        purchaseOrderController.getAllEquipmentPurchaseOrder
+        purchaseOrderController.getAllEquipmentPurchaseOrder,
     );
 
     router.post(
@@ -2116,7 +2049,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.udpatePurchaseOrderStatus),
-        purchaseOrderController.updatePOStatus
+        purchaseOrderController.updatePOStatus,
     );
 
     router.post(
@@ -2125,7 +2058,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.createPurchaseOrderEstimate),
-        purchaseOrderController.createPOEstimate
+        purchaseOrderController.createPOEstimate,
     );
 
     router.post(
@@ -2134,7 +2067,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.udpatePurchaseOrder),
-        purchaseOrderController.updatePO
+        purchaseOrderController.updatePO,
     );
 
     router.post(
@@ -2143,7 +2076,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.udpateEstimate),
-        estimateController.updateEstimate
+        estimateController.updateEstimate,
     );
 
     router.post(
@@ -2152,7 +2085,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.udpateEstimateStatus),
-        estimateController.updateEstimateStatus
+        estimateController.updateEstimateStatus,
     );
 
     router.post(
@@ -2160,7 +2093,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        estimateController.createEstimate
+        estimateController.createEstimate,
     );
 
     router.post(
@@ -2168,7 +2101,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        estimateController.getEstimates
+        estimateController.getEstimates,
     );
 
     router.post(
@@ -2177,7 +2110,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.cancelEstimate),
-        estimateController.cancelEstimate
+        estimateController.cancelEstimate,
     );
 
     router.post(
@@ -2185,7 +2118,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyController.getCompanyContractorActivity
+        companyController.getCompanyContractorActivity,
     );
 
     // PAYMENT TERM
@@ -2196,7 +2129,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.setCompanyDefaultPaymentTerm),
-        paymentTermController.setCompanyDefaultPaymentTerm
+        paymentTermController.setCompanyDefaultPaymentTerm,
     );
 
     router.post(
@@ -2205,7 +2138,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.setCustomerPaymentTerm),
-        paymentTermController.setCustomerPaymentTerm
+        paymentTermController.setCustomerPaymentTerm,
     );
 
     router.get(
@@ -2214,7 +2147,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         // TODO: Add and use new proper permission
-        paymentTermController.getPaymentTerms
+        paymentTermController.getPaymentTerms,
     );
 
     router.post(
@@ -2224,7 +2157,7 @@ export default function (sio: any) {
         getCompanyId(),
         // TODO: Add and use new proper permission
         validate(Validations.createPaymentTerm),
-        paymentTermController.createPaymentTerm
+        paymentTermController.createPaymentTerm,
     );
 
     router.put(
@@ -2234,7 +2167,7 @@ export default function (sio: any) {
         getCompanyId(),
         // TODO: Add and use new proper permission
         validate(Validations.updatePaymentTerm),
-        paymentTermController.updatePaymentTerm
+        paymentTermController.updatePaymentTerm,
     );
 
     router.delete(
@@ -2244,7 +2177,7 @@ export default function (sio: any) {
         getCompanyId(),
         // TODO: Add and use new proper permission
         validate(Validations.deletePaymentTerm),
-        paymentTermController.deletePaymentTerm
+        paymentTermController.deletePaymentTerm,
     );
 
     // PAYMENT
@@ -2255,7 +2188,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getInvoicesByCustomerId),
-        invoiceController.getInvoicesByCustomerId
+        invoiceController.getInvoicesByCustomerId,
     );
 
     router.get(
@@ -2263,7 +2196,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        paymentController.getPayments
+        paymentController.getPayments,
     );
 
     router.get(
@@ -2271,7 +2204,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        paymentController.getUnsyncedPayments
+        paymentController.getUnsyncedPayments,
     );
 
     router.get(
@@ -2280,7 +2213,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getPaymentsByCustomer),
-        paymentController.getPaymentsByCustomerId
+        paymentController.getPaymentsByCustomerId,
     );
 
     router.get(
@@ -2288,7 +2221,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        paymentController.getPaymentsByContractor
+        paymentController.getPaymentsByContractor,
     );
 
     router.post(
@@ -2298,7 +2231,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.recordPayment),
         refreshQBToken(),
-        paymentController.createPayment
+        paymentController.createPayment,
     );
 
     router.post(
@@ -2307,7 +2240,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.recordPaymentContractor),
-        paymentController.createPaymentContractor
+        paymentController.createPaymentContractor,
     );
 
     router.put(
@@ -2316,7 +2249,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updatePayment),
-        paymentController.updatePayment
+        paymentController.updatePayment,
     );
 
     router.put(
@@ -2325,7 +2258,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updatePaymentContractor),
-        paymentController.updatePaymentContractor
+        paymentController.updatePaymentContractor,
     );
 
     router.post(
@@ -2334,7 +2267,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.voidPaymentContractor),
-        paymentController.voidPaymentContractor
+        paymentController.voidPaymentContractor,
     );
 
     router.delete(
@@ -2343,7 +2276,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.voidPaymentContractor),
-        paymentController.voidPaymentContractor
+        paymentController.voidPaymentContractor,
     );
 
     router.get(
@@ -2351,7 +2284,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        paymentController.getPayrollBalance
+        paymentController.getPayrollBalance,
     );
 
     router.get(
@@ -2359,7 +2292,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        paymentController.exportVendorJobs
+        paymentController.exportVendorJobs,
     );
 
     router.get(
@@ -2367,7 +2300,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        paymentController.getPayrollReport
+        paymentController.getPayrollReport,
     );
 
     // Advance Payment
@@ -2377,7 +2310,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.recordAdvancePayment),
-        paymentAdvanceController.createAdvancePaymentContractor
+        paymentAdvanceController.createAdvancePaymentContractor,
     );
 
     router.get(
@@ -2386,7 +2319,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getAdvancePayments),
-        paymentAdvanceController.getAdvancePaymentsByContractor
+        paymentAdvanceController.getAdvancePaymentsByContractor,
     );
 
     router.put(
@@ -2395,7 +2328,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateAdvancePaymentContractor),
-        paymentAdvanceController.updateAdvancePaymentContractor
+        paymentAdvanceController.updateAdvancePaymentContractor,
     );
 
     router.delete(
@@ -2404,7 +2337,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.voidAdvancePaymentContractor),
-        paymentAdvanceController.voidAdvancePaymentContractor
+        paymentAdvanceController.voidAdvancePaymentContractor,
     );
 
     // REPORT
@@ -2415,7 +2348,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.generateIncomeReport),
-        reportController.generateIncomeReport
+        reportController.generateIncomeReport,
     );
 
     router.get(
@@ -2423,14 +2356,14 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         validate(Validations.generateIncomeReport),
-        reportController.generateIncomeReportPdf
+        reportController.generateIncomeReportPdf,
     );
 
     router.get(
         '/getIncomeReportEmailTemplate',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        reportController.getIncomeReportEmailTemplate
+        reportController.getIncomeReportEmailTemplate,
     );
 
     router.post(
@@ -2439,7 +2372,7 @@ export default function (sio: any) {
         uploadInvoices.single('incomeReportPdf'),
         getCompanyId(),
         validate(Validations.generateIncomeReport),
-        reportController.sendIncomeReportEmail
+        reportController.sendIncomeReportEmail,
     );
 
     router.get(
@@ -2447,7 +2380,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        reportController.getReportEmailTemplate
+        reportController.getReportEmailTemplate,
     );
 
     router.post(
@@ -2456,7 +2389,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.sendReportEmail),
-        reportController.sendReportEmail
+        reportController.sendReportEmail,
     );
 
     router.get(
@@ -2465,7 +2398,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.generateAccountReceivableReport),
-        reportController.generateAccountReceivableReport
+        reportController.generateAccountReceivableReport,
     );
 
     router.get(
@@ -2474,7 +2407,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.generateAccountReceivableDetail),
-        reportController.generateAccountReceivableDetail
+        reportController.generateAccountReceivableDetail,
     );
 
     router.get(
@@ -2483,7 +2416,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.generateAccountReceivableInvoices),
-        reportController.generateAccountReceivableInvoices
+        reportController.generateAccountReceivableInvoices,
     );
 
     router.get(
@@ -2492,21 +2425,21 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.generateReportPdf),
-        reportController.generateReportPdf
+        reportController.generateReportPdf,
     );
 
     router.get(
         '/getMemorizedReports',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        reportController.getMemorizedReports
+        reportController.getMemorizedReports,
     );
 
     router.get(
         '/getMemorizedReport',
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
-        reportController.getMemorizedReport
+        reportController.getMemorizedReport,
     );
 
     router.post(
@@ -2514,7 +2447,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         validate(Validations.createMemorizedReport),
-        reportController.createMemorizedReport
+        reportController.createMemorizedReport,
     );
 
     router.put(
@@ -2522,7 +2455,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         validate(Validations.updateMemorizedReport),
-        reportController.updateMemorizedReport
+        reportController.updateMemorizedReport,
     );
 
     router.delete(
@@ -2530,7 +2463,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         validate(Validations.updateMemorizedReport),
-        reportController.deleteMemorizedReport
+        reportController.deleteMemorizedReport,
     );
 
     // CODE LOCATION TAG
@@ -2541,7 +2474,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.codeLocationTag),
-        tagController.codeLocationTag
+        tagController.codeLocationTag,
     );
 
     router.post(
@@ -2550,7 +2483,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getLocationTagInfo),
-        tagController.getLocationTagInfo
+        tagController.getLocationTagInfo,
     );
 
     router.post(
@@ -2559,7 +2492,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateLocationTag),
-        tagController.updateLocationTag
+        tagController.updateLocationTag,
     );
 
     router.post(
@@ -2567,7 +2500,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        tagController.getLocationTags
+        tagController.getLocationTags,
     );
     router.post(
         '/getLocationTagJobs',
@@ -2576,7 +2509,7 @@ export default function (sio: any) {
         getCompanyId(),
         validate(Validations.getLocationTagJobs),
         checkUserScanPermissions(Permissions.Get_Location_Tag_Jobs),
-        tagController.getLocationTagJobs
+        tagController.getLocationTagJobs,
     );
 
     // CONTACT
@@ -2586,7 +2519,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         validate(Validations.addContact),
-        ContactController.addContact
+        ContactController.addContact,
     );
 
     router.put(
@@ -2595,14 +2528,14 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateContact),
-        ContactController.updateContact
+        ContactController.updateContact,
     );
 
     router.get(
         '/getContacts',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
-        ContactController.getContacts
+        ContactController.getContacts,
     );
 
     router.get(
@@ -2611,7 +2544,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getCustomerAllContacts),
-        ContactController.getCustomerAllContacts
+        ContactController.getCustomerAllContacts,
     );
 
     router.delete(
@@ -2619,7 +2552,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         validate(Validations.removeContact),
-        ContactController.removeContact
+        ContactController.removeContact,
     );
 
     // Notification
@@ -2629,7 +2562,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.getNotifications),
-        notificationController.getNotifications
+        notificationController.getNotifications,
     );
 
     router.put(
@@ -2638,7 +2571,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateNotification),
-        notificationController.updateNotification
+        notificationController.updateNotification,
     );
 
     // Integrations
@@ -2650,7 +2583,7 @@ export default function (sio: any) {
         validate(Validations.createIntegrationServiceTicket),
         (req, res) => {
             integrationController.createServiceTicket(req, res, sio);
-        }
+        },
     );
 
     // Scripts
@@ -2659,35 +2592,35 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        scriptController.syncItemTier
+        scriptController.syncItemTier,
     );
 
     router.post(
         '/script/migrateJobTask',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
-        scriptController.migrateJobTask
+        scriptController.migrateJobTask,
     );
 
     router.post(
         '/script/migrateTicketAndJobImage',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
-        scriptController.migrateTicketAndJobImage
+        scriptController.migrateTicketAndJobImage,
     );
 
     router.post(
         '/script/migrateTechnicianStatus',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
-        scriptController.migrateTechnicianStatus
+        scriptController.migrateTechnicianStatus,
     );
 
     router.post(
         '/script/addJobTypeMongooseId',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
-        scriptController.addJobTypeMongooseId
+        scriptController.addJobTypeMongooseId,
     );
 
     router.post(
@@ -2695,7 +2628,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        scriptController.addVendorBalance
+        scriptController.addVendorBalance,
     );
 
     router.post(
@@ -2703,7 +2636,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        scriptController.addPaymentType
+        scriptController.addPaymentType,
     );
 
     router.post(
@@ -2711,7 +2644,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        scriptController.addInvoiceCommission
+        scriptController.addInvoiceCommission,
     );
 
     router.post(
@@ -2719,7 +2652,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        scriptController.updatePaidTechnicians
+        scriptController.updatePaidTechnicians,
     );
 
     router.post(
@@ -2727,7 +2660,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        scriptController.migrateCustomer
+        scriptController.migrateCustomer,
     );
 
     router.post(
@@ -2735,18 +2668,12 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        scriptController.updateQBCustomerJob
+        scriptController.updateQBCustomerJob,
     );
 
-    router.post(
-        '/script/revertBackInvoices',
-        scriptController.revertBackInvoices
-    );
+    router.post('/script/revertBackInvoices', scriptController.revertBackInvoices);
 
-    router.post(
-        '/script/revertBackInvoices',
-        scriptController.revertBackInvoices
-    );
+    router.post('/script/revertBackInvoices', scriptController.revertBackInvoices);
 
     // QUICKBOOK DIRECT CHECK API
     router.get(
@@ -2755,7 +2682,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         refreshQBToken(),
-        quickBookCustomerController.getQBCustomer
+        quickBookCustomerController.getQBCustomer,
     );
 
     router.get(
@@ -2764,7 +2691,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         refreshQBToken(),
-        quickBookItemController.getQBItem
+        quickBookItemController.getQBItem,
     );
 
     router.get(
@@ -2773,7 +2700,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         refreshQBToken(),
-        quickBookInvoiceController.getQBInvoice
+        quickBookInvoiceController.getQBInvoice,
     );
 
     router.get(
@@ -2782,7 +2709,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         refreshQBToken(),
-        quickBookPaymentController.getQBPayment
+        quickBookPaymentController.getQBPayment,
     );
 
     // QUICKBOOK DIRECT CUSTOMER API
@@ -2793,7 +2720,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         refreshQBToken(),
-        quickBookCustomerController.findQBCustomers
+        quickBookCustomerController.findQBCustomers,
     );
 
     router.get(
@@ -2802,7 +2729,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         refreshQBToken(),
-        quickBookCustomerController.findQBCustomersByEmail
+        quickBookCustomerController.findQBCustomersByEmail,
     );
 
     // QUICKBOOK DIRECT ACCOUNT API
@@ -2812,7 +2739,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         refreshQBToken(),
-        quickBookInvoiceController.findQBInvoice
+        quickBookInvoiceController.findQBInvoice,
     );
 
     router.get(
@@ -2820,7 +2747,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         refreshQBToken(),
-        quickBookItemController.findQBAccount
+        quickBookItemController.findQBAccount,
     );
 
     // QUICKBOOK DIRECT ITEM API
@@ -2830,7 +2757,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         refreshQBToken(),
-        quickBookItemController.findQBItem
+        quickBookItemController.findQBItem,
     );
 
     // QUICKBOOK DIRECT PAYMENT METHOD API
@@ -2840,7 +2767,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         refreshQBToken(),
-        quickBookPaymentTermController.findQBAllTerms
+        quickBookPaymentTermController.findQBAllTerms,
     );
 
     // QUICKBOOK DIRECT INVOICE API
@@ -2849,7 +2776,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         refreshQBToken(),
-        quickBookInvoiceController.updateQBInvoice
+        quickBookInvoiceController.updateQBInvoice,
     );
 
     // QUICKBOOK DIRECT PAYMENT API
@@ -2859,7 +2786,7 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         refreshQBToken(),
-        quickBookPaymentController.deleteQBPayment
+        quickBookPaymentController.deleteQBPayment,
     );
 
     router.get(
@@ -2867,57 +2794,44 @@ export default function (sio: any) {
         passport.authenticate('jwt', { session: false }),
         getCompanyId(),
         refreshQBToken(),
-        quickBookPaymentController.findQBPayment
+        quickBookPaymentController.findQBPayment,
     );
 
     // WORK TYPE API
-    router.get(
-        '/getWorkTypes',
-        workTypeController.getWorkTypes
-    );
+    router.get('/getWorkTypes', workTypeController.getWorkTypes);
 
-    router.get(
-        '/getWorkType/:id',
-        workTypeController.getWorkTypeById
-    );
+    router.get('/getWorkType/:id', workTypeController.getWorkTypeById);
 
     router.delete(
         '/deleteWorkType/:id',
         workTypeController.deleteWorkType,
-        passport.authenticate('jwt', { session: false })
+        passport.authenticate('jwt', { session: false }),
     );
 
-    router.put(
-        '/updateWorkType',
-        workTypeController.updateWorkType,
-        passport.authenticate('jwt', { session: false })
-    );
+    router.put('/updateWorkType', workTypeController.updateWorkType, passport.authenticate('jwt', { session: false }));
 
-    router.post(
-        '/createWorkType',
-        workTypeController.createWorkType,
-        passport.authenticate('jwt', { session: false })
-    );
+    router.post('/createWorkType', workTypeController.createWorkType, passport.authenticate('jwt', { session: false }));
 
-    router.get('/customers/export',
+    router.get(
+        '/customers/export',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        customerController.exportCustomersToExcel
+        customerController.exportCustomersToExcel,
     );
     router.get(
         '/getJobCostingList',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyController.getJobCostingList
+        companyController.getJobCostingList,
     );
     router.post(
         '/addJobCosting',
         passport.authenticate('jwt', { session: false }),
         isLogin(),
         getCompanyId(),
-        companyController.addJobCosting
+        companyController.addJobCosting,
     );
     router.put(
         '/updateJobCosting',
@@ -2925,7 +2839,7 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateJobCosting),
-        companyController.updateJobCosting
+        companyController.updateJobCosting,
     );
 
     router.put(
@@ -2934,10 +2848,8 @@ export default function (sio: any) {
         isLogin(),
         getCompanyId(),
         validate(Validations.updateJobCommission),
-        invoiceController.updateJobCommission
+        invoiceController.updateJobCommission,
     );
 
     return router;
-
 }
-
