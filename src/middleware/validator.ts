@@ -10,26 +10,24 @@ const uniq = (a: any) => {
 };
 
 export const validate = (validations: ValidationChain[]) => {
-
     return async (req: Request, res: Response, next: NextFunction) => {
-
-        await Promise.all(validations.map(validation => validation.run(req)));
+        await Promise.all(validations.map((validation) => validation.run(req)));
 
         const errors: any = validationResult(req);
         if (errors.isEmpty()) {
             return next();
         }
-        let errorMessages = errors.errors.reduce((acc: string, v: any) => {
-            return acc + 'parameter ' + v.param + ': ' + v.msg + '\n';
-        }, '').split('\n').filter((e: string) => e !== '');
+        let errorMessages = errors.errors
+            .reduce((acc: string, v: any) => {
+                return acc + 'parameter ' + v.param + ': ' + v.msg + '\n';
+            }, '')
+            .split('\n')
+            .filter((e: string) => e !== '');
 
         errorMessages = uniq(errorMessages);
-        return res.json({ 'status': Status.Error, 'message': errorMessages });
-
+        return res.json({ status: Status.Error, message: errorMessages });
     };
-
 };
-
 
 export const Validations = {
     //Auth
@@ -44,48 +42,135 @@ export const Validations = {
         check('industryId').optional().isMongoId().withMessage(Messages.WrongId),
         check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
         check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
-        check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })
+        check('email').normalizeEmail({ all_lowercase: true, gmail_remove_dots: false }),
     ],
 
     //bounce email
-    bounceEmail: [check('email').exists(),check('email').isLength({min:1})],
+    bounceEmail: [check('email').exists(), check('email').isLength({ min: 1 })],
 
-    login: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
+    login: [
+        check('email').exists(),
+        check('email').isEmail(),
+        check('password').exists(),
+        check('email').normalizeEmail({ all_lowercase: true, gmail_remove_dots: false }),
+    ],
 
     socialLogin: [check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric()],
 
-    socialSignUp: [check('email').exists(), check('email').isEmail(), check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],
+    socialSignUp: [
+        check('email').exists(),
+        check('email').isEmail(),
+        check('socialId').exists(),
+        check('connectorType').exists(),
+        check('connectorType').isNumeric(),
+        check('firstName').exists(),
+        check('lastName').exists(),
+        check('phone').exists(),
+        check('companyName').exists(),
+        check('industryId').exists(),
+    ],
 
     customerImport: [check('customerSheet').exists()],
 
     agree: [check('agreedStatus').exists()],
 
-    adminSignUp: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
+    adminSignUp: [
+        check('email').exists(),
+        check('email').isEmail(),
+        check('password').exists(),
+        check('firstName').exists(),
+        check('lastName').exists(),
+        check('phone').exists(),
+        check('email').normalizeEmail({ all_lowercase: true, gmail_remove_dots: false }),
+    ],
 
-    contractorSignup: [check('email').exists(), check('email').isEmail(), check('password').exists(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists(), check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
+    contractorSignup: [
+        check('email').exists(),
+        check('email').isEmail(),
+        check('password').exists(),
+        check('firstName').exists(),
+        check('lastName').exists(),
+        check('phone').exists(),
+        check('companyName').exists(),
+        check('industryId').exists(),
+        check('email').normalizeEmail({ all_lowercase: true, gmail_remove_dots: false }),
+    ],
 
-    contractorSocialSignUp: [check('email').exists(), check('email').isEmail(), check('socialId').exists(), check('connectorType').exists(), check('connectorType').isNumeric(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('companyName').exists(), check('industryId').exists()],
+    contractorSocialSignUp: [
+        check('email').exists(),
+        check('email').isEmail(),
+        check('socialId').exists(),
+        check('connectorType').exists(),
+        check('connectorType').isNumeric(),
+        check('firstName').exists(),
+        check('lastName').exists(),
+        check('phone').exists(),
+        check('companyName').exists(),
+        check('industryId').exists(),
+    ],
 
-    searchContractor: [check('email').exists().withMessage(Messages.Required), check('email').isEmail(), check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
+    searchContractor: [
+        check('email').exists().withMessage(Messages.Required),
+        check('email').isEmail(),
+        check('email').normalizeEmail({ all_lowercase: true, gmail_remove_dots: false }),
+    ],
 
-    remindContractor: [check('contractId').exists().withMessage(Messages.Required), check('contractId').isMongoId().withMessage(Messages.WrongId)],
+    remindContractor: [
+        check('contractId').exists().withMessage(Messages.Required),
+        check('contractId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
-    startContract: [check('contractorId').exists().withMessage(Messages.Required), check('contractorId').isMongoId().withMessage(Messages.WrongId)],
+    startContract: [
+        check('contractorId').exists().withMessage(Messages.Required),
+        check('contractorId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
-    updateContract: [check('contractId').exists().withMessage(Messages.Required), check('contractId').isMongoId().withMessage(Messages.WrongId), check('status').exists().withMessage(Messages.Required)],
+    updateContract: [
+        check('contractId').exists().withMessage(Messages.Required),
+        check('contractId').isMongoId().withMessage(Messages.WrongId),
+        check('status').exists().withMessage(Messages.Required),
+    ],
 
-    finishContract: [check('contractId').exists().withMessage(Messages.Required), check('contractId').isMongoId().withMessage(Messages.WrongId)],
+    finishContract: [
+        check('contractId').exists().withMessage(Messages.Required),
+        check('contractId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
-    contractorPermissions: [check('contractorId').exists().withMessage(Messages.Required), check('contractorId').isMongoId().withMessage(Messages.WrongId), check('permissions').exists()],
+    contractorPermissions: [
+        check('contractorId').exists().withMessage(Messages.Required),
+        check('contractorId').isMongoId().withMessage(Messages.WrongId),
+        check('permissions').exists(),
+    ],
 
     upgradeToCompany: [check('token').exists(), check('ending').exists()],
 
     //Users
-    createManager: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
+    createManager: [
+        check('email').exists(),
+        check('email').isEmail(),
+        check('firstName').exists(),
+        check('lastName').exists(),
+        check('phone').exists(),
+        check('email').normalizeEmail({ all_lowercase: true, gmail_remove_dots: false }),
+    ],
 
-    createTechnician: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
+    createTechnician: [
+        check('email').exists(),
+        check('email').isEmail(),
+        check('firstName').exists(),
+        check('lastName').exists(),
+        check('phone').exists(),
+        check('email').normalizeEmail({ all_lowercase: true, gmail_remove_dots: false }),
+    ],
 
-    createOfficeAdmin: [check('email').exists(), check('email').isEmail(), check('firstName').exists(), check('lastName').exists(), check('phone').exists(), check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
+    createOfficeAdmin: [
+        check('email').exists(),
+        check('email').isEmail(),
+        check('firstName').exists(),
+        check('lastName').exists(),
+        check('phone').exists(),
+        check('email').normalizeEmail({ all_lowercase: true, gmail_remove_dots: false }),
+    ],
 
     changeEmployeeRole: [check('employeeId').exists(), check('newRole').exists()],
 
@@ -95,26 +180,36 @@ export const Validations = {
 
     changePassword: [
         check('currentPassword').exists().withMessage(Messages.Required),
-        check('newPassword').exists().withMessage(Messages.Required)
+        check('newPassword').exists().withMessage(Messages.Required),
     ],
 
     getContractorDetail: [
         check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
-        check('employeeId').optional().isMongoId().withMessage(Messages.WrongId)
+        check('employeeId').optional().isMongoId().withMessage(Messages.WrongId),
     ],
 
     updateVendorDisplayName: [
         check('contractorId').exists().isMongoId().withMessage(Messages.WrongId),
-        check('displayName').exists().isString().withMessage(Messages.Required)
+        check('displayName').exists().isString().withMessage(Messages.Required),
     ],
 
-    updateCompanyProfile: [check('companyName').exists(), check('companyEmail').exists(), check('companyEmail').isEmail(), check('companyEmail').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false }), check('phone').exists()],
+    updateCompanyProfile: [
+        check('companyName').exists(),
+        check('companyEmail').exists(),
+        check('companyEmail').isEmail(),
+        check('companyEmail').normalizeEmail({ all_lowercase: true, gmail_remove_dots: false }),
+        check('phone').exists(),
+    ],
 
     getCompanyCustomer: [
         check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
         check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-        check('status').optional().isInt({ min: 0, max: 4 }).toInt().withMessage('status has to be number with value between 0 and 4'),
-        check('isPreferred').optional().isBoolean().toBoolean()
+        check('status')
+            .optional()
+            .isInt({ min: 0, max: 4 })
+            .toInt()
+            .withMessage('status has to be number with value between 0 and 4'),
+        check('isPreferred').optional().isBoolean().toBoolean(),
     ],
 
     updateCompanyCustomer: [
@@ -134,20 +229,26 @@ export const Validations = {
     updateCompanyContract: [
         check('contractId').exists().withMessage(Messages.Required),
         check('contractId').isMongoId().withMessage(Messages.WrongId),
-        check('status').isInt({ min: 1, max: 4 }).toInt().withMessage('status has to be number with value between 1 and 4')
+        check('status')
+            .isInt({ min: 1, max: 4 })
+            .toInt()
+            .withMessage('status has to be number with value between 1 and 4'),
     ],
 
     updateContractorEmailPreferences: [check('contractorId').exists(), check('emailPreferences').isNumeric()],
 
     updateCustomerEmailPreferences: [check('customerId').exists(), check('emailPreferences').isNumeric()],
 
-    forgotPassword: [check('email').exists(), check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
+    forgotPassword: [
+        check('email').exists(),
+        check('email').normalizeEmail({ all_lowercase: true, gmail_remove_dots: false }),
+    ],
 
     // COMPANY LOCATIONS
     createCompanyLocation: [
         check('name').exists().withMessage(Messages.Required),
         check('isMainLocation').optional().toBoolean(),
-        check('email').optional().isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false }),
+        check('email').optional().isEmail().normalizeEmail({ all_lowercase: true, gmail_remove_dots: false }),
     ],
 
     updateCompanyLocation: [
@@ -155,7 +256,7 @@ export const Validations = {
         check('companyLocationId').isMongoId().withMessage(Messages.WrongId),
         check('name').exists().withMessage(Messages.Required),
         check('isMainLocation').optional().toBoolean(),
-        check('email').optional().isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false }),
+        check('email').optional().isEmail().normalizeEmail({ all_lowercase: true, gmail_remove_dots: false }),
     ],
 
     //Industry
@@ -172,14 +273,26 @@ export const Validations = {
     //Customers
     createCustomer: [
         check('name').exists(),
-        check('email').optional({ nullable: true, checkFalsy: true }).isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false }),
-        check('type').exists().isIn([ECustomerTypes.BUILDER]),
+        check('email')
+            .optional({ nullable: true, checkFalsy: true })
+            .isEmail()
+            .normalizeEmail({ all_lowercase: true, gmail_remove_dots: false }),
+        // check('type').exists().isIn([ECustomerTypes.BUILDER]),
         check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
     ],
 
-    updateCustomer: [check('customerId').exists(), check('email').optional({ nullable: true, checkFalsy: true }).isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false })],
+    updateCustomer: [
+        check('customerId').exists(),
+        check('email')
+            .optional({ nullable: true, checkFalsy: true })
+            .isEmail()
+            .normalizeEmail({ all_lowercase: true, gmail_remove_dots: false }),
+    ],
 
-    updateCustomPrices: [check('customerId').exists().withMessage('is required'), check('customerId').isMongoId().withMessage(Messages.WrongId)],
+    updateCustomPrices: [
+        check('customerId').exists().withMessage('is required'),
+        check('customerId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
     getCustomers: [check('includeActive').exists(), check('includeNonActive').exists()],
 
@@ -191,12 +304,23 @@ export const Validations = {
         check('customerId').exists().withMessage(Messages.Required),
         check('customerId').isMongoId().withMessage(Messages.WrongId),
         check('unusedCustomerIds').exists().withMessage(Messages.Required),
-        check('email').optional().isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false }).withMessage(Messages.InvalidEmail),
+        check('email')
+            .optional()
+            .isEmail()
+            .normalizeEmail({ all_lowercase: true, gmail_remove_dots: false })
+            .withMessage(Messages.InvalidEmail),
     ],
 
     //Customer Equipment
 
-    createCustomerEquipment: [check('model').exists(), check('serialNumber').exists(), check('nfcTag').exists(), check('equipmentTypeId').exists(), check('equipmentBrandId').exists(), check('customerId').exists()],
+    createCustomerEquipment: [
+        check('model').exists(),
+        check('serialNumber').exists(),
+        check('nfcTag').exists(),
+        check('equipmentTypeId').exists(),
+        check('equipmentBrandId').exists(),
+        check('customerId').exists(),
+    ],
 
     getCustomerEquipments: [check('customerId').exists()],
 
@@ -216,29 +340,33 @@ export const Validations = {
     // Item
     getItems: [check('includeDiscountItems').optional().isBoolean().toBoolean()],
 
-    createItem: [check('title').exists().withMessage(Messages.Required),
+    createItem: [
+        check('title').exists().withMessage(Messages.Required),
         check('account').exists().withMessage(Messages.Required),
-        check('itemType').optional().isIn(['Product', 'Service']).withMessage('Item type must be either "Product" or "Service"'),
-        check('isFixed').optional({ checkFalsy: true }).custom((value: boolean, { req }: any) => {
-            // Check if itemType is "Product" and isFixed is not true
-            if (req.body.itemType === 'Product' && value !== true) {
-                throw new Error('isFixed must be true when itemType is "Product"');
-            }
-            return true;
-        }),
-    // check('productCost').if(check('itemType').equals('Product')).not().isEmpty().withMessage(Messages.Required),
+        check('itemType')
+            .optional()
+            .isIn(['Product', 'Service'])
+            .withMessage('Item type must be either "Product" or "Service"'),
+        check('isFixed')
+            .optional({ checkFalsy: true })
+            .custom((value: boolean, { req }: any) => {
+                // Check if itemType is "Product" and isFixed is not true
+                if (req.body.itemType === 'Product' && value !== true) {
+                    throw new Error('isFixed must be true when itemType is "Product"');
+                }
+                return true;
+            }),
+        // check('productCost').if(check('itemType').equals('Product')).not().isEmpty().withMessage(Messages.Required),
         // check('salePrice').if(check('itemType').equals('Product')).not().isEmpty().withMessage(Messages.Required)
     ],
 
     // Discount Item
-    getDiscountItems: [
-        check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-    ],
+    getDiscountItems: [check('customerId').optional().isMongoId().withMessage(Messages.WrongId)],
 
     createDiscountItem: [
         check('title').exists().withMessage(Messages.Required),
         check('charges').exists().withMessage(Messages.Required),
-        check('noOfItems').optional().toInt()
+        check('noOfItems').optional().toInt(),
     ],
 
     updateDiscountItem: [
@@ -246,7 +374,7 @@ export const Validations = {
         check('discountItemId').isMongoId().withMessage(Messages.WrongId),
         check('title').exists().withMessage(Messages.Required),
         check('charges').exists().withMessage(Messages.Required),
-        check('noOfItems').optional().toInt()
+        check('noOfItems').optional().toInt(),
     ],
 
     //Job
@@ -286,8 +414,12 @@ export const Validations = {
     getJobs: [
         check('status').optional().toInt(),
         check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-        check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided'),
-        check('technicianIds').optional()
+        check('pageSize')
+            .optional()
+            .isInt({ min: 1 })
+            .toInt()
+            .withMessage('pageSize has to be number with minimum value 1 if provided'),
+        check('technicianIds').optional(),
     ],
 
     searchJob: [check('pageSize').isNumeric(), check('page').isNumeric()],
@@ -298,7 +430,7 @@ export const Validations = {
         check('jobId').exists().withMessage(Messages.Required),
         check('jobId').isMongoId().withMessage(Messages.WrongId),
         check('jobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
-        check('taskJobTypeId').optional().isMongoId().withMessage(Messages.WrongId)
+        check('taskJobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
     ],
 
     updateJobTask: [
@@ -307,7 +439,9 @@ export const Validations = {
         check('jobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
         check('taskJobTypeId').optional().isMongoId().withMessage(Messages.WrongId),
         check('status').exists().withMessage(Messages.Required),
-        check('status').isIn([JobStatus.PAUSED, JobStatus.FINISHED, JobStatus.PARTIALLY_COMPLETED]).withMessage('Only paused and finished are allowed')
+        check('status')
+            .isIn([JobStatus.PAUSED, JobStatus.FINISHED, JobStatus.PARTIALLY_COMPLETED])
+            .withMessage('Only paused and finished are allowed'),
     ],
 
     updateJob: [
@@ -319,7 +453,7 @@ export const Validations = {
         check('homeJobLocationId').optional().isMongoId().withMessage(Messages.WrongId),
         check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
         check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
-        check('homeJobSiteId').optional().isMongoId().withMessage(Messages.WrongId)
+        check('homeJobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
     ],
 
     updateJoBRequestStatus: [
@@ -340,20 +474,26 @@ export const Validations = {
         check('homeJobSiteId').optional().isMongoId().withMessage(Messages.WrongId),
         check('isHomeOccupied').optional().isBoolean().toBoolean().withMessage('isHomeOccupied has to be boolean'),
         check('customerContactId').optional().isMongoId().withMessage(Messages.WrongId),
-        check('scheduleDate').exists().withMessage(Messages.Required)
+        check('scheduleDate').exists().withMessage(Messages.Required),
     ],
 
-    updateJobTime: [check('jobId').exists().withMessage(Messages.Required), check('jobId').isMongoId().withMessage(Messages.WrongId)],
+    updateJobTime: [
+        check('jobId').exists().withMessage(Messages.Required),
+        check('jobId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
     updateJobTechnicianStatus: [
         check('jobId').exists().withMessage(Messages.Required),
         check('jobId').isMongoId().withMessage(Messages.WrongId),
         check('technicianId').exists().withMessage(Messages.Required),
         check('technicianId').isMongoId().withMessage(Messages.WrongId),
-        check('status').optional().isInt().toInt()
+        check('status').optional().isInt().toInt(),
     ],
 
-    technicianJobs: [check('employeeId').exists().withMessage(Messages.Required), check('employeeId').isMongoId().withMessage(Messages.WrongId)],
+    technicianJobs: [
+        check('employeeId').exists().withMessage(Messages.Required),
+        check('employeeId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
     // Job Route
     jobRoute: [
@@ -361,18 +501,16 @@ export const Validations = {
         // check('employeeType').exists().withMessage(Messages.Required),
         // check('employeeType').isNumeric(),
         check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
-        check('contractorId').optional().isMongoId().withMessage(Messages.WrongId)
+        check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
     ],
 
     // Job Route
     allJobRoutesByTechnician: [
         check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
-        check('contractorId').optional().isMongoId().withMessage(Messages.WrongId)
+        check('contractorId').optional().isMongoId().withMessage(Messages.WrongId),
     ],
 
-    createJobRoute: [
-        check('routes').exists().withMessage(Messages.Required),
-    ],
+    createJobRoute: [check('routes').exists().withMessage(Messages.Required)],
 
     updateJobRoute: [
         check('jobRouteId').exists().withMessage(Messages.Required),
@@ -390,7 +528,13 @@ export const Validations = {
     memberGeneric: [check('groupId').exists(), check('memberId').exists()],
 
     //Company Equipemnt
-    createCompanyEquipment: [check('imageUrl').exists(), check('model').exists(), check('serialNumber').exists(), check('typeId').exists(), check('brandId').exists()],
+    createCompanyEquipment: [
+        check('imageUrl').exists(),
+        check('model').exists(),
+        check('serialNumber').exists(),
+        check('typeId').exists(),
+        check('brandId').exists(),
+    ],
 
     //Company Equipemnt History
     createCompanyEquipmentHistory: [check('action').exists(), check('dateTime').exists()],
@@ -399,20 +543,46 @@ export const Validations = {
     createEquipmentInventory: [check('dateTime').exists()],
 
     // Tags
-    placeOrder: [check('noOfTags').exists(), check('total').exists(), check('tax').exists(), check('cardId').exists(), check('street').exists(), check('city').exists(), check('state').exists(), check('zipCode').exists(),],
+    placeOrder: [
+        check('noOfTags').exists(),
+        check('total').exists(),
+        check('tax').exists(),
+        check('cardId').exists(),
+        check('street').exists(),
+        check('city').exists(),
+        check('state').exists(),
+        check('zipCode').exists(),
+    ],
 
     // Company Cards
-    addCompanyCard: [check('cardNumber').exists(), check('exp').exists(), check('cvc').exists(), check('name').exists(), check('address').exists(), check('city').exists(), check('state').exists(), check('zipcode').exists()],
+    addCompanyCard: [
+        check('cardNumber').exists(),
+        check('exp').exists(),
+        check('cvc').exists(),
+        check('name').exists(),
+        check('address').exists(),
+        check('city').exists(),
+        check('state').exists(),
+        check('zipcode').exists(),
+    ],
 
     removeCompanyCard: [check('cardId').exists()],
 
     subscribe: [check('cardId').exists(), check('planId').exists()],
 
-    buySubscriptions: [check('noOfOfficeAdmins').exists(), check('noOfTechnicians').exists(), check('noOfManagers').exists()],
+    buySubscriptions: [
+        check('noOfOfficeAdmins').exists(),
+        check('noOfTechnicians').exists(),
+        check('noOfManagers').exists(),
+    ],
 
-    removeSubscription: [check('employeeId').exists(),],
+    removeSubscription: [check('employeeId').exists()],
 
-    updateDefaultPermissions: [check('onPermissions').exists(), check('offPermissions').exists(), check('role').exists()],
+    updateDefaultPermissions: [
+        check('onPermissions').exists(),
+        check('offPermissions').exists(),
+        check('role').exists(),
+    ],
 
     udpateUserPermissions: [check('onPermissions').exists(), check('offPermissions').exists()],
 
@@ -434,11 +604,20 @@ export const Validations = {
 
     getJobReport: [check('jobReportId').exists()],
 
-    getAllJobReports: [check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided')],
+    getAllJobReports: [
+        check('pageSize')
+            .optional()
+            .isInt({ min: 1 })
+            .toInt()
+            .withMessage('pageSize has to be number with minimum value 1 if provided'),
+    ],
 
     deleteJobReport: [check('jobReportId').exists()],
 
-    createQBCustomer: [check('customerId').exists().withMessage('is required'), check('customerId').isMongoId().withMessage(Messages.WrongId)],
+    createQBCustomer: [
+        check('customerId').exists().withMessage('is required'),
+        check('customerId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
     getQBUri: [check('redirectUri').exists()],
 
@@ -461,8 +640,12 @@ export const Validations = {
         check('technicianId').optional().isMongoId().withMessage(Messages.WrongId),
         check('isDraft').optional().isBoolean().toBoolean().withMessage('isDraft has to be boolean'),
         check('isVoid').optional().isBoolean().toBoolean().withMessage('isVoid has to be boolean'),
-        check('pageSize').optional().isInt({ min: 1 }).toInt().withMessage('pageSize has to be number with minimum value 1 if provided'),
-        check('recentOnly').optional().isBoolean().toBoolean().withMessage('recentOnly has to be boolean')
+        check('pageSize')
+            .optional()
+            .isInt({ min: 1 })
+            .toInt()
+            .withMessage('pageSize has to be number with minimum value 1 if provided'),
+        check('recentOnly').optional().isBoolean().toBoolean().withMessage('recentOnly has to be boolean'),
     ],
 
     createInvoice: [
@@ -478,7 +661,7 @@ export const Validations = {
     ],
 
     getInvoiceEmailTemplate: [
-    // check('emailType').exists().withMessage(Messages.Required),
+        // check('emailType').exists().withMessage(Messages.Required),
         check('invoiceId').optional().isMongoId().withMessage(Messages.WrongId),
     ],
 
@@ -487,9 +670,7 @@ export const Validations = {
         check('invoiceId').optional().isMongoId().withMessage(Messages.WrongId),
     ],
 
-    sendInvoices: [
-        check('invoiceIds').exists().withMessage(Messages.Required),
-    ],
+    sendInvoices: [check('invoiceIds').exists().withMessage(Messages.Required)],
 
     generateInvoicePdf: [
         check('customerId').exists().withMessage(Messages.Required),
@@ -519,22 +700,41 @@ export const Validations = {
 
     companyInvoice: [check('companyInvoiceId').exists()],
 
-    voidInvoice: [check('invoiceId').exists().withMessage(Messages.Required), check('invoiceId').isMongoId().withMessage(Messages.WrongId)],
-    unVoidInvoice: [check('invoiceId').exists().withMessage(Messages.Required), check('invoiceId').isMongoId().withMessage(Messages.WrongId)],
+    voidInvoice: [
+        check('invoiceId').exists().withMessage(Messages.Required),
+        check('invoiceId').isMongoId().withMessage(Messages.WrongId),
+    ],
+    unVoidInvoice: [
+        check('invoiceId').exists().withMessage(Messages.Required),
+        check('invoiceId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
     updateCommission: [
         check('type').exists().withMessage(Messages.Required),
         check('commissionEffectiveDate').exists().withMessage(Messages.Required),
         check('id').exists().withMessage(Messages.Required),
         check('id').isMongoId().withMessage(Messages.WrongId),
-        check('commission').optional().isInt().withMessage('invalid format')
+        check('commission').optional().isInt().withMessage('invalid format'),
     ],
 
     getInvoiceDetail: [check('invoiceId').exists()],
 
-    createPartInventory: [check('name').exists(), check('itemCode').exists(), check('cost').exists(), check('price').exists(), check('totalQuantity').exists()],
+    createPartInventory: [
+        check('name').exists(),
+        check('itemCode').exists(),
+        check('cost').exists(),
+        check('price').exists(),
+        check('totalQuantity').exists(),
+    ],
 
-    udpatePartInventory: [check('partId').exists(), check('name').exists(), check('itemCode').exists(), check('cost').exists(), check('price').exists(), check('totalQuantity').exists()],
+    udpatePartInventory: [
+        check('partId').exists(),
+        check('name').exists(),
+        check('itemCode').exists(),
+        check('cost').exists(),
+        check('price').exists(),
+        check('totalQuantity').exists(),
+    ],
 
     removePartInventory: [check('partId').exists()],
 
@@ -569,29 +769,53 @@ export const Validations = {
 
     // Payment Term
 
-    setCompanyDefaultPaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId)],
+    setCompanyDefaultPaymentTerm: [
+        check('paymentTermId').exists().withMessage(Messages.Required),
+        check('paymentTermId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
-    setCustomerPaymentTerm: [check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId), check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId)],
+    setCustomerPaymentTerm: [
+        check('customerId').exists().withMessage(Messages.Required),
+        check('customerId').isMongoId().withMessage(Messages.WrongId),
+        check('paymentTermId').exists().withMessage(Messages.Required),
+        check('paymentTermId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
-    createPaymentTerm: [check('name').exists().withMessage(Messages.Required), check('dueDays').exists().withMessage(Messages.Required), check('dueDays').isInt().withMessage('invalid format')],
+    createPaymentTerm: [
+        check('name').exists().withMessage(Messages.Required),
+        check('dueDays').exists().withMessage(Messages.Required),
+        check('dueDays').isInt().withMessage('invalid format'),
+    ],
 
-    updatePaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId), check('dueDays').optional().isInt().withMessage('invalid format')],
+    updatePaymentTerm: [
+        check('paymentTermId').exists().withMessage(Messages.Required),
+        check('paymentTermId').isMongoId().withMessage(Messages.WrongId),
+        check('dueDays').optional().isInt().withMessage('invalid format'),
+    ],
 
-    deletePaymentTerm: [check('paymentTermId').exists().withMessage(Messages.Required), check('paymentTermId').isMongoId().withMessage(Messages.WrongId)],
+    deletePaymentTerm: [
+        check('paymentTermId').exists().withMessage(Messages.Required),
+        check('paymentTermId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
     // Payment
 
-    getInvoicesByCustomerId: [check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId)],
+    getInvoicesByCustomerId: [
+        check('customerId').exists().withMessage(Messages.Required),
+        check('customerId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
-    getPaymentsByCustomer: [check('customerId').exists().withMessage(Messages.Required), check('customerId').isMongoId().withMessage(Messages.WrongId)],
+    getPaymentsByCustomer: [
+        check('customerId').exists().withMessage(Messages.Required),
+        check('customerId').isMongoId().withMessage(Messages.WrongId),
+    ],
 
     recordPayment: [
-    // check('invoiceId').exists().withMessage(Messages.Required),
+        // check('invoiceId').exists().withMessage(Messages.Required),
         check('invoiceId').optional().isMongoId().withMessage(Messages.WrongId),
         // check('amount').exists().withMessage(Messages.Required),
         check('customerId').exists().withMessage(Messages.Required),
-        check('customerId').isMongoId().withMessage(Messages.WrongId)
-
+        check('customerId').isMongoId().withMessage(Messages.WrongId),
     ],
 
     updatePayment: [
@@ -603,7 +827,9 @@ export const Validations = {
 
     recordPaymentContractor: [
         check('type').exists().withMessage(Messages.Required),
-        check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+        check('type')
+            .isIn(['vendor', 'employee'])
+            .withMessage('Type not supported. Available Type to be used: vendor or employee.'),
         check('id').exists().withMessage(Messages.Required),
         check('id').isMongoId().withMessage(Messages.WrongId),
         check('amount').exists().withMessage(Messages.Required),
@@ -612,7 +838,9 @@ export const Validations = {
 
     updatePaymentContractor: [
         check('type').exists().withMessage(Messages.Required),
-        check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+        check('type')
+            .isIn(['vendor', 'employee'])
+            .withMessage('Type not supported. Available Type to be used: vendor or employee.'),
         check('id').exists().withMessage(Messages.Required),
         check('id').isMongoId().withMessage(Messages.WrongId),
         check('paymentId').exists().withMessage(Messages.Required),
@@ -622,7 +850,9 @@ export const Validations = {
 
     voidPaymentContractor: [
         check('type').exists().withMessage(Messages.Required),
-        check('type').isIn(['vendor', 'employee', 'customer']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+        check('type')
+            .isIn(['vendor', 'employee', 'customer'])
+            .withMessage('Type not supported. Available Type to be used: vendor or employee.'),
         check('paymentId').exists().withMessage(Messages.Required),
         check('paymentId').isMongoId().withMessage(Messages.WrongId),
     ],
@@ -630,7 +860,9 @@ export const Validations = {
     // ADVANCE PAYMENT
     recordAdvancePayment: [
         check('type').exists().withMessage(Messages.Required),
-        check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+        check('type')
+            .isIn(['vendor', 'employee'])
+            .withMessage('Type not supported. Available Type to be used: vendor or employee.'),
         check('id').exists().withMessage(Messages.Required),
         check('id').isMongoId().withMessage(Messages.WrongId),
         check('amount').exists().withMessage(Messages.Required),
@@ -639,14 +871,18 @@ export const Validations = {
 
     getAdvancePayments: [
         check('type').exists().withMessage(Messages.Required),
-        check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+        check('type')
+            .isIn(['vendor', 'employee'])
+            .withMessage('Type not supported. Available Type to be used: vendor or employee.'),
         check('id').exists().withMessage(Messages.Required),
         check('id').isMongoId().withMessage(Messages.WrongId),
     ],
 
     updateAdvancePaymentContractor: [
         check('type').exists().withMessage(Messages.Required),
-        check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+        check('type')
+            .isIn(['vendor', 'employee'])
+            .withMessage('Type not supported. Available Type to be used: vendor or employee.'),
         check('id').exists().withMessage(Messages.Required),
         check('id').isMongoId().withMessage(Messages.WrongId),
         check('advancePaymentId').exists().withMessage(Messages.Required),
@@ -657,7 +893,9 @@ export const Validations = {
 
     voidAdvancePaymentContractor: [
         check('type').exists().withMessage(Messages.Required),
-        check('type').isIn(['vendor', 'employee']).withMessage('Type not supported. Available Type to be used: vendor or employee.'),
+        check('type')
+            .isIn(['vendor', 'employee'])
+            .withMessage('Type not supported. Available Type to be used: vendor or employee.'),
         check('advancePaymentId').exists().withMessage(Messages.Required),
         check('advancePaymentId').isMongoId().withMessage(Messages.WrongId),
     ],
@@ -666,18 +904,16 @@ export const Validations = {
     generateIncomeReport: [
         check('reportData').exists().withMessage(Messages.Required),
         check('reportData').isInt().toInt().withMessage('has to be number'),
-        check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+        check('reportSource').optional().isInt().toInt().withMessage('has to be number'),
     ],
 
     generateAccountReceivableReport: [
         check('reportData').exists().withMessage(Messages.Required),
         check('reportData').isInt().toInt().withMessage('has to be number'),
-        check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+        check('reportSource').optional().isInt().toInt().withMessage('has to be number'),
     ],
 
-    generateAccountReceivableDetail: [
-        check('customerId').isMongoId().withMessage(Messages.WrongId),
-    ],
+    generateAccountReceivableDetail: [check('customerId').isMongoId().withMessage(Messages.WrongId)],
 
     generateAccountReceivableInvoices: [
         check('customerId').isMongoId().withMessage(Messages.WrongId),
@@ -688,7 +924,7 @@ export const Validations = {
         check('reportType').exists().withMessage(Messages.Required),
         check('reportData').exists().withMessage(Messages.Required),
         check('reportData').isInt().toInt().withMessage('has to be number'),
-        check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+        check('reportSource').optional().isInt().toInt().withMessage('has to be number'),
     ],
 
     sendReportEmail: [
@@ -702,12 +938,12 @@ export const Validations = {
     createMemorizedReport: [
         check('reportType').exists().withMessage(Messages.Required),
         check('reportType').isInt().toInt().withMessage('has to be number'),
-        check('reportSource').optional().isInt().toInt().withMessage('has to be number')
+        check('reportSource').optional().isInt().toInt().withMessage('has to be number'),
     ],
 
     updateMemorizedReport: [
         check('memorizedReportId').exists().withMessage(Messages.Required),
-        check('memorizedReportId').isMongoId().withMessage(Messages.WrongId)
+        check('memorizedReportId').isMongoId().withMessage(Messages.WrongId),
     ],
 
     // Code Location
@@ -716,11 +952,24 @@ export const Validations = {
 
     getLocationTagInfo: [check('nfcTag').exists()],
 
-    updateLocationTag: [check('nfcTag').exists(), check('latitude').exists(), check('longitude').exists(), check('nfcTag').exists()],
+    updateLocationTag: [
+        check('nfcTag').exists(),
+        check('latitude').exists(),
+        check('longitude').exists(),
+        check('nfcTag').exists(),
+    ],
 
     getLocationTagJobs: [check('nfcTag').exists()],
 
-    getOpenServiceTickets: [check('page').exists().isNumeric(), check('pagesize').exists().isNumeric(), check('customerNames').optional(), check('homeOwnerNames').optional(), check('jobTypeTitle').optional(), check('dueDate').optional(), check('ticketId').optional()],
+    getOpenServiceTickets: [
+        check('page').exists().isNumeric(),
+        check('pagesize').exists().isNumeric(),
+        check('customerNames').optional(),
+        check('homeOwnerNames').optional(),
+        check('jobTypeTitle').optional(),
+        check('dueDate').optional(),
+        check('ticketId').optional(),
+    ],
 
     getOpenServiceTicketsStream: [check('includeOpenJobRequest').optional().toBoolean()],
 
@@ -728,7 +977,11 @@ export const Validations = {
     createHomeOwner: [
         check('companyId').optional().isMongoId().withMessage(Messages.WrongId),
         check('firstName').exists().withMessage(Messages.Required),
-        check('email').optional().isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false }).withMessage(Messages.InvalidEmail),
+        check('email')
+            .optional()
+            .isEmail()
+            .normalizeEmail({ all_lowercase: true, gmail_remove_dots: false })
+            .withMessage(Messages.InvalidEmail),
         check('address').exists().withMessage(Messages.Required),
         check('address').isMongoId().withMessage(Messages.WrongId),
         check('subdivision').optional().isMongoId().withMessage(Messages.WrongId),
@@ -736,7 +989,7 @@ export const Validations = {
 
     getHomeOwner: [
         check('id').exists().withMessage(Messages.Required),
-        check('id').isMongoId().withMessage(Messages.WrongId)
+        check('id').isMongoId().withMessage(Messages.WrongId),
     ],
 
     getHomeOwners: [
@@ -749,46 +1002,52 @@ export const Validations = {
     updateHomeOwner: [
         check('id').exists().withMessage(Messages.Required),
         check('id').isMongoId().withMessage(Messages.WrongId),
-        check('email').optional().isEmail().normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false }).withMessage(Messages.InvalidEmail),
+        check('email')
+            .optional()
+            .isEmail()
+            .normalizeEmail({ all_lowercase: true, gmail_remove_dots: false })
+            .withMessage(Messages.InvalidEmail),
         check('firstName').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
         check('lastName').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
         check('phone').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
         check('fax').optional().isLength({ min: 1 }).withMessage(Messages.EmptyString),
         check('address').optional().isMongoId().withMessage(Messages.WrongId),
-        check('subdivision').optional().isMongoId().withMessage(Messages.WrongId)
+        check('subdivision').optional().isMongoId().withMessage(Messages.WrongId),
     ],
 
     // Job location
     getJobLocation: [
         check('builderId').optional().isMongoId().withMessage(Messages.WrongId),
         check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
-        check('id').optional().isMongoId().withMessage(Messages.WrongId)
+        check('id').optional().isMongoId().withMessage(Messages.WrongId),
     ],
 
     createJobLocation: [
-    // check('customerId').exists().withMessage(Messages.Required),
+        // check('customerId').exists().withMessage(Messages.Required),
         check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
         check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
-        check('name').exists().withMessage(Messages.Required)
+        check('name').exists().withMessage(Messages.Required),
     ],
 
     updateJobLocation: [
         check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
         check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
         check('id').exists().withMessage(Messages.Required),
-        check('id').isMongoId().withMessage(Messages.WrongId)
+        check('id').isMongoId().withMessage(Messages.WrongId),
     ],
 
     // Contact
     addContact: [
         check('type').exists().withMessage(Messages.Required),
-        check('type').isIn(['Customer', 'JobLocation']).withMessage('Only supported for Customer & JobLocation for now'),
+        check('type')
+            .isIn(['Customer', 'JobLocation'])
+            .withMessage('Only supported for Customer & JobLocation for now'),
     ],
 
     updateContact: [
         check('_id').exists().withMessage(Messages.Required),
         check('_id').isMongoId().withMessage(Messages.WrongId),
-        check('isActive').optional().isBoolean().toBoolean()
+        check('isActive').optional().isBoolean().toBoolean(),
     ],
 
     getCustomerAllContacts: [
@@ -807,15 +1066,20 @@ export const Validations = {
     // Image
     deleteImage: [
         check('type').exists().withMessage(Messages.Required),
-        check('type').isIn(['ServiceTicket', 'Job', 'Technician']).withMessage('Only supported for ServiceTicket & Job for now'),
+        check('type')
+            .isIn(['ServiceTicket', 'Job', 'Technician'])
+            .withMessage('Only supported for ServiceTicket & Job for now'),
         check('id').exists().withMessage(Messages.Required),
         check('id').isMongoId().withMessage(Messages.WrongId),
         check('imageId').exists().withMessage(Messages.Required),
-        check('imageId').isMongoId().withMessage(Messages.WrongId)
+        check('imageId').isMongoId().withMessage(Messages.WrongId),
     ],
 
     // Notification
-    getNotifications: [check('isRead').optional().isIn(['ALL', true, false, 1, 0]), check('isDismissed').optional().isIn(['ALL', true, false, 1, 0])],
+    getNotifications: [
+        check('isRead').optional().isIn(['ALL', true, false, 1, 0]),
+        check('isDismissed').optional().isIn(['ALL', true, false, 1, 0]),
+    ],
 
     updateNotification: [check('isRead').optional().isBoolean(), check('isDismissed').optional().isBoolean()],
 
@@ -824,12 +1088,12 @@ export const Validations = {
         check('name').exists().withMessage(Messages.Required),
         check('email').exists().withMessage(Messages.Required),
         check('email').isEmail().withMessage(Messages.InvalidEmail),
-        check('email').normalizeEmail({ 'all_lowercase': true, 'gmail_remove_dots': false }),
+        check('email').normalizeEmail({ all_lowercase: true, gmail_remove_dots: false }),
         check('street').exists().withMessage(Messages.Required),
         check('city').exists().withMessage(Messages.Required),
         check('state').exists().withMessage(Messages.Required),
         check('zipCode').exists().withMessage(Messages.Required),
-        check('phone').exists().withMessage(Messages.Required)
+        check('phone').exists().withMessage(Messages.Required),
     ],
 
     // Chat
@@ -853,20 +1117,18 @@ export const Validations = {
 
     updateJobCosting: [check('costingTierId').exists().withMessage('is required')],
 
-    updateJobCommission: [
-        check('balance').exists().withMessage(Messages.Required),
-    ],
+    updateJobCommission: [check('balance').exists().withMessage(Messages.Required)],
 
     getCustomersNames: [
         query('keyword')
-            .exists().withMessage(Messages.Required)
-            .isString().withMessage('Only letters and digits allowed in keyword.')
-            .isLength({ min: 3 }).withMessage('Minimum length for keyword is 3.')
-            .trim()
+            .exists()
+            .withMessage(Messages.Required)
+            .isString()
+            .withMessage('Only letters and digits allowed in keyword.')
+            .isLength({ min: 3 })
+            .withMessage('Minimum length for keyword is 3.')
+            .trim(),
     ],
 
-    getCompanyById: [
-        param('id').exists().withMessage(Messages.Required),
-    ]
+    getCompanyById: [param('id').exists().withMessage(Messages.Required)],
 };
-
