@@ -69,6 +69,7 @@ export const get = async (req: Request, res: Response) => {
             Sentry.captureException(err);
             return res.json({'status': Status.Error, 'message': err.message});
         });
+        console.log(JobLocation,'JobLocation')
 };
 
 export const create = async (req: Request, res: Response) => {
@@ -205,6 +206,7 @@ export const update = async (req: Request, res: Response) => {
         jobLocation.inactiveAt = null;
         jobLocation.inactiveBy = null;
     }
+    console.log(jobLocation,'jobLocation')
     await jobLocation.save();
 
     await jobLocation
@@ -238,3 +240,16 @@ export const update = async (req: Request, res: Response) => {
         return res.json({ status: Status.Success, message: 'Subdivision updated successfully.', jobLocation });
     }
 };
+
+export const search = async(req: Request, res: Response) => {
+    const { keyword }: { keyword: string } = req.query;
+    
+    const keywordRegex = { $regex: keyword, $options: 'i' };
+    const query = {
+        '$or': [
+            { name: keywordRegex },
+        ]
+    };
+    const jobLocations = await JobLocation.find({ ...query }).select("name location address");
+    return res.json({ status: Status.Success, jobLocations });
+}

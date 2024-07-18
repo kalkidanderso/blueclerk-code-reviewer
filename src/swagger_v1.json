@@ -5691,6 +5691,67 @@
         ]
       }
     },
+    "/jobLocation/name": {
+      "get": {
+        "tags": [
+          "Subdivision"
+        ],
+        "summary": "Get Subdivision by builderId and/or customerId",
+        "parameters": [
+          {
+            "name": "builderId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customerId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "isActive",
+            "in": "query",
+            "description": "If not provided will return ALL subdivision / job locations",
+            "schema": {
+              "enum": [
+                "ALL",
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "required",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/jobLocation"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
     "/jobSite": {
       "post": {
         "tags": [

@@ -779,6 +779,12 @@ export const Validations = {
         check('id').isMongoId().withMessage(Messages.WrongId)
     ],
 
+    searchJobLocation: [
+        check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('keyword').exists().withMessage(Messages.Required)
+    ],
+
     // Contact
     addContact: [
         check('type').exists().withMessage(Messages.Required),
