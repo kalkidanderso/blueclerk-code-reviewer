@@ -69,7 +69,6 @@ export const get = async (req: Request, res: Response) => {
             Sentry.captureException(err);
             return res.json({'status': Status.Error, 'message': err.message});
         });
-        console.log(JobLocation,'JobLocation')
 };
 
 export const create = async (req: Request, res: Response) => {
@@ -206,7 +205,6 @@ export const update = async (req: Request, res: Response) => {
         jobLocation.inactiveAt = null;
         jobLocation.inactiveBy = null;
     }
-    console.log(jobLocation,'jobLocation')
     await jobLocation.save();
 
     await jobLocation
