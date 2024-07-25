@@ -77,6 +77,7 @@ export interface ICustomer extends Document {
     notes?: string
     type: ECustomerTypes
     companyId?: Schema.Types.ObjectId
+    spId?: string
 }
 
 export interface IQBCustomer {
@@ -277,6 +278,10 @@ const CustomerSchema = new Schema({
     companyId: {
         type: Schema.Types.ObjectId,
         ref: 'Company',
+        required: false
+    },
+    spId: {
+        type: String,
         required: false
     }
 });
