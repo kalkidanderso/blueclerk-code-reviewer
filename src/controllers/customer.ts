@@ -45,7 +45,7 @@ export const _resetCustomerQB = (company: ICompany): void => {
 export const createCustomer = async (req: Request, res: Response) => {
 
     const params = req.body;
-    // const spCompany = req.companyId
+    const spCompany = req.companyId
     const company = <ICompany>req.company;
     let companyId = req.companyId;
     let companyTier: { tier: any };
@@ -117,12 +117,12 @@ export const createCustomer = async (req: Request, res: Response) => {
         }
     }
 
-    // if (companyCustomerId) {
-    //     const checkIfCustomerExist = await Customer.findOne({ companyId: companyCustomerId, spId: spCompany });
-    //     if (checkIfCustomerExist) {
-    //         return res.status(400).json({ 'status': 'Customer already exists'});
-    //     }
-    // }
+    if (companyCustomerId) {
+        const checkIfCustomerExist = await Customer.findOne({ companyId: companyCustomerId, spCompanyId: spCompany });
+        if (checkIfCustomerExist) {
+            return res.status(400).json({ 'status': 'Customer already exists'});
+        }
+    }
 
     const data: any = {
         info: {
@@ -156,7 +156,7 @@ export const createCustomer = async (req: Request, res: Response) => {
         contacts: params.contacts,
         type: ECustomerTypes.BUILDER,
         companyId: companyCustomerId,
-        // spId: spCompany && spCompany
+        spCompanyId: spCompany && spCompany
     };
 
     if (params.latitude && params.longitude) {
@@ -369,84 +369,84 @@ export const _createCustomer = async (req: Request, res: Response, next: (err: a
 
 };
 
-    // export const getCustomers = async (req: Request, res: Response) => {
-    //     const params = req.body;
-    //     let companyId = req.companyId;
+    export const getCustomers = async (req: Request, res: Response) => {
+        const params = req.body;
+        let companyId = req.companyId;
 
-    //     let filter = {};
-    //     if (params.includeActive == 'true' && params.includeNonActive == 'true') {
-    //         filter = {};
-    //     } else if (params.includeActive == 'true') {
-    //         filter = { 'isActive': { $eq: true } };
-    //     } else {
-    //         filter = { 'isActive': { $eq: false } };
-    //     }
+        let filter = {};
+        if (params.includeActive == 'true' && params.includeNonActive == 'true') {
+            filter = {};
+        } else if (params.includeActive == 'true') {
+            filter = { 'isActive': { $eq: true } };
+        } else {
+            filter = { 'isActive': { $eq: false } };
+        }
 
-    //     const allCustomers = await Customer.find({spId: companyId, ...filter})
-    //     return res.json({ 'status': Status.Success, 'customers': allCustomers });
+        const allCustomers = await Customer.find({spCompanyId: companyId, ...filter},{ spCompanyId: 0 }))
+        return res.json({ 'status': Status.Success, 'customers': allCustomers });
 
-    // };
+    };
 
-export const getCustomers = async (req: Request, res: Response) => {
-    const params = req.body;
-    let companyId = req.companyId;
-    if (req.otherCompanyId != undefined) {
-        companyId = req.otherCompanyId;
-    }
+// export const getCustomers = async (req: Request, res: Response) => {
+//     const params = req.body;
+//     let companyId = req.companyId;
+//     if (req.otherCompanyId != undefined) {
+//         companyId = req.otherCompanyId;
+//     }
 
-    let filter = {};
-    if (params.includeActive == 'true' && params.includeNonActive == 'true') {
-        filter = {};
-    } else if (params.includeActive == 'true') {
-        filter = { 'isActive': { $eq: true } };
-    } else {
-        filter = { 'isActive': { $eq: false } };
-    }
+//     let filter = {};
+//     if (params.includeActive == 'true' && params.includeNonActive == 'true') {
+//         filter = {};
+//     } else if (params.includeActive == 'true') {
+//         filter = { 'isActive': { $eq: true } };
+//     } else {
+//         filter = { 'isActive': { $eq: false } };
+//     }
 
-    const customers = await Customer.aggregate([
-        {
-            $lookup: {
-                from: 'companycustomers',
-                localField: '_id',
-                foreignField: 'customer',
-                as: 'companycustomers'
-            }
-        },
-        {
-            $lookup: {
-                from: 'pricetiers',
-                localField: 'itemTier',
-                foreignField: '_id',
-                as: 'itemTierObj'
-            }
-        },
-        {
-            $match: {
-                $and: [
-                    { 'companycustomers.company': new ObjectId(companyId) },
-                    filter
-                ]
-            }
-        },
-        {
-            $project: {
-                _id: 1,
-                'profile.displayName': 1,
-                'contact.phone': 1,
-                'info.email': 1,
-                'isActive': 1,
-                'quickbookId': 1,
-                'isPORequired': 1,
-                'notes': 1,
-                'itemTier': 1,
-                'itemTierObj': 1,
-                'discountPrices': 1
-            }
-        },
-    ]).exec();
+//     const customers = await Customer.aggregate([
+//         {
+//             $lookup: {
+//                 from: 'companycustomers',
+//                 localField: '_id',
+//                 foreignField: 'customer',
+//                 as: 'companycustomers'
+//             }
+//         },
+//         {
+//             $lookup: {
+//                 from: 'pricetiers',
+//                 localField: 'itemTier',
+//                 foreignField: '_id',
+//                 as: 'itemTierObj'
+//             }
+//         },
+//         {
+//             $match: {
+//                 $and: [
+//                     { 'companycustomers.company': new ObjectId(companyId) },
+//                     filter
+//                 ]
+//             }
+//         },
+//         {
+//             $project: {
+//                 _id: 1,
+//                 'profile.displayName': 1,
+//                 'contact.phone': 1,
+//                 'info.email': 1,
+//                 'isActive': 1,
+//                 'quickbookId': 1,
+//                 'isPORequired': 1,
+//                 'notes': 1,
+//                 'itemTier': 1,
+//                 'itemTierObj': 1,
+//                 'discountPrices': 1
+//             }
+//         },
+//     ]).exec();
 
-    return res.json({ 'status': Status.Success, 'customers': customers });
-};
+//     return res.json({ 'status': Status.Success, 'customers': customers });
+// };
 
 /**
  * To retrieve the builders of the supplier,
