@@ -382,7 +382,7 @@ export const _createCustomer = async (req: Request, res: Response, next: (err: a
             filter = { 'isActive': { $eq: false } };
         }
 
-        const allCustomers = await Customer.find({spCompanyId: companyId, ...filter},{ spCompanyId: 0 }))
+        const allCustomers = await Customer.find({spCompanyId: companyId, ...filter},{ spCompanyId: 0 })
         return res.json({ 'status': Status.Success, 'customers': allCustomers });
 
     };
