@@ -1,0 +1,42 @@
+name: Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14.20' # Change this version as needed
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Get list of changed files
+        id: changed-files
+        run: |
+          files=$(jq -r '.[] | select(.status == "modified") | .filename' $GITHUB_EVENT_PATH)
+          echo "changed_files=${files}" >> $GITHUB_ENV
+
+      - name: Run code review
+        env:
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+        run: |
+          for file in ${{ env.changed_files }}
+          do
+            if [[ $file == *.js ]]; then
+              echo "Reviewing $file"
+              node review_code.js $file
+            else
+              echo "Skipping $file"
+            fi
+          done
