@@ -282,7 +282,8 @@ const CustomerSchema = new Schema({
     },
     spCompanyId: {
         type: String,
-        required: false
+        required: false,
+        select: false
     }
 });
 

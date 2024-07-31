@@ -120,7 +120,7 @@ export const createCustomer = async (req: Request, res: Response) => {
     if (companyCustomerId) {
         const checkIfCustomerExist = await Customer.findOne({ companyId: companyCustomerId, spCompanyId: spCompany });
         if (checkIfCustomerExist) {
-            return res.status(400).json({ 'status': 'Customer already exists'});
+            return res.status(400).json({ 'status': 'Customer already added'});
         }
     }
 
@@ -729,8 +729,9 @@ export const customerDetail = (req: Request, res: Response) => {
             });
     }
     else {
-        CompanyCustomer.findOne({ 'customer': params.customerId, company: companyId })
-            .populate({
+         const checkIfCustomerExists = Customer.findOne({_id: params.customerId, spCompanyId: companyId})
+        if (checkIfCustomerExists) {
+            checkIfCustomerExists.populate({
                 path: 'customer',
                 populate: [
                     {
@@ -746,8 +747,8 @@ export const customerDetail = (req: Request, res: Response) => {
                     { path: 'paymentTerm', select: '-company -__v' }
                 ]
             })
-            .exec().then((companyCustomer: ICompanyCustomer) => {
-                const customer: any = companyCustomer?.customer;
+            .exec().then((companyCustomer: ICustomer) => {
+                const customer: any = companyCustomer;
                 if (!companyCustomer || customer?.permissions?.role != Role.CUSTOMER) {
                     return res.json({ 'status': Status.Error, 'message': 'No customer found' });
                 }
@@ -756,6 +757,36 @@ export const customerDetail = (req: Request, res: Response) => {
                 Sentry.captureException(err);
                 return res.json({ 'status': Status.Error, 'message': err.message });
             });
+        } else {
+            return res.json({ 'status': Status.Error, 'message': 'Something went wrong' });
+        }
+        // CompanyCustomer.findOne({ 'customer': params.customerId, company: companyId })
+        //     .populate({
+        //         path: 'customer',
+        //         populate: [
+        //             {
+        //                 path: 'companyId',
+        //                 select: 'jobLocations',
+        //                 populate: {
+        //                     path: 'jobLocations',
+        //                     populate: { path: 'jobSites' }
+        //                 },
+        //             },
+        //             { path: 'equipments' },
+        //             { path: 'itemTier', select: '-companyId -__v' },
+        //             { path: 'paymentTerm', select: '-company -__v' }
+        //         ]
+        //     })
+        //     .exec().then((companyCustomer: ICompanyCustomer) => {
+        //         const customer: any = companyCustomer?.customer;
+        //         if (!companyCustomer || customer?.permissions?.role != Role.CUSTOMER) {
+        //             return res.json({ 'status': Status.Error, 'message': 'No customer found' });
+        //         }
+        //         return res.json({ 'status': Status.Success, 'customer': customer });
+        //     }).catch((err) => {
+        //         Sentry.captureException(err);
+        //         return res.json({ 'status': Status.Error, 'message': err.message });
+        //     });
     }
 };
 
