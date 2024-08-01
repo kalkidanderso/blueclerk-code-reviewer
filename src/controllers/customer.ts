@@ -382,8 +382,36 @@ export const _createCustomer = async (req: Request, res: Response, next: (err: a
             filter = { 'isActive': { $eq: false } };
         }
 
-        const allCustomers = await Customer.find({spCompanyId: companyId, ...filter},{ spCompanyId: 0 })
-        return res.json({ 'status': Status.Success, 'customers': allCustomers });
+      
+        const allCustomers = await Customer.find({spCompanyId: companyId, ...filter})
+        .populate({
+            path: 'itemTier',
+            model: 'PriceTier'
+        })
+        .select('_id isActive quickbookId itemTier discountPrices isPORequired contact.phone info.email profile.displayName')
+        .exec();
+       const finalData: any = allCustomers.map(val => {
+        const itemTierId = typeof val.itemTier === 'object' && '_id' in val.itemTier ? val.itemTier._id : ""
+            return {
+                _id: val._id,
+                isActive: val.isActive,
+                quickbookId: val.quickbookId,
+                discountPrices: val.discountPrices,
+                isPORequired: val.isPORequired,
+                itemTier: itemTierId, 
+                contact: {
+                    phone: val.contact.phone || ""
+                },
+                info: {
+                    email: val.info.email || ""
+                },
+                profile: {
+                    displayName: val.profile.displayName || ""
+                },
+                itemTierObj: [val.itemTier]
+            };
+        })
+        return res.json({ 'status': Status.Success, 'customers': finalData });
 
     };
 
