@@ -1,4 +1,4 @@
-name: Code Review
+name: Code Review Workflow
 
 on:
   pull_request:
@@ -15,7 +15,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '14.20' # Change this version as needed
+          node-version: '18'
 
       - name: Install dependencies
         run: npm install
@@ -23,20 +23,20 @@ jobs:
       - name: Get list of changed files
         id: changed-files
         run: |
-          files=$(jq -r '.[] | select(.status == "modified") | .filename' $GITHUB_EVENT_PATH)
-          echo "changed_files=${files}" >> $GITHUB_ENV
+          echo "Changed files:"
+          git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed_files.txt
+          cat changed_files.txt
 
       - name: Run code review
         env:
           AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
           AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
         run: |
-          for file in ${{ env.changed_files }}
-          do
-            if [[ $file == *.js ]]; then
+          while IFS= read -r file; do
+            if [[ -f $file ]]; then
               echo "Reviewing $file"
               node review_code.js $file
             else
-              echo "Skipping $file"
+              echo "$file does not exist, skipping"
             fi
-          done
+          done < changed_files.txt
