@@ -153,9 +153,9 @@ export const create = async (req: Request, res: Response) => {
                 return res.json({'status': Status.Error, 'message': err.message});
             });
         }
-           
+        return  
     }
-
+    
     const jobLocationData: any = {
         name,
         address: {
