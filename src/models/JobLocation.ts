@@ -19,6 +19,8 @@ export interface IJobLocation extends Document {
     jobSites?: [Schema.Types.ObjectId]
     isActive?: boolean
     builderId: Schema.Types.ObjectId | ICompany
+    customerIds: [Schema.Types.ObjectId] | Schema.Types.ObjectId
+    companyId: String
     inactiveAt?: Date
     inactiveBy?: Schema.Types.ObjectId | IUser
     quickbookId?: string
@@ -64,6 +66,15 @@ const JobLocationSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Company',
         require: true
+    },
+    customerIds: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Customer',
+        required: true,
+        select: false
+    }],
+    companyId: {
+        type: String,
     },
     inactiveAt: {
         type: Date
