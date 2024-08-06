@@ -5533,6 +5533,9 @@
                   "customerId": {
                     "type": "string"
                   },
+                  "jobLocationId": {
+                    "type": "string"
+                  },
                   "name": {
                     "type": "string"
                   },

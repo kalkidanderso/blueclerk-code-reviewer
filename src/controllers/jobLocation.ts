@@ -32,17 +32,34 @@ export const get = async (req: Request, res: Response) => {
     let { customerId, builderId } = queryParams;
     let query = {};
 
-    if(customerId && !builderId) {
-        const customer = await Customer.findById(customerId);
-        builderId = customer.companyId;
+    if(!customerId) {
+        return res.json({'status': Status.Error, 'message': 'customerId is required'});
     }
 
+    // if(customerId && !builderId) {
+    //     const customer = await Customer.findById(customerId);
+    //     builderId = customer.companyId;
+    // }
+    
     if (!id && !customerId && loggedInCompanyId) {
         customerId = loggedInCompanyId;
     }
-    query = {
-        ...(id ? { _id: id } : {}),
-        ...(builderId ? { builderId } : {}),
+
+    if (builderId) {
+        query = {
+            ...(id ? { _id: id } : {}),
+            ...(builderId ? { builderId } : {}),
+            ...(customerId ? { customerIds: { $in: [customerId] } } : {}),
+        };
+    } else {
+        query = {
+            ...(id ? { _id: id } : {}),
+            ...(customerId ? { customerIds: { $in: [customerId] } } : {}),
+        };
+    }
+
+    const projection = {
+        customerIds: 0
     };
 
 
@@ -60,7 +77,7 @@ export const get = async (req: Request, res: Response) => {
         break;
     }
 
-    JobLocation.find(query)
+    JobLocation.find(query, projection)
         .populate('jobSites', '-__v -locationId -customerId -homeOwner')
         .populate('contacts', '-__v')
         .exec().then((jobLocations: any) => {
@@ -83,6 +100,8 @@ export const create = async (req: Request, res: Response) => {
     const state = params.state;
     const zipcode = params.zipcode;
     const customerId = params.customerId;
+    const companyId = req.companyId;
+    const jobLocationId = params.jobLocationId;
 
     if (!(locationLat && locationLong) && !(street && city && state && zipcode)) {
         return res.json({'status': Status.Error, 'message': 'Either location or address is required.'});
@@ -94,6 +113,49 @@ export const create = async (req: Request, res: Response) => {
 
     const customer = await Customer.findById(customerId);
 
+    if (jobLocationId) {
+        const checkIfExistsAlready = await JobLocation.find({_id: jobLocationId , customerIds: {$in: [customerId]}})
+        if(checkIfExistsAlready.length > 0) {
+            return res.json({ status: Status.Error, message: 'Subdivision already added'});
+        } else {
+            const check = await JobLocation.findOneAndUpdate({ _id: jobLocationId },
+                {$push: {customerIds: customerId}},
+                { new: true }
+            ).then(async (jobLocation: IJobLocation) => {
+                await customer.save();
+        
+                await jobLocation
+                    .populate({ path: 'jobSites', select: '-__v -locationId -customerId' })
+                    .populate({ path: 'contacts', select: '-__v' })
+                    .execPopulate();
+        
+                if (company.qbAuthorized && customer?.quickbookId) {
+                    // Create QB Customer Job
+                    _createQBCustomerJob(req, res, company, jobLocation, customer.quickbookId, (err, errMsg, qbCustomerJob) => {
+                        if (err) {
+                            return res.json({ status: err, message: errMsg });
+                        }
+        
+                        if (qbCustomerJob) {
+                            // Create new Customer in QuickBooks
+                            jobLocation.quickbookId = qbCustomerJob.Id;
+                            jobLocation.save();
+                        }
+        
+                        return res.json({ status: Status.Success, message: 'Subdivision created successfully.', jobLocation, quickbookCustomerJob: qbCustomerJob });
+                    });
+                } else {
+                    return res.json({ status: Status.Success, message: 'Subdivision created successfully.', jobLocation });
+                }
+        
+            }).catch((err) => {
+                Sentry.captureException(err);
+                return res.json({'status': Status.Error, 'message': err.message});
+            });
+        }
+           
+    }
+
     const jobLocationData: any = {
         name,
         address: {
@@ -103,7 +165,9 @@ export const create = async (req: Request, res: Response) => {
             zipcode: zipcode
         },
         contacts: [],
-        builderId: customer.companyId
+        builderId: customer.companyId,
+        customerIds: [customerId],
+        companyId: companyId
     };
 
     if (contact?.name || contact?.phone || contact?.email) {
