@@ -23,6 +23,7 @@ export interface ICreateJobSiteInput {
     homeOwnerId: number;
 }
 export interface IUpdateJobSiteArgs extends Omit<IUpdateJobSiteInput, 'id'> {}
+
 export interface IUpdateJobSiteInput {
     id: number
     alternativeId: string;
@@ -36,6 +37,11 @@ export interface IUpdateJobSiteInput {
     locationId?: number;
     customerId: number;
     homeOwnerId: number;
+}
+
+export interface IAllJobs { 
+    id?: number;
+    job_name: string[]
 }
 
 export interface IGetJobSiteFilter {

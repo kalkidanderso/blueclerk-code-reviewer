@@ -16,7 +16,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-          fetch-depth: 2  # Fetch a minimal number of commits
+          fetch-depth: 0  # Fetch full history for accurate diff
 
       - name: Setup Node.js
         uses: actions/setup-node@v2
@@ -26,6 +26,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Debug - Print Commit Hashes
+        run: |
+          echo "Before Commit: ${{ github.event.before }}"
+          echo "Current Commit: ${{ github.sha }}"
+
       - name: Get list of changed files
         id: changed-files
         run: |
@@ -33,7 +38,6 @@ jobs:
           if [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
             git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed_files.txt
           else
-            # Handle cases where there's no valid 'before' hash (e.g., for new branches)
             git diff --name-only HEAD^ > changed_files.txt
           fi
           cat changed_files.txt
@@ -45,7 +49,6 @@ jobs:
           AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
         run: |
           while IFS= read -r file; do
-            # Skip package.json and package-lock.json
             if [[ $file == "package.json" || $file == "package-lock.json" ]]; then
               echo "Skipping review for $file"
               continue
