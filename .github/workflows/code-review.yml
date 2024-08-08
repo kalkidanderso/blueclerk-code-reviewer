@@ -35,16 +35,14 @@ jobs:
         id: changed-files
         run: |
           echo "Changed files:"
-          git fetch origin main
+          # Use proper references based on your default branch
           if [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
             git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed_files.txt
           else
-            git diff --name-only origin/main > changed_files.txt
+            # For new branches, use the base commit if available
+            git diff --name-only origin/staging ${{ github.sha }} > changed_files.txt
           fi
           cat changed_files.txt
-
-      - name: Print Files in Repo
-        run: ls -R
 
       - name: Run code review
         env:

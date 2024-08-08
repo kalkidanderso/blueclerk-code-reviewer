@@ -1,3 +1,4 @@
+//here we added all interfaces for job Sites
 export interface IJobSite {
     id: number;
     alternativeId: string;
