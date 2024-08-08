@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - staging
+      - master
       - feat/code-review
     types: [opened, synchronize]
 
