@@ -1,4 +1,6 @@
 import { timestamp } from "aws-sdk/clients/cloudfront";
+
+//here we added all interfaces for job location
 export interface IJobLocation {
     id?: number;
     customerId?: number;

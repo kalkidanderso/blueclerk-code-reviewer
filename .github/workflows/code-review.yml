@@ -35,12 +35,16 @@ jobs:
         id: changed-files
         run: |
           echo "Changed files:"
+          git fetch origin main
           if [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
             git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed_files.txt
           else
-            git diff --name-only HEAD^ > changed_files.txt
+            git diff --name-only origin/main > changed_files.txt
           fi
           cat changed_files.txt
+
+      - name: Print Files in Repo
+        run: ls -R
 
       - name: Run code review
         env:
