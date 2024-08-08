@@ -1,10 +1,10 @@
-name: Code Review Workflow
+name: Code Review and Build Workflow
 
 on:
   pull_request:
-    branch:
+    branches:
       - staging
-      - master
+      - feat/code-review
     types: [opened, synchronize]
 
 jobs:
@@ -13,21 +13,28 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 2  # Fetch a minimal number of commits
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v2
         with:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm install axios
+        run: npm install
 
       - name: Get list of changed files
         id: changed-files
         run: |
           echo "Changed files:"
-          git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed_files.txt
+          if [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+            git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed_files.txt
+          else
+            # Handle cases where there's no valid 'before' hash (e.g., for new branches)
+            git diff --name-only HEAD^ > changed_files.txt
+          fi
           cat changed_files.txt
 
       - name: Run code review
