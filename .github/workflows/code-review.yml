@@ -45,6 +45,12 @@ jobs:
           AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
         run: |
           while IFS= read -r file; do
+            # Skip package.json and package-lock.json
+            if [[ $file == "package.json" || $file == "package-lock.json" ]]; then
+              echo "Skipping review for $file"
+              continue
+            fi
+            
             if [[ -f $file ]]; then
               echo "Reviewing $file"
               node review_code.js $file
