@@ -44,6 +44,10 @@ jobs:
           fi
           cat changed_files.txt
 
+      - name: Debug - Print Changed Files
+        run: |
+          cat changed_files.txt
+
       - name: Run code review
         env:
           AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
@@ -51,6 +55,7 @@ jobs:
           AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
         run: |
           while IFS= read -r file; do
+            echo "Processing $file"
             if [[ $file == "package.json" || $file == "package-lock.json" ]]; then
               echo "Skipping review for $file"
               continue

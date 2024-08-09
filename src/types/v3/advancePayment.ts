@@ -1,3 +1,4 @@
+//  here we have created all interfaces related to Advance payment 
 export interface IAdvancePayment {
     id?: number;
     alternativeId?: string;
