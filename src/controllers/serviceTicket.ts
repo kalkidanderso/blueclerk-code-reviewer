@@ -22,7 +22,7 @@ import * as Sentry from '@sentry/node';
 import { PORequest } from '../models/PORequest';
 
 export const createServiceTicket = (req: Request, res: Response, sio: any) => {
-
+          console.log('=========createServiceTicket', req.body);
     parseFieldsAndUploadImageInS3(req, res, async (err: any, data)=>{
         if (!err) {
             const params = data.body;
