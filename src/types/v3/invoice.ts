@@ -15,4 +15,5 @@ export interface InvoiceRequestBody {
     lastEmailEndDate: Date;
     bouncedEmailFlag: boolean
 }
+
 export interface InvoiceRequestQuery { }

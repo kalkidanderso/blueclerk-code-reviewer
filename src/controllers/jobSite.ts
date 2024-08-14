@@ -5,7 +5,7 @@ import { JobSite, IJobSite } from '../models/JobSite';
 import { JobLocation } from '../models/JobLocation';
 import * as Sentry from '@sentry/node';
 
-export const get = (req: Request, res: Response) => {
+export const get = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { query: queryParams = {} } = req;
     const { customerId, homeOwnerId, locationId, isActive } = queryParams;
@@ -42,8 +42,7 @@ export const get = (req: Request, res: Response) => {
         // Retrieve all job sites
         query;
     }
-
-    JobSite.find(query, (err: any, jobSite: any) => {
+    await JobSite.find(query, (err: any, jobSite: any) => {
         if (err) {
             res.status(Status.InternalError);
             res.send(Messages.InternalServerError);

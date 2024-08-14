@@ -1,7 +1,11 @@
-name: Code Review Workflow
+name: Code Review and Build Workflow
 
 on:
   pull_request:
+    branches:
+      - staging
+      - master
+      - feat/code-review
     types: [opened, synchronize]
 
 jobs:
@@ -11,6 +15,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Fetch full history for accurate diff
 
       - name: Setup Node.js
         uses: actions/setup-node@v2
@@ -20,19 +26,41 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Debug - Print Commit Hashes
+        run: |
+          echo "Before Commit: ${{ github.event.before }}"
+          echo "Current Commit: ${{ github.sha }}"
+
       - name: Get list of changed files
         id: changed-files
         run: |
           echo "Changed files:"
-          git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed_files.txt
+          # Use proper references based on your default branch
+          if [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+            git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed_files.txt
+          else
+            # For new branches, use the base commit if available
+            git diff --name-only origin/staging ${{ github.sha }} > changed_files.txt
+          fi
+          cat changed_files.txt
+
+      - name: Debug - Print Changed Files
+        run: |
           cat changed_files.txt
 
       - name: Run code review
         env:
           AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
           AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
         run: |
           while IFS= read -r file; do
+            echo "Processing $file"
+            if [[ $file == "package.json" || $file == "package-lock.json" ]]; then
+              echo "Skipping review for $file"
+              continue
+            fi
+            
             if [[ -f $file ]]; then
               echo "Reviewing $file"
               node review_code.js $file
