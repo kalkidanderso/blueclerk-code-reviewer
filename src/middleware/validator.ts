@@ -1042,6 +1042,12 @@ export const Validations = {
         check('keyword').exists().withMessage(Messages.Required)
     ],
 
+    searchJobSite: [
+        check('customerId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('homeOwnerId').optional().isMongoId().withMessage(Messages.WrongId),
+        check('keyword').exists().withMessage(Messages.Required)
+    ],
+
     // Contact
     addContact: [
         check('type').exists().withMessage(Messages.Required),

@@ -167,3 +167,16 @@ export const update = async (req: Request, res: Response) => {
         }
     });
 };
+
+export const search = async(req: Request, res: Response) => {
+    const { keyword }: { keyword: string } = req.query;
+    const keywordRegex = { $regex: keyword, $options: 'i' };
+    const query = {
+        '$or': [
+            { name: keywordRegex },
+        ]
+    };
+    const jobSites = await JobSite.find({ ...query }).select("name location address");
+    return res.json({ status: Status.Success, jobSites });
+}
+
