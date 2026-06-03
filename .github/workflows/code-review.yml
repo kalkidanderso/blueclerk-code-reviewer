@@ -37,60 +37,62 @@ jobs:
 
       - name: Get list of changed files
         run: |
-          echo "Detecting changed files..."
           BASE="${{ github.event.pull_request.base.sha }}"
           HEAD="${{ github.sha }}"
           git diff --name-only "$BASE" "$HEAD" > changed_files.txt
           echo "Changed files:"
           cat changed_files.txt
 
-      - name: Run Groq AI code review and post PR comment
+      - name: Run Groq AI review on each file
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           NODE_PATH: /tmp/review-deps/node_modules
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          SKIPPED=("package.json" "package-lock.json" ".env" ".gitignore")
-          FULL_REVIEW="## 🤖 Groq AI Code Review\n\n"
-          HAS_REVIEW=false
+          SKIPPED=("package.json" "package-lock.json" ".env" ".gitignore" "package-lock")
+          echo "[]" > reviews.json
 
           while IFS= read -r file; do
-            # Skip non-existent files (deleted)
+            # Skip deleted files
             if [[ ! -f "$file" ]]; then
-              echo "Skipping (deleted): $file"
+              echo "⏭ Skipping (deleted): $file"
               continue
             fi
 
-            # Skip non-code files
+            # Only review .ts and .js files
             if [[ "$file" != *.ts && "$file" != *.js ]]; then
-              echo "Skipping (non-code): $file"
+              echo "⏭ Skipping (non-code): $file"
               continue
             fi
 
-            # Skip specific files
+            # Skip excluded files
             SKIP=false
-            for skip_file in "${SKIPPED[@]}"; do
-              if [[ "$file" == *"$skip_file"* ]]; then
-                SKIP=true
-                break
-              fi
+            for s in "${SKIPPED[@]}"; do
+              [[ "$file" == *"$s"* ]] && SKIP=true && break
             done
+            $SKIP && echo "⏭ Skipping (excluded): $file" && continue
 
-            if $SKIP; then
-              echo "Skipping (excluded): $file"
-              continue
-            fi
+            echo "🔍 Reviewing: $file"
+            RESULT=$(node review_code.js "$file" 2>&1)
 
-            echo "Reviewing: $file"
-            REVIEW=$(node review_code.js "$file")
-            FULL_REVIEW="${FULL_REVIEW}### 📄 \`${file}\`\n\n${REVIEW}\n\n---\n\n"
-            HAS_REVIEW=true
+            # Append result to reviews array
+            CURRENT=$(cat reviews.json)
+            echo "$CURRENT" | node -e "
+              const data = JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));
+              const result = $(echo "$RESULT" | head -1);
+              data.push(result);
+              console.log(JSON.stringify(data));
+            " > reviews.json || echo "⚠️  Failed to parse review for $file"
 
           done < changed_files.txt
 
-          if [ "$HAS_REVIEW" = true ]; then
-            echo "Posting review comment on PR..."
-            printf "%b" "$FULL_REVIEW" | gh pr comment ${{ github.event.pull_request.number }} --body-file -
-          else
-            echo "No reviewable files found."
-          fi
+          echo "Collected reviews:"
+          cat reviews.json | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8')); console.log('Files reviewed:', d.length);"
+
+      - name: Post review as PR inline comments
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_PATH: /tmp/review-deps/node_modules
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.sha }}
+        run: node post_review.js
