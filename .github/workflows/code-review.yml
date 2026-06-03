@@ -1,70 +1,76 @@
-name: Code Review and Build Workflow
+name: AI Code Review (Groq)
 
 on:
   pull_request:
     branches:
       - staging
       - master
-      - feat/code-review
+      - main
     types: [opened, synchronize]
 
 jobs:
   review:
     runs-on: ubuntu-latest
+    name: Review changed files with Groq AI
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Fetch full history for accurate diff
+          fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
 
       - name: Install dependencies
         run: npm install
 
-      - name: Debug - Print Commit Hashes
-        run: |
-          echo "Before Commit: ${{ github.event.before }}"
-          echo "Current Commit: ${{ github.sha }}"
-
       - name: Get list of changed files
         id: changed-files
         run: |
+          echo "Detecting changed files..."
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.sha }}"
+          git diff --name-only "$BASE" "$HEAD" > changed_files.txt
           echo "Changed files:"
-          # Use proper references based on your default branch
-          if [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
-            git diff --name-only ${{ github.event.before }} ${{ github.sha }} > changed_files.txt
-          else
-            # For new branches, use the base commit if available
-            git diff --name-only origin/staging ${{ github.sha }} > changed_files.txt
-          fi
           cat changed_files.txt
 
-      - name: Debug - Print Changed Files
-        run: |
-          cat changed_files.txt
-
-      - name: Run code review
+      - name: Run Groq AI code review
         env:
-          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
-          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
-          AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
+          SKIPPED=("package.json" "package-lock.json" ".env" ".gitignore")
+
           while IFS= read -r file; do
-            echo "Processing $file"
-            if [[ $file == "package.json" || $file == "package-lock.json" ]]; then
-              echo "Skipping review for $file"
+            # Skip non-existent files (deleted)
+            if [[ ! -f "$file" ]]; then
+              echo "Skipping (deleted): $file"
               continue
             fi
-            
-            if [[ -f $file ]]; then
-              echo "Reviewing $file"
-              node review_code.js $file
-            else
-              echo "$file does not exist, skipping"
+
+            # Skip non-code files
+            if [[ "$file" != *.ts && "$file" != *.js && "$file" != *.json ]]; then
+              echo "Skipping (non-code): $file"
+              continue
             fi
+
+            # Skip specific files
+            SKIP=false
+            for skip_file in "${SKIPPED[@]}"; do
+              if [[ "$file" == *"$skip_file"* ]]; then
+                SKIP=true
+                break
+              fi
+            done
+
+            if $SKIP; then
+              echo "Skipping (excluded): $file"
+              continue
+            fi
+
+            echo "Reviewing: $file"
+            node review_code.js "$file"
+
           done < changed_files.txt
