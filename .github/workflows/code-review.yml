@@ -8,6 +8,10 @@ on:
       - main
     types: [opened, synchronize]
 
+permissions:
+  pull-requests: write
+  contents: read
+
 jobs:
   review:
     runs-on: ubuntu-latest
@@ -32,7 +36,6 @@ jobs:
           npm install axios
 
       - name: Get list of changed files
-        id: changed-files
         run: |
           echo "Detecting changed files..."
           BASE="${{ github.event.pull_request.base.sha }}"
@@ -41,12 +44,15 @@ jobs:
           echo "Changed files:"
           cat changed_files.txt
 
-      - name: Run Groq AI code review
+      - name: Run Groq AI code review and post PR comment
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           NODE_PATH: /tmp/review-deps/node_modules
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           SKIPPED=("package.json" "package-lock.json" ".env" ".gitignore")
+          FULL_REVIEW="## 🤖 Groq AI Code Review\n\n"
+          HAS_REVIEW=false
 
           while IFS= read -r file; do
             # Skip non-existent files (deleted)
@@ -56,7 +62,7 @@ jobs:
             fi
 
             # Skip non-code files
-            if [[ "$file" != *.ts && "$file" != *.js && "$file" != *.json ]]; then
+            if [[ "$file" != *.ts && "$file" != *.js ]]; then
               echo "Skipping (non-code): $file"
               continue
             fi
@@ -76,6 +82,15 @@ jobs:
             fi
 
             echo "Reviewing: $file"
-            node review_code.js "$file"
+            REVIEW=$(node review_code.js "$file")
+            FULL_REVIEW="${FULL_REVIEW}### 📄 \`${file}\`\n\n${REVIEW}\n\n---\n\n"
+            HAS_REVIEW=true
 
           done < changed_files.txt
+
+          if [ "$HAS_REVIEW" = true ]; then
+            echo "Posting review comment on PR..."
+            printf "%b" "$FULL_REVIEW" | gh pr comment ${{ github.event.pull_request.number }} --body-file -
+          else
+            echo "No reviewable files found."
+          fi
