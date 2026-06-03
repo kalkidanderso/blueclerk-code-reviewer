@@ -25,7 +25,11 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          mkdir -p /tmp/review-deps
+          cd /tmp/review-deps
+          npm init -y
+          npm install axios
 
       - name: Get list of changed files
         id: changed-files
@@ -40,6 +44,7 @@ jobs:
       - name: Run Groq AI code review
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          NODE_PATH: /tmp/review-deps/node_modules
         run: |
           SKIPPED=("package.json" "package-lock.json" ".env" ".gitignore")
 
